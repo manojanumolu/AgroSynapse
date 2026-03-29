@@ -124,6 +124,19 @@ st.markdown("""
 BASE = os.path.dirname(os.path.abspath(__file__))
 def mpath(n): return os.path.join(BASE, n)
 
+# ── Model file verification (runs at startup, visible in logs) ──
+_MODEL_FILES = [
+    "img_model.pt", "fusion_model.pt",
+    "tab_projector.pt", "xgb_model.json", "scaler.pkl",
+]
+_file_status = {}
+for _f in _MODEL_FILES:
+    _p = mpath(_f)
+    _exists = os.path.exists(_p)
+    _size   = os.path.getsize(_p) if _exists else 0
+    _file_status[_f] = {"exists": _exists, "mb": round(_size / 1024 / 1024, 1)}
+    print(f"{_f}: exists={_exists}, size={_size/1024/1024:.1f}MB")
+
 # ══════════════════════════════════════════════════════════════
 # MODEL DEFINITIONS — identical to training
 # ══════════════════════════════════════════════════════════════
@@ -243,7 +256,29 @@ class FusionGRNModel(nn.Module):
 # ══════════════════════════════════════════════════════════════
 
 @st.cache_resource(show_spinner="Loading AI models…")
-def load_everything():
+def load_all_models():
+    """Load and cache all models once per session.
+    Raises a clear error if any model file is missing or too small
+    (which happens when Git LFS pointers aren't resolved on the server).
+    """
+    # ── Validate model files before loading ────────────────────
+    MIN_SIZES = {
+        "img_model.pt":     50,   # expect ~105 MB
+        "fusion_model.pt":  20,   # expect ~80 MB
+        "tab_projector.pt":  0.5, # expect ~1.6 MB
+    }
+    for fname, min_mb in MIN_SIZES.items():
+        info = _file_status.get(fname, {})
+        if not info.get("exists"):
+            raise FileNotFoundError(
+                f"{fname} not found. Check repository LFS setup.")
+        if info["mb"] < min_mb:
+            raise ValueError(
+                f"{fname} is only {info['mb']:.1f} MB — "
+                f"expected >{min_mb} MB. "
+                f"Git LFS pointers may not have been resolved on this server. "
+                f"Run: git lfs pull")
+
     with open(mpath("model_config.json")) as f: cfg = json.load(f)
     with open(mpath("class_names.json"))  as f: cls = json.load(f)
 
@@ -269,19 +304,13 @@ def load_everything():
     xgb_clf = xgb.XGBClassifier()
     xgb_clf.load_model(mpath("xgb_model.json"))
 
-    with open(mpath("scaler.pkl"), "rb") as f:
-        scaler = pickle.load(f)
+    with open(mpath("scaler.pkl"), "rb") as fh:
+        scaler = pickle.load(fh)
 
-    # Explicit eval() — required for BatchNorm and Dropout to behave correctly
+    # Explicit eval() — essential for BatchNorm/Dropout at inference
     img_m.eval(); tab_p.eval(); fusion.eval()
 
-    tf = transforms.Compose([
-        transforms.Resize((224, 224)),
-        transforms.ToTensor(),
-        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
-    ])
-
-    return img_m, tab_p, fusion, xgb_clf, scaler, cls, num_cols, tf
+    return img_m, tab_p, fusion, xgb_clf, scaler, cls, num_cols
 
 
 # ── Lookup maps ────────────────────────────────────────────────
@@ -337,13 +366,20 @@ CROP_MAP = {
 # ══════════════════════════════════════════════════════════════
 
 def run_inference(img_model, tab_proj, fusion, xgb_clf, scaler,
-                  class_names, num_cols, tf,
+                  class_names, num_cols,
                   img_bytes, n, p, k, temp, hum, rain, ph, yld, fert,
                   season, irrig, prev, region):
 
-    # ── Image: always read from bytes to avoid exhausted file pointer ──
-    # (Streamlit's UploadedFile pointer is consumed by st.image preview;
-    #  passing raw bytes guarantees a fresh read every time.)
+    # ── Transform created fresh every call (never cached) ──────
+    tf = transforms.Compose([
+        transforms.Resize((224, 224)),
+        transforms.ToTensor(),
+        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
+    ])
+
+    # ── Image: always decode from raw bytes ────────────────────
+    # UploadedFile stream is consumed by st.image(); using saved bytes
+    # guarantees a correct, fresh tensor regardless of Streamlit rerenders.
     pil_img = Image.open(io.BytesIO(img_bytes)).convert("RGB")
     img_t   = tf(pil_img).unsqueeze(0)           # (1, 3, 224, 224)
 
@@ -358,12 +394,21 @@ def run_inference(img_model, tab_proj, fusion, xgb_clf, scaler,
     tab_raw   = np.concatenate([xgb_probs, scaled_feat], axis=1).astype(np.float32)
     tab_t     = torch.tensor(tab_raw, dtype=torch.float32)             # (1, 19)
 
-    # ── Inference — all models in eval(), wrapped in no_grad ──
+    # ── Inference — explicit eval() + no_grad every call ──────
     img_model.eval(); tab_proj.eval(); fusion.eval()
     with torch.no_grad():
         img_feat  = img_model(img_t, return_features=True)
         tab_feat  = tab_proj(tab_t)
         logits, _ = fusion(img_feat, tab_feat)
+
+    # Debug values — exposed so callers can verify image features vary per image
+    debug = {
+        "logits":         logits[0].cpu().tolist(),
+        "img_feat_mean":  round(img_feat.mean().item(), 6),
+        "img_feat_std":   round(img_feat.std().item(),  6),
+        "img_shape":      list(img_t.shape),
+        "img_pixel_mean": round(img_t.mean().item(), 4),
+    }
 
     fusion_probs = torch.softmax(logits, dim=-1)[0].cpu().numpy()      # (6,)
 
@@ -404,7 +449,7 @@ def run_inference(img_model, tab_proj, fusion, xgb_clf, scaler,
         crop_recs.append({"name": crop, "rank": i + 1, "stars": 5 - i,
                            "fertilizer": cf["fertilizer"], "npk": cf["npk"]})
 
-    return soil_name, confidence, all_probs, soil_fert, crop_recs
+    return soil_name, confidence, all_probs, soil_fert, crop_recs, debug
 
 
 # ══════════════════════════════════════════════════════════════
@@ -419,8 +464,23 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# Load models once
-img_model, tab_proj, fusion, xgb_clf, scaler, CLASS_NAMES, NUMERIC_COLS, eval_tf = load_everything()
+# ── Load models (cached) — show file status if any file is bad ─
+try:
+    img_model, tab_proj, fusion, xgb_clf, scaler, CLASS_NAMES, NUMERIC_COLS = load_all_models()
+    _models_ok = True
+except Exception as _load_err:
+    _models_ok = False
+    st.error(
+        f"**Model loading failed:** {_load_err}\n\n"
+        f"This usually means Git LFS files were not pulled. "
+        f"Run `git lfs pull` in the repo and redeploy."
+    )
+    st.markdown("**File status at startup:**")
+    for _fn, _info in _file_status.items():
+        _ok  = _info["exists"] and _info["mb"] > 0.1
+        _ico = "OK" if _ok else "MISSING / TOO SMALL"
+        st.write(f"- `{_fn}`: {_info['mb']:.1f} MB  —  {_ico}")
+    st.stop()
 
 left, right = st.columns([1, 1], gap="large")
 
@@ -484,9 +544,9 @@ with right:
     else:
         with st.spinner("Running inference…"):
             try:
-                soil_name, confidence, all_probs, soil_fert, crop_recs = run_inference(
+                soil_name, confidence, all_probs, soil_fert, crop_recs, dbg = run_inference(
                     img_model, tab_proj, fusion, xgb_clf, scaler,
-                    CLASS_NAMES, NUMERIC_COLS, eval_tf,
+                    CLASS_NAMES, NUMERIC_COLS,
                     img_bytes,                          # raw bytes — no pointer issue
                     n, p, k, temp, hum, rain, ph, yld, fert,
                     season, irrig, prev, region,
@@ -544,7 +604,30 @@ with right:
                 </div>
                 """, unsafe_allow_html=True)
 
+                # ── Debug expander ─────────────────────────────
+                # img_feat_mean and img_feat_std MUST differ across
+                # images — if they are identical, the image model is
+                # not loading correctly (LFS pointer vs real file).
+                with st.expander("Debug Info"):
+                    st.write("**Model file sizes at startup:**")
+                    for fn, info in _file_status.items():
+                        st.write(f"- `{fn}`: {info['mb']:.1f} MB")
+                    st.write("---")
+                    st.write("**Raw logits:**",
+                             [round(v, 4) for v in dbg["logits"]])
+                    st.write("**Image feature mean:**", dbg["img_feat_mean"],
+                             "  std:", dbg["img_feat_std"])
+                    st.write("**Image tensor shape:**", dbg["img_shape"],
+                             "  pixel mean:", dbg["img_pixel_mean"])
+                    st.caption(
+                        "If img_feat_mean / std are identical for every image, "
+                        "the image model is not working — check LFS file sizes above."
+                    )
+
             except Exception as e:
                 st.error(f"Prediction failed: {e}")
                 import traceback
                 st.code(traceback.format_exc())
+                st.markdown("**File status:**")
+                for fn, info in _file_status.items():
+                    st.write(f"- `{fn}`: {info['mb']:.1f} MB")
