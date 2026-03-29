@@ -404,20 +404,74 @@ def run_inference(img_model, tab_proj, fusion, xgb_clf, scaler,
 # ══════════════════════════════════════════════════════════════
 
 def is_soil_image(pil_img, img_model, transform):
-    """Use the trained ResNet-50 to validate soil images.
-    If the model is confident (>=40%) about any soil class → valid.
-    Low confidence across all classes → not a soil image.
+    """Dual-layer soil validator:
+    Layer 1 — Color pre-filter: catches gaming/people/sky/neon/screenshots.
+    Layer 2 — ResNet confidence: catches blurry/unclear non-soil images.
+    Both layers must pass.
     """
-    import torch
+    img = pil_img.resize((200, 200)).convert("RGB")
+    arr = np.array(img).astype(float)
+    r, g, b  = arr[:, :, 0], arr[:, :, 1], arr[:, :, 2]
+    total_px = 200 * 200
+
+    # ── Layer 1: Color pre-filter ──────────────────────────────
+
+    # Neon pixels (gaming/UI screenshots)
+    neon = np.sum(
+        ((r > 200) & (g < 100) & (b < 100)) |
+        ((b > 200) & (r < 100) & (g < 100)) |
+        ((g > 200) & (r < 100) & (b < 100)) |
+        ((r > 220) & (g > 80)  & (g < 150) & (b < 60)) |
+        ((b > 180) & (g > 180) & (r < 100))
+    ) / total_px
+    if neon > 0.03:
+        return False, "No soil detected in this image."
+
+    # Skin tones (people/selfies)
+    px_bright = (r + g + b) / 3
+    skin = np.sum(
+        (r > 150) & (g > 100) & (b > 80) &
+        (r > g) & (g > b) &
+        ((r - b) > 20) & ((r - b) < 130) &
+        (px_bright > 110) & (px_bright < 220)
+    ) / total_px
+    if skin > 0.20:
+        return False, "No soil detected in this image."
+
+    # Strong blue (sky/water)
+    blue = np.sum((b > r + 30) & (b > g + 20) & (b > 120)) / total_px
+    if blue > 0.28:
+        return False, "No soil detected in this image."
+
+    # Vivid green (grass/plants)
+    vivid_green = np.sum((g > r + 30) & (g > b + 30) & (g > 100)) / total_px
+    if vivid_green > 0.28:
+        return False, "No soil detected in this image."
+
+    # Too bright (white backgrounds, light images)
+    if (r.mean() + g.mean() + b.mean()) / 3 > 195:
+        return False, "No soil detected in this image."
+
+    # Structured row variance (UI/text/screenshots)
+    row_vars = [np.var(arr[i]) for i in range(0, 200, 5)]
+    if np.mean(row_vars) > 5000:
+        return False, "No soil detected in this image."
+
+    # High overall saturation (vivid non-soil images)
+    sat = (np.maximum(np.maximum(r, g), b) -
+           np.minimum(np.minimum(r, g), b))
+    if sat.mean() > 75 or (sat > 130).sum() / total_px > 0.30:
+        return False, "No soil detected in this image."
+
+    # ── Layer 2: ResNet confidence check ──────────────────────
     img_t = transform(pil_img).unsqueeze(0)
     with torch.no_grad():
-        feat  = img_model(img_t, return_features=False)
-        probs = torch.softmax(feat, dim=-1)[0]
-    top_confidence = probs.max().item() * 100
-    if top_confidence >= 40.0:
-        return True, "Valid soil image"
-    else:
-        return False, top_confidence
+        logits = img_model(img_t, return_features=False)
+        probs  = torch.softmax(logits, dim=-1)[0]
+    if probs.max().item() * 100 < 45.0:
+        return False, "No soil detected in this image."
+
+    return True, "Valid soil image"
 
 
 # ══════════════════════════════════════════════════════════════
@@ -604,30 +658,19 @@ with right:
         _pil_check = Image.open(io.BytesIO(img_bytes)).convert("RGB")
         _valid, _result = is_soil_image(_pil_check, img_model, _eval_tf)
         if not _valid:
-            _conf_shown = float(_result)
-            st.markdown(f"""
+            st.markdown("""
             <div style="background:#FFEBEE; border-left:4px solid #C62828;
             border-radius:12px; padding:24px; margin:16px 0">
               <h3 style="color:#C62828; margin:0 0 8px 0">❌ No Soil Detected</h3>
-              <p style="color:#B71C1C; margin:0 0 16px 0; font-size:16px">
-              The uploaded image does not appear to be a soil photograph.
-              Our model could not identify any known soil type with
-              sufficient confidence.</p>
-              <div style="background:#FFCDD2; border-radius:8px;
-              padding:12px; margin-bottom:12px">
-                <p style="margin:0; color:#7F0000; font-size:14px">
-                Model confidence: {_conf_shown:.1f}%
-                (minimum required: 40%)
-                </p>
-              </div>
+              <p style="color:#B71C1C; margin:0 0 16px 0">
+              The uploaded image does not appear to contain soil.
+              Please upload a clear photograph of soil.</p>
               <p style="color:#555; margin:0; font-size:14px">
-                <strong>Please upload:</strong><br>
-                • Clear close-up photo of bare soil<br>
-                • Soil held in hands (soil must be majority of image)<br>
-                • Soil sample in a container or tray<br>
-                • Agricultural field soil close-up<br>
-                • Any of the 6 types: Red, Black, Alluvial,
-                  Clay, Laterite, Yellow soil
+                <strong>Valid examples:</strong><br>
+                • Close-up of bare soil (red, black, clay etc)<br>
+                • Soil held in hands (soil must fill most of the image)<br>
+                • Soil sample in container or tray<br>
+                • Agricultural field soil close-up
               </p>
             </div>
             """, unsafe_allow_html=True)
