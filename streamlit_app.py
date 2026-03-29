@@ -2,7 +2,7 @@
 # ResNet-50 + XGBoost + TSACA Fusion + GRN  |  Accuracy: 98.67%
 # Run: streamlit run streamlit_app.py
 
-import os, io, json, pickle
+import io, os, json, pickle
 import numpy as np, pandas as pd
 import torch, torch.nn as nn
 import xgboost as xgb
@@ -10,7 +10,7 @@ import streamlit as st
 from PIL import Image
 from torchvision import models, transforms
 
-# ── Page config (must be first Streamlit call) ─────────────────
+# ── Page config ────────────────────────────────────────────────
 st.set_page_config(
     page_title="SoilSense — Crop & Soil Advisor",
     page_icon="🌱",
@@ -18,87 +18,105 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# ── Green agricultural theme ───────────────────────────────────
+# ── CSS theme ──────────────────────────────────────────────────
 st.markdown("""
 <style>
-  /* Hide Streamlit default header/footer */
   #MainMenu, footer, header { visibility: hidden; }
 
-  /* App background */
-  .stApp { background: #f0f4e8; }
+  .stApp { background: #F9FBF9; }
 
-  /* Top banner */
+  /* Header */
   .app-header {
-    background: linear-gradient(135deg, #1b4332 0%, #2d6a4f 60%, #40916c 100%);
-    color: white; padding: 1.4rem 2rem; border-radius: 14px;
+    background: #2E7D32; color: white;
+    padding: 1.2rem 1.8rem; border-radius: 10px;
     margin-bottom: 1.5rem;
-    display: flex; align-items: center; gap: 1rem;
   }
-  .app-header h1 { margin: 0; font-size: 2rem; font-weight: 800; letter-spacing: -0.5px; }
-  .app-header p  { margin: 0; opacity: .8; font-size: .95rem; }
-  .badge {
-    margin-left: auto; background: rgba(255,255,255,.15);
-    border: 1px solid rgba(255,255,255,.3); padding: .35rem 1rem;
-    border-radius: 999px; font-size: .8rem; font-weight: 600;
-    white-space: nowrap;
-  }
-  .badge span { color: #a3e635; }
-
-  /* Section headings */
-  .section-head {
-    font-size: .68rem; font-weight: 700; letter-spacing: 1.2px;
-    color: #2d6a4f; text-transform: uppercase; margin: 1.2rem 0 .5rem;
+  .app-header h1 { margin: 0; font-size: 1.8rem; font-weight: 800; }
+  .app-header p  { margin: .2rem 0 0; font-size: .9rem; opacity: .85; }
+  .acc-badge {
+    display: inline-block; margin-top: .5rem;
+    background: rgba(255,255,255,.2); border-radius: 20px;
+    padding: .2rem .8rem; font-size: .78rem; font-weight: 600;
   }
 
-  /* Result cards */
-  .soil-card {
-    border-radius: 14px; color: white; padding: 1.2rem 1.4rem;
+  /* Section labels */
+  .sec-label {
+    font-size: .7rem; font-weight: 700; letter-spacing: 1px;
+    color: #2E7D32; text-transform: uppercase;
+    margin: 1.1rem 0 .4rem; border-left: 3px solid #2E7D32;
+    padding-left: .5rem;
+  }
+
+  /* Soil result card */
+  .soil-result {
+    background: #2E7D32; color: white;
+    border-radius: 10px; padding: 1.2rem 1.4rem;
     margin-bottom: 1rem;
   }
-  .soil-label  { font-size: .65rem; opacity: .75; letter-spacing: 1px; text-transform: uppercase; }
-  .soil-name   { font-size: 1.7rem; font-weight: 800; margin: .1rem 0; }
-  .soil-conf   { font-size: 1rem; opacity: .9; }
+  .soil-result .label { font-size: .65rem; opacity: .8; letter-spacing: 1px; text-transform: uppercase; }
+  .soil-result .name  { font-size: 1.6rem; font-weight: 800; margin: .2rem 0; }
+  .soil-result .conf  {
+    display: inline-block; background: rgba(255,255,255,.2);
+    border-radius: 6px; padding: .15rem .65rem;
+    font-size: .9rem; font-weight: 600;
+  }
 
+  /* Probability rows */
+  .prob-row {
+    display: flex; align-items: center; gap: .6rem;
+    margin-bottom: .35rem; font-size: .82rem; color: #212121;
+  }
+  .prob-label { width: 110px; flex-shrink: 0; }
+  .prob-bar-bg { flex: 1; height: 8px; background: #E8F5E9; border-radius: 4px; overflow: hidden; }
+  .prob-bar-fill { height: 100%; background: #2E7D32; border-radius: 4px; }
+  .prob-pct { width: 38px; text-align: right; font-weight: 600; color: #2E7D32; }
+
+  /* Crop cards */
   .crop-card {
-    background: white; border: 1.5px solid #d8f3dc; border-radius: 12px;
-    padding: .9rem 1rem; margin-bottom: .6rem;
+    background: white; border: 1px solid #E8F5E9;
+    border-radius: 8px; padding: .75rem 1rem;
+    margin-bottom: .5rem;
     display: flex; align-items: center; gap: .8rem;
   }
-  .crop-card.rank1 { border-color: #52b788; background: #f0faf3; }
-  .crop-emoji { font-size: 2rem; line-height: 1; }
-  .crop-name  { font-weight: 700; font-size: 1rem; color: #1a1a2e; }
-  .crop-fert  { font-size: .75rem; color: #52525b; margin-top: .1rem; }
-  .crop-npk   { font-size: .7rem; color: #a1a1aa; }
-  .stars      { font-size: .9rem; color: #f59e0b; letter-spacing: 2px; }
-
-  .fert-card {
-    background: linear-gradient(135deg, #7c5c3a, #a06840);
-    color: white; border-radius: 14px; padding: 1.1rem 1.3rem;
-    margin-top: .5rem;
+  .crop-card.top { border-color: #2E7D32; background: #F1F8E9; }
+  .crop-rank-badge {
+    background: #2E7D32; color: white;
+    border-radius: 50%; width: 28px; height: 28px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: .75rem; font-weight: 700; flex-shrink: 0;
   }
-  .fert-label { font-size: .65rem; opacity: .75; letter-spacing: 1px; text-transform: uppercase; }
-  .fert-name  { font-size: 1.1rem; font-weight: 700; margin: .15rem 0 .1rem; }
-  .fert-npk   { font-size: .85rem; opacity: .85; }
+  .crop-rank-badge.s { background: #81C784; }
+  .crop-rank-badge.t { background: #A5D6A7; color: #212121; }
+  .crop-info .crop-name { font-weight: 700; font-size: .95rem; color: #212121; }
+  .crop-info .crop-sub  { font-size: .75rem; color: #555; margin-top: .1rem; }
+  .stars { color: #F9A825; font-size: .85rem; margin-left: auto; flex-shrink: 0; }
 
-  /* Streamlit widget overrides */
-  div[data-testid="stNumberInput"] label,
-  div[data-testid="stSelectbox"] label { font-weight: 600; color: #374151; font-size: .85rem; }
-  div[data-testid="stFileUploader"] { border: 2px dashed #95d5b2; border-radius: 12px; background: #f0faf3; }
+  /* Fertilizer table */
+  .fert-box {
+    background: #E8F5E9; border-left: 4px solid #2E7D32;
+    border-radius: 0 8px 8px 0; padding: .9rem 1.1rem;
+    margin-top: .75rem;
+  }
+  .fert-box .fert-title { font-size: .65rem; font-weight: 700;
+    letter-spacing: 1px; color: #2E7D32; text-transform: uppercase; margin-bottom: .4rem; }
+  .fert-box .fert-name  { font-size: 1rem; font-weight: 700; color: #212121; }
+  .fert-box .fert-npk   { font-size: .85rem; color: #444; margin-top: .15rem; }
 
-  /* Predict button */
+  /* Submit button */
   div[data-testid="stButton"] > button {
-    background: linear-gradient(135deg, #2d6a4f, #40916c);
-    color: white; border: none; border-radius: 10px;
-    padding: .7rem 2.5rem; font-size: 1rem; font-weight: 600;
-    width: 100%; box-shadow: 0 4px 12px rgba(45,106,79,.35);
-    transition: all .2s;
+    background: #2E7D32; color: white; border: none;
+    border-radius: 8px; padding: .65rem 1.5rem;
+    font-size: .95rem; font-weight: 600; width: 100%;
   }
-  div[data-testid="stButton"] > button:hover {
-    box-shadow: 0 6px 18px rgba(45,106,79,.5); transform: translateY(-1px);
-  }
+  div[data-testid="stButton"] > button:hover { background: #1B5E20; }
 
-  /* Progress bar colour */
-  .stProgress > div > div { background: #40916c !important; }
+  /* Placeholder */
+  .placeholder {
+    text-align: center; padding: 4rem 1rem;
+    color: #9E9E9E; border: 2px dashed #C8E6C9;
+    border-radius: 10px;
+  }
+  .placeholder p { margin: .5rem 0 0; font-size: .9rem; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -107,7 +125,7 @@ BASE = os.path.dirname(os.path.abspath(__file__))
 def mpath(n): return os.path.join(BASE, n)
 
 # ══════════════════════════════════════════════════════════════
-# MODEL DEFINITIONS (identical to app.py / training)
+# MODEL DEFINITIONS — identical to training
 # ══════════════════════════════════════════════════════════════
 
 class ResNet50Classifier(nn.Module):
@@ -121,9 +139,10 @@ class ResNet50Classifier(nn.Module):
             nn.Linear(2048, 1024),
             nn.BatchNorm1d(1024), nn.ReLU(), nn.Dropout(0.3),
             nn.Linear(1024, fd),
-            nn.BatchNorm1d(fd),   nn.ReLU(),
+            nn.BatchNorm1d(fd), nn.ReLU(),
         )
         self.classifier = nn.Sequential(nn.Dropout(0.4), nn.Linear(fd, nc))
+
     def forward(self, x, return_features=False):
         f = self.projection(self.pool(self.backbone(x)))
         if return_features: return f
@@ -158,6 +177,7 @@ class TSACAFusion(nn.Module):
             nn.Linear(fd*2, fd*2), nn.ReLU(),
             nn.Linear(fd*2, fd),   nn.Sigmoid())
         self.out  = nn.Sequential(nn.Linear(fd, fd), nn.LayerNorm(fd), nn.ReLU())
+
     def forward(self, img_f, tab_f):
         ip = self.ip(img_f).unsqueeze(1)
         tp = self.tp(tab_f).unsqueeze(1)
@@ -181,9 +201,9 @@ class GatedLinearUnit(nn.Module):
 class GRNBlock(nn.Module):
     def __init__(self, dim, drop=0.1):
         super().__init__()
-        self.fc1  = nn.Linear(dim, dim*2); self.elu = nn.ELU()
-        self.fc2  = nn.Linear(dim*2, dim)
-        self.glu  = GatedLinearUnit(dim, dim)
+        self.fc1 = nn.Linear(dim, dim*2); self.elu = nn.ELU()
+        self.fc2 = nn.Linear(dim*2, dim)
+        self.glu = GatedLinearUnit(dim, dim)
         self.norm = nn.LayerNorm(dim); self.drop = nn.Dropout(drop)
     def forward(self, x):
         h = self.elu(self.fc1(x)); h = self.drop(self.fc2(h))
@@ -219,7 +239,7 @@ class FusionGRNModel(nn.Module):
 
 
 # ══════════════════════════════════════════════════════════════
-# CACHED MODEL LOADING — runs only once per session
+# MODEL LOADING — cached per session, loads once
 # ══════════════════════════════════════════════════════════════
 
 @st.cache_resource(show_spinner="Loading AI models…")
@@ -227,22 +247,24 @@ def load_everything():
     with open(mpath("model_config.json")) as f: cfg = json.load(f)
     with open(mpath("class_names.json"))  as f: cls = json.load(f)
 
-    img_dim   = cfg["IMG_FEAT_DIM"]   # 512
-    xgb_dim   = cfg["XGB_PROJ_DIM"]   # 256
-    fused_dim = cfg["FUSED_DIM"]      # 512
-    num_heads = cfg["NUM_HEADS"]      # 8
-    num_cls   = cfg["NUM_CLASSES"]    # 6
-    tab_dim   = cfg["TAB_FEAT_DIM"]   # 19
+    img_dim   = cfg["IMG_FEAT_DIM"]
+    xgb_dim   = cfg["XGB_PROJ_DIM"]
+    fused_dim = cfg["FUSED_DIM"]
+    num_heads = cfg["NUM_HEADS"]
+    num_cls   = cfg["NUM_CLASSES"]
+    tab_dim   = cfg["TAB_FEAT_DIM"]
     num_cols  = cfg["NUMERIC_COLS"]
-    img_size  = cfg["IMG_SIZE"]       # 224
 
     img_m  = ResNet50Classifier(num_cls, img_dim)
     tab_p  = TabProjector(tab_dim, xgb_dim)
     fusion = FusionGRNModel(img_dim, xgb_dim, fused_dim, num_heads, num_cls)
 
-    img_m.load_state_dict( torch.load(mpath("img_model.pt"),     map_location="cpu", weights_only=True))
-    tab_p.load_state_dict( torch.load(mpath("tab_projector.pt"), map_location="cpu", weights_only=True))
-    fusion.load_state_dict(torch.load(mpath("fusion_model.pt"),  map_location="cpu", weights_only=True))
+    img_m.load_state_dict(
+        torch.load(mpath("img_model.pt"),     map_location="cpu", weights_only=True))
+    tab_p.load_state_dict(
+        torch.load(mpath("tab_projector.pt"), map_location="cpu", weights_only=True))
+    fusion.load_state_dict(
+        torch.load(mpath("fusion_model.pt"),  map_location="cpu", weights_only=True))
 
     xgb_clf = xgb.XGBClassifier()
     xgb_clf.load_model(mpath("xgb_model.json"))
@@ -250,10 +272,11 @@ def load_everything():
     with open(mpath("scaler.pkl"), "rb") as f:
         scaler = pickle.load(f)
 
+    # Explicit eval() — required for BatchNorm and Dropout to behave correctly
     img_m.eval(); tab_p.eval(); fusion.eval()
 
     tf = transforms.Compose([
-        transforms.Resize((img_size, img_size)),
+        transforms.Resize((224, 224)),
         transforms.ToTensor(),
         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
     ])
@@ -308,76 +331,50 @@ CROP_MAP = {
     ("Yellow Soil",   "Zaid")  : ["Sunflower", "Moong",      "Cucumber",   "Tomato"],
 }
 
-SOIL_COLOR = {
-    "Alluvial Soil": "linear-gradient(135deg,#7c6f52,#a08c6a)",
-    "Black Soil":    "linear-gradient(135deg,#2d2d2d,#4a4a4a)",
-    "Clay Soil":     "linear-gradient(135deg,#7a4f38,#a06848)",
-    "Laterite Soil": "linear-gradient(135deg,#8b3a20,#b05030)",
-    "Red Soil":      "linear-gradient(135deg,#9b1c1c,#c53030)",
-    "Yellow Soil":   "linear-gradient(135deg,#856404,#b28a0a)",
-}
-
-SOIL_ICON = {
-    "Alluvial Soil": "🏜️", "Black Soil": "⬛", "Clay Soil": "🧱",
-    "Laterite Soil": "🪨", "Red Soil": "🔴", "Yellow Soil": "🟡",
-}
-
-CROP_EMOJI = {
-    "Rice": "🌾", "Wheat": "🌾", "Cotton": "🌿", "Maize": "🌽",
-    "Sugarcane": "🎋", "Tomato": "🍅", "Potato": "🥔", "Groundnut": "🥜",
-    "Jute": "🌿", "Barley": "🌾", "Mustard": "🌻", "Peas": "🫛",
-    "Sorghum": "🌾", "Soybean": "🌱", "Sunflower": "🌻", "Chickpea": "🫘",
-    "Linseed": "🌼", "Safflower": "🌸", "Sesame": "🌿", "Moong": "🫘",
-    "Cashew": "🥜", "Rubber": "🌳", "Tea": "🍵", "Coffee": "☕",
-    "Tapioca": "🥔", "Turmeric": "🟡", "Ginger": "🫚",
-    "Watermelon": "🍉", "Muskmelon": "🍈", "Cucumber": "🥒",
-    "Bitter Gourd": "🥬", "Pumpkin": "🎃", "Taro": "🌱",
-    "Spinach": "🥬", "Mango": "🥭", "Pineapple": "🍍",
-    "Jackfruit": "🟡", "Banana": "🍌",
-}
-
 
 # ══════════════════════════════════════════════════════════════
-# INFERENCE FUNCTION
+# INFERENCE
 # ══════════════════════════════════════════════════════════════
 
 def run_inference(img_model, tab_proj, fusion, xgb_clf, scaler,
                   class_names, num_cols, tf,
-                  pil_img, n, p, k, temp, hum, rain, ph, yld, fert,
+                  img_bytes, n, p, k, temp, hum, rain, ph, yld, fert,
                   season, irrig, prev, region):
 
-    # Tabular features
-    num_raw = np.array([[n, p, k, temp, hum, rain, ph, yld, fert]])
-    num_sc  = scaler.transform(pd.DataFrame(num_raw, columns=num_cols))
-    cat_enc = np.array([[
-        SEASON_MAP[season], IRRIG_MAP[irrig],
-        PREV_MAP[prev],     REGION_MAP[region],
-    ]])
+    # ── Image: always read from bytes to avoid exhausted file pointer ──
+    # (Streamlit's UploadedFile pointer is consumed by st.image preview;
+    #  passing raw bytes guarantees a fresh read every time.)
+    pil_img = Image.open(io.BytesIO(img_bytes)).convert("RGB")
+    img_t   = tf(pil_img).unsqueeze(0)           # (1, 3, 224, 224)
+
+    # ── Tabular features ──
+    num_raw     = np.array([[n, p, k, temp, hum, rain, ph, yld, fert]])
+    num_sc      = scaler.transform(pd.DataFrame(num_raw, columns=num_cols))
+    cat_enc     = np.array([[SEASON_MAP[season], IRRIG_MAP[irrig],
+                              PREV_MAP[prev],     REGION_MAP[region]]])
     scaled_feat = np.concatenate([num_sc, cat_enc], axis=1).astype(np.float32)
 
-    xgb_probs = xgb_clf.predict_proba(scaled_feat)           # (1, 6)
+    xgb_probs = xgb_clf.predict_proba(scaled_feat)                    # (1, 6)
     tab_raw   = np.concatenate([xgb_probs, scaled_feat], axis=1).astype(np.float32)
-    tab_t     = torch.tensor(tab_raw, dtype=torch.float32)
+    tab_t     = torch.tensor(tab_raw, dtype=torch.float32)             # (1, 19)
 
-    # Image
-    img_t = tf(pil_img.convert("RGB")).unsqueeze(0)
-
-    # Inference
+    # ── Inference — all models in eval(), wrapped in no_grad ──
+    img_model.eval(); tab_proj.eval(); fusion.eval()
     with torch.no_grad():
         img_feat  = img_model(img_t, return_features=True)
         tab_feat  = tab_proj(tab_t)
         logits, _ = fusion(img_feat, tab_feat)
 
-    fusion_probs = torch.softmax(logits, dim=-1)[0].cpu().numpy()
+    fusion_probs = torch.softmax(logits, dim=-1)[0].cpu().numpy()      # (6,)
 
-    # Calibrated ensemble
-    xgb_p   = xgb_probs[0]
-    top2    = np.partition(fusion_probs, -2)[-2:]
-    gap     = float(top2[-1] - top2[-2])
-    xgb_w   = 0.45 if gap < 0.20 else 0.30
+    # ── Calibrated ensemble: blend fusion + XGBoost ──
+    xgb_p  = xgb_probs[0]
+    top2   = np.partition(fusion_probs, -2)[-2:]
+    gap    = float(top2[-1] - top2[-2])
+    xgb_w  = 0.45 if gap < 0.20 else 0.30
     blended = (1 - xgb_w) * fusion_probs + xgb_w * xgb_p
 
-    # Red ↔ Yellow calibration
+    # Red <-> Yellow calibration via pH + K
     RED_IDX    = class_names.index("Red Soil")
     YELLOW_IDX = class_names.index("Yellow Soil")
     if blended[RED_IDX] > 0.30 or blended[YELLOW_IDX] > 0.30:
@@ -390,8 +387,8 @@ def run_inference(img_model, tab_proj, fusion, xgb_clf, scaler,
 
     pred_idx   = int(np.argmax(blended))
     soil_name  = class_names[pred_idx]
-    confidence = round(float(blended[pred_idx]) * 100, 2)
-    all_probs  = {class_names[i]: round(float(blended[i]) * 100, 2)
+    confidence = round(float(blended[pred_idx]) * 100, 1)
+    all_probs  = {class_names[i]: round(float(blended[i]) * 100, 1)
                   for i in range(len(class_names))}
 
     soil_fert = SOIL_FERT_MAP.get(soil_name,
@@ -404,7 +401,7 @@ def run_inference(img_model, tab_proj, fusion, xgb_clf, scaler,
     crop_recs = []
     for i, crop in enumerate(crops_all[:3]):
         cf = CROP_FERT_MAP.get(crop, {"fertilizer": "NPK 14:14:14", "npk": "60:40:20 kg/ha"})
-        crop_recs.append({"name": crop, "rank": i+1, "stars": 5-i,
+        crop_recs.append({"name": crop, "rank": i + 1, "stars": 5 - i,
                            "fertilizer": cf["fertilizer"], "npk": cf["npk"]})
 
     return soil_name, confidence, all_probs, soil_fert, crop_recs
@@ -414,151 +411,136 @@ def run_inference(img_model, tab_proj, fusion, xgb_clf, scaler,
 # UI
 # ══════════════════════════════════════════════════════════════
 
-# Header
 st.markdown("""
 <div class="app-header">
-  <span style="font-size:2.5rem">🌱</span>
-  <div>
-    <h1>SoilSense</h1>
-    <p>Multimodal Crop &amp; Soil Recommendation System</p>
-  </div>
-  <div class="badge">Accuracy: <span>98.67%</span></div>
+  <h1>SoilSense</h1>
+  <p>Multimodal Crop &amp; Soil Recommendation System</p>
+  <span class="acc-badge">Model Accuracy: 98.67%</span>
 </div>
 """, unsafe_allow_html=True)
 
-# Load models
+# Load models once
 img_model, tab_proj, fusion, xgb_clf, scaler, CLASS_NAMES, NUMERIC_COLS, eval_tf = load_everything()
 
-# ── Two-column layout ──────────────────────────────────────────
 left, right = st.columns([1, 1], gap="large")
 
+# ── LEFT: Inputs ───────────────────────────────────────────────
 with left:
-    st.markdown('<div class="section-head">📷 Soil Image</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sec-label">Soil Image</div>', unsafe_allow_html=True)
     uploaded = st.file_uploader(
-        "Drag & drop or browse",
+        "Upload soil photo (JPEG or PNG)",
         type=["jpg", "jpeg", "png"],
         label_visibility="collapsed",
     )
-    if uploaded:
-        st.image(uploaded, use_container_width=True, caption="Uploaded soil image")
 
-    st.markdown('<div class="section-head">🧪 Soil & Climate Parameters</div>', unsafe_allow_html=True)
+    # Read bytes immediately — before any other widget touches the stream
+    img_bytes = uploaded.read() if uploaded else None
+
+    if img_bytes:
+        st.image(io.BytesIO(img_bytes), use_container_width=True)
+
+    st.markdown('<div class="sec-label">Soil & Climate Parameters</div>', unsafe_allow_html=True)
     c1, c2, c3 = st.columns(3)
     with c1:
-        n    = st.number_input("Nitrogen (N)",       0.0, 200.0, 90.0,  step=1.0, help="kg/ha")
-        temp = st.number_input("Temperature (°C)",   0.0,  50.0, 25.0,  step=0.1)
-        ph   = st.number_input("Soil pH",            3.0,  10.0,  6.5,  step=0.01)
+        n    = st.number_input("Nitrogen — N",     0.0, 200.0,  90.0, step=1.0)
+        temp = st.number_input("Temperature °C",   0.0,  50.0,  25.0, step=0.1)
+        ph   = st.number_input("Soil pH",          3.0,  10.0,   6.5, step=0.01)
     with c2:
-        p    = st.number_input("Phosphorus (P)",     0.0, 200.0, 42.0,  step=1.0, help="kg/ha")
-        hum  = st.number_input("Humidity (%)",       0.0, 100.0, 80.0,  step=1.0)
-        yld  = st.number_input("Yield Last Season",  0.0,15000.0,2500.0,step=10.0, help="kg/ha")
+        p    = st.number_input("Phosphorus — P",   0.0, 200.0,  42.0, step=1.0)
+        hum  = st.number_input("Humidity %",       0.0, 100.0,  80.0, step=1.0)
+        yld  = st.number_input("Yield Last Season",0.0,15000.0,2500.0, step=10.0)
     with c3:
-        k    = st.number_input("Potassium (K)",      0.0, 200.0, 43.0,  step=1.0, help="kg/ha")
-        rain = st.number_input("Rainfall (mm)",      0.0,3000.0, 200.0, step=5.0)
-        fert = st.number_input("Fertilizer Used",    0.0,1000.0, 120.0, step=5.0, help="kg/ha last season")
+        k    = st.number_input("Potassium — K",    0.0, 200.0,  43.0, step=1.0)
+        rain = st.number_input("Rainfall mm",      0.0,3000.0, 200.0, step=5.0)
+        fert = st.number_input("Fertilizer Used",  0.0,1000.0, 120.0, step=5.0)
 
-    st.markdown('<div class="section-head">🌾 Farm Context</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sec-label">Farm Context</div>', unsafe_allow_html=True)
     d1, d2 = st.columns(2)
     with d1:
         season = st.selectbox("Season", ["Kharif", "Rabi", "Zaid"])
         prev   = st.selectbox("Previous Crop",
-                              ["Wheat","Rice","Maize","Cotton","Potato","Sugarcane","Tomato"])
+                               ["Wheat","Rice","Maize","Cotton","Potato","Sugarcane","Tomato"])
     with d2:
-        irrig  = st.selectbox("Irrigation Type", ["Canal","Drip","Rainfed","Sprinkler"])
+        irrig  = st.selectbox("Irrigation", ["Canal","Drip","Rainfed","Sprinkler"])
         region = st.selectbox("Region", ["South","North","East","West","Central"])
 
-    predict_clicked = st.button("🔍  Analyze Soil & Get Recommendations")
+    predict_clicked = st.button("Analyze Soil")
 
-# ── Results column ─────────────────────────────────────────────
+# ── RIGHT: Results ─────────────────────────────────────────────
 with right:
-    st.markdown('<div class="section-head">📊 Analysis Results</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sec-label">Analysis Results</div>', unsafe_allow_html=True)
 
     if not predict_clicked:
         st.markdown("""
-        <div style="text-align:center;padding:4rem 1rem;color:#a1a1aa;">
-          <div style="font-size:3.5rem;margin-bottom:1rem;opacity:.4">🌾</div>
-          <p>Upload a soil image and fill in the parameters,<br>
-             then click <strong>Analyze</strong> to see results.</p>
+        <div class="placeholder">
+          <p><strong>Upload a soil image</strong> and fill in the parameters,<br>
+             then click <strong>Analyze Soil</strong> to see results.</p>
         </div>
         """, unsafe_allow_html=True)
 
-    elif uploaded is None:
+    elif not img_bytes:
         st.error("Please upload a soil image before analyzing.")
 
     else:
-        with st.spinner("Running AI model inference…"):
+        with st.spinner("Running inference…"):
             try:
-                pil_img = Image.open(uploaded)
                 soil_name, confidence, all_probs, soil_fert, crop_recs = run_inference(
                     img_model, tab_proj, fusion, xgb_clf, scaler,
                     CLASS_NAMES, NUMERIC_COLS, eval_tf,
-                    pil_img, n, p, k, temp, hum, rain, ph, yld, fert,
+                    img_bytes,                          # raw bytes — no pointer issue
+                    n, p, k, temp, hum, rain, ph, yld, fert,
                     season, irrig, prev, region,
                 )
 
-                # ── Soil type card ──────────────────────────────
-                grad = SOIL_COLOR.get(soil_name, "linear-gradient(135deg,#2d6a4f,#40916c)")
-                icon = SOIL_ICON.get(soil_name, "🪨")
+                # ── Soil type ──────────────────────────────────
                 st.markdown(f"""
-                <div class="soil-card" style="background:{grad}">
-                  <div style="display:flex;align-items:center;gap:1rem">
-                    <span style="font-size:2.8rem">{icon}</span>
-                    <div style="flex:1">
-                      <div class="soil-label">Detected Soil Type</div>
-                      <div class="soil-name">{soil_name}</div>
-                    </div>
-                    <div style="text-align:center;background:rgba(255,255,255,.18);
-                                border-radius:12px;padding:.6rem 1.1rem">
-                      <div style="font-size:1.6rem;font-weight:800">{confidence}%</div>
-                      <div style="font-size:.65rem;opacity:.8">confidence</div>
-                    </div>
-                  </div>
+                <div class="soil-result">
+                  <div class="label">Detected Soil Type</div>
+                  <div class="name">{soil_name}</div>
+                  <span class="conf">Confidence: {confidence}%</span>
                 </div>
                 """, unsafe_allow_html=True)
 
-                # ── All probabilities ───────────────────────────
-                st.markdown("**All Soil Probabilities**")
+                # ── Probability breakdown ──────────────────────
+                st.markdown("**Soil Probabilities**")
                 for name, pct in sorted(all_probs.items(), key=lambda x: -x[1]):
-                    col_a, col_b = st.columns([3, 1])
-                    with col_a:
-                        st.progress(int(pct), text=name)
-                    with col_b:
-                        st.markdown(f"<div style='text-align:right;font-weight:600;padding-top:.4rem'>{pct}%</div>",
-                                    unsafe_allow_html=True)
-
-                # ── Top 3 recommended crops ─────────────────────
-                st.markdown("**Top Recommended Crops**")
-                for crop in crop_recs:
-                    emoji  = CROP_EMOJI.get(crop["name"], "🌱")
-                    stars  = "★" * crop["stars"] + "☆" * (5 - crop["stars"])
-                    border = "#52b788" if crop["rank"] == 1 else "#d8f3dc"
-                    bg     = "#f0faf3" if crop["rank"] == 1 else "white"
+                    fill = int(pct)
                     st.markdown(f"""
-                    <div class="crop-card" style="border-color:{border};background:{bg}">
-                      <span class="crop-emoji">{emoji}</span>
-                      <div style="flex:1">
-                        <div class="crop-name">{crop["name"]}</div>
-                        <div class="crop-fert">🌿 {crop["fertilizer"]}</div>
-                        <div class="crop-npk">NPK: {crop["npk"]}</div>
+                    <div class="prob-row">
+                      <span class="prob-label">{name}</span>
+                      <div class="prob-bar-bg">
+                        <div class="prob-bar-fill" style="width:{fill}%"></div>
                       </div>
-                      <div style="text-align:center">
-                        <div class="stars">{stars}</div>
-                        <div style="font-size:.62rem;color:#a1a1aa;font-weight:600">RANK #{crop["rank"]}</div>
-                      </div>
+                      <span class="prob-pct">{pct}%</span>
                     </div>
                     """, unsafe_allow_html=True)
 
-                # ── Soil fertilizer card ────────────────────────
-                st.markdown(f"""
-                <div class="fert-card">
-                  <div style="display:flex;align-items:flex-start;gap:.8rem">
-                    <span style="font-size:2rem">🌿</span>
-                    <div>
-                      <div class="fert-label">Soil Fertilizer Recommendation</div>
-                      <div class="fert-name">{soil_fert["fertilizer"]}</div>
-                      <div class="fert-npk">{soil_fert["npk"]}</div>
+                st.markdown("<br>", unsafe_allow_html=True)
+
+                # ── Top 3 crops ────────────────────────────────
+                st.markdown("**Recommended Crops**")
+                badge_cls = ["", "s", "t"]
+                for crop in crop_recs:
+                    stars  = "★" * crop["stars"] + "☆" * (5 - crop["stars"])
+                    is_top = "top" if crop["rank"] == 1 else ""
+                    bc     = badge_cls[crop["rank"] - 1]
+                    st.markdown(f"""
+                    <div class="crop-card {is_top}">
+                      <div class="crop-rank-badge {bc}">#{crop["rank"]}</div>
+                      <div class="crop-info" style="flex:1">
+                        <div class="crop-name">{crop["name"]}</div>
+                        <div class="crop-sub">{crop["fertilizer"]} &nbsp;|&nbsp; {crop["npk"]}</div>
+                      </div>
+                      <div class="stars">{stars}</div>
                     </div>
-                  </div>
+                    """, unsafe_allow_html=True)
+
+                # ── Soil fertilizer ────────────────────────────
+                st.markdown(f"""
+                <div class="fert-box">
+                  <div class="fert-title">Soil Fertilizer Recommendation</div>
+                  <div class="fert-name">{soil_fert["fertilizer"]}</div>
+                  <div class="fert-npk">{soil_fert["npk"]}</div>
                 </div>
                 """, unsafe_allow_html=True)
 
