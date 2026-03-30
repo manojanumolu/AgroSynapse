@@ -1075,7 +1075,7 @@ CUSTOM_CSS = """
   --surface: #ffffff;
   --surface-2: #f5f3f0;
   --surface-3: #efeeeb;
-  --outline: #bfc9c1;
+  --outline: #e4e2df;
   --text: #1b1c1a;
   --muted: #6a726d;
   --primary: #0f5238;
@@ -1099,12 +1099,12 @@ h1, h2, h3, h4, h5 {
 }
 
 #MainMenu, footer, header { visibility: hidden; }
-.block-container { padding-top: 1rem; max-width: 1400px; }
+.block-container { padding-top: 0.5rem; max-width: 1200px; }
 
 .nav-card {
   background: var(--surface-2);
   border-radius: 16px;
-  padding: 24px 16px;
+  padding: 20px 16px;
   height: 100%;
 }
 
@@ -1126,11 +1126,12 @@ h1, h2, h3, h4, h5 {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 12px;
+  padding: 8px 12px;
   border-radius: 10px;
   color: var(--muted);
   font-weight: 600;
   margin-top: 6px;
+  font-size: 12px;
 }
 
 .nav-link.active {
@@ -1143,17 +1144,17 @@ h1, h2, h3, h4, h5 {
   align-items: center;
   justify-content: space-between;
   padding: 12px 16px;
-  border-radius: 14px;
+  border-radius: 12px;
   background: #ffffffcc;
   border: 1px solid #e6e3df;
-  margin-bottom: 16px;
+  margin-bottom: 18px;
 }
 
 .card {
   background: var(--surface);
-  border: 1px solid #ece9e5;
-  border-radius: 16px;
-  padding: 20px;
+  border: 1px solid var(--outline);
+  border-radius: 12px;
+  padding: 16px;
 }
 
 .card.soft {
@@ -1161,7 +1162,7 @@ h1, h2, h3, h4, h5 {
 }
 
 .section-title {
-  font-size: 18px;
+  font-size: 14px;
   font-weight: 700;
   display: flex;
   align-items: center;
@@ -1178,9 +1179,9 @@ h1, h2, h3, h4, h5 {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 12px;
+  padding: 4px 10px;
   border-radius: 999px;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   color: #0e5138;
   background: #b1f0ce4d;
@@ -1189,19 +1190,20 @@ h1, h2, h3, h4, h5 {
 }
 
 .result-title {
-  font-size: 20px;
+  font-size: 14px;
   font-weight: 800;
   text-transform: uppercase;
   color: #8b938d;
-  letter-spacing: 0.15em;
-  margin: 10px 0 16px;
+  letter-spacing: 0.2em;
+  margin: 14px 0 16px;
   text-align: center;
 }
 
 div.stButton > button {
-  border-radius: 12px;
+  border-radius: 10px;
   font-weight: 700;
-  padding: 12px 18px;
+  padding: 10px 14px;
+  height: 40px;
 }
 
 .stFileUploader { border-radius: 12px; }
@@ -1262,14 +1264,14 @@ button[data-testid="baseButton-primary"] {
   background: #0f5238 !important;
   color: #ffffff !important;
   border: none !important;
-  border-radius: 12px !important;
+  border-radius: 10px !important;
   font-weight: 700 !important;
 }
 button[data-testid="baseButton-secondary"] {
   background: #ffffff !important;
   color: #2d6a4f !important;
   border: 1px solid #d7d3ce !important;
-  border-radius: 12px !important;
+  border-radius: 10px !important;
   font-weight: 700 !important;
 }
 
@@ -1318,13 +1320,13 @@ with main_col:
         unsafe_allow_html=True,
     )
 
-    header_left, header_right = st.columns([2.2, 1], gap="large")
+    header_left, header_right = st.columns([2.6, 1], gap="large")
     with header_left:
         st.markdown(
             """
-            <h1 style="font-size:40px; font-weight:800; margin-bottom:8px">Precise Agricultural Intelligence</h1>
-            <p style="color:#6a726d; margin-top:0">
-              Seamlessly integrate soil data, chemical properties, and atmospheric conditions to unlock maximum potential yield.
+            <h1 style="font-size:28px; font-weight:800; margin-bottom:6px">Precise Agricultural Intelligence</h1>
+            <p style="color:#6a726d; margin-top:0; font-size:12px; line-height:1.4">
+              Seamlessly integrate soil data, chemical properties, and atmospheric conditions to unlock maximum potential yield through our specialized advisor pipeline.
             </p>
             """,
             unsafe_allow_html=True,
