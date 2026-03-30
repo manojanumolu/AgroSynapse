@@ -21,6 +21,12 @@ st.set_page_config(
 # ── Theme state ────────────────────────────────────────────────
 if "theme" not in st.session_state:
     st.session_state.theme = "light"
+if "img_bytes" not in st.session_state:
+    st.session_state.img_bytes = None
+if "last_result" not in st.session_state:
+    st.session_state.last_result = None
+if "last_error" not in st.session_state:
+    st.session_state.last_error = None
 
 # ── Theme CSS definitions ───────────────────────────────────────
 _BASE_CSS = """
@@ -28,6 +34,7 @@ _BASE_CSS = """
   #MainMenu, footer, header { visibility: hidden; }
   .block-container { padding: 0 2rem 2rem; max-width: 1200px; }
   h1, h2, h3, h4 { font-family: 'Segoe UI', sans-serif; }
+  .hero h1, .hero p { color: #ffffff !important; }
   div.stButton > button {
     background: #2E7D32; color: white; border: none;
     padding: 14px 48px; font-size: 18px; font-weight: 600;
@@ -44,6 +51,16 @@ _BASE_CSS = """
     width: auto !important;
     margin-top: 0 !important;
     white-space: nowrap !important;
+    text-align: left !important;
+  }
+  @media (max-width: 768px) {
+    div[data-testid="column"]:last-child {
+      display: flex;
+      justify-content: flex-start;
+    }
+    div[data-testid="column"]:last-child div.stButton {
+      width: 100%;
+    }
   }
 </style>
 """
@@ -438,13 +455,22 @@ def is_soil_image(pil_img, img_model, transform):
     if arr.mean() > 195:
         return False
 
-    # Rule 6: High gradient diff (gaming/UI)
+    # Rule 6: Earth-tone presence (avoid UI/screenshots)
+    earth = np.sum(
+        (r > 70) & (g > 45) & (b > 25) &
+        (r >= g) & (g >= b) &
+        (r < 220) & (g < 180) & (b < 150)
+    ) / total
+    if earth < 0.06:
+        return False
+
+    # Rule 7: High gradient diff (gaming/UI)
     h_diff = np.abs(np.diff(arr[:, :, 0].astype(float), axis=1)).mean()
     v_diff = np.abs(np.diff(arr[:, :, 0].astype(float), axis=0)).mean()
     if (h_diff + v_diff) / 2 > 28:
         return False
 
-    # Rule 7: ResNet confidence
+    # Rule 8: ResNet confidence
     img_t = transform(pil_img).unsqueeze(0)
     with torch.no_grad():
         out   = img_model(img_t, return_features=False)
@@ -493,7 +519,7 @@ CROP_ICONS = {
 _hcol1, _hcol2 = st.columns([8, 1])
 with _hcol1:
     st.markdown("""
-    <div style="background:#1B5E20; color:white; padding:1.5rem 2rem;
+    <div class="hero" style="background:#1B5E20; color:white; padding:1.5rem 2rem;
     border-radius:16px; margin-bottom:1rem; text-align:center">
       <h1 style="margin:0; font-size:1.8rem; font-weight:800; letter-spacing:-0.5px; color:white !important">
         🌱 Multimodal Crop &amp; Fertilizer Recommendation</h1>
@@ -545,7 +571,11 @@ with left:
     )
     st.info("💡 Tip: Upload a clear close-up photo of soil for best results. "
             "Avoid photos with people, plants, or bright objects.")
-    img_bytes = uploaded.read() if uploaded else None
+    if uploaded:
+        st.session_state.img_bytes = uploaded.getvalue()
+        st.session_state.last_result = None
+        st.session_state.last_error = None
+    img_bytes = st.session_state.img_bytes
     if img_bytes:
         st.image(io.BytesIO(img_bytes), use_container_width=True)
 
@@ -613,23 +643,22 @@ with left:
 
 # ── RIGHT: Results ─────────────────────────────────────────────
 with right:
-    if not predict_clicked:
+    if not predict_clicked and not st.session_state.last_result and not st.session_state.last_error:
         st.markdown("""
         <div style="text-align:center; padding:5rem 2rem;
         color:#9E9E9E; border:2px dashed #C8E6C9; border-radius:16px;
         background:var(--card-bg,#FAFFFE)">
-          <div style="font-size:3rem; margin-bottom:1rem">🌱</div>
+          <div style="font-size:3rem; margin-bottom:1rem">Soil</div>
           <p style="font-size:1.05rem; color:#555; margin:0">
             <strong>Upload a soil image</strong> and fill in the parameters,<br>
             then click <strong>Analyze Soil</strong> to see results.</p>
         </div>
         """, unsafe_allow_html=True)
 
-    elif not img_bytes:
+    if predict_clicked and not img_bytes:
         st.error("Please upload a soil image before analyzing.")
 
-    else:
-        # ── Soil image validation ──────────────────────────────
+    if predict_clicked and img_bytes:
         _pil_check = Image.open(io.BytesIO(img_bytes)).convert("RGB")
         _eval_tf = transforms.Compose([
             transforms.Resize((224, 224)),
@@ -638,141 +667,158 @@ with right:
         ])
         valid = is_soil_image(_pil_check, img_model, _eval_tf)
 
-        with st.expander("🔍 Debug Values"):
+        with st.expander("Debug Values"):
             arr_d = np.array(_pil_check.resize((200, 200))).astype(float)
             r_d = arr_d[:, :, 0]; g_d = arr_d[:, :, 1]; b_d = arr_d[:, :, 2]
             total_d = 200 * 200
             cyan_d  = np.sum((b_d > 150) & (g_d > 150) & (r_d < 100)) / total_d
             neon_o  = np.sum((r_d > 220) & (g_d > 80) & (g_d < 170) & (b_d < 80)) / total_d
             skin_d  = np.sum((r_d > 160) & (g_d > 110) & (b_d > 90) & (r_d > g_d) & (g_d > b_d) & ((r_d + g_d + b_d) / 3 > 120)) / total_d
+            earth_d = np.sum((r_d > 70) & (g_d > 45) & (b_d > 25) & (r_d >= g_d) & (g_d >= b_d) & (r_d < 220) & (g_d < 180) & (b_d < 150)) / total_d
             h_d     = np.abs(np.diff(arr_d[:, :, 0], axis=1)).mean()
             st.write(f"Cyan neon: {cyan_d:.3f} (reject if >0.02)")
             st.write(f"Orange neon: {neon_o:.3f} (reject if >0.02)")
             st.write(f"Skin ratio: {skin_d:.3f} (reject if >0.18)")
+            st.write(f"Earth tone: {earth_d:.3f} (reject if <0.06)")
             st.write(f"H-diff: {h_d:.2f} (reject if >28)")
             st.write(f"Brightness: {arr_d.mean():.1f} (reject if >195)")
 
         if not valid:
+            st.session_state.last_error = "No Soil Detected"
+            st.session_state.last_result = None
+        else:
+            st.session_state.last_error = None
+            with st.spinner("Running AI inference..."):
+                try:
+                    soil_name, confidence, all_probs, soil_fert, crop_recs, dbg = run_inference(
+                        img_model, tab_proj, fusion, xgb_clf, scaler,
+                        CLASS_NAMES, NUMERIC_COLS,
+                        img_bytes,
+                        n, p, k, temp, hum, rain, ph, yld, fert,
+                        season, irrig, prev, region,
+                    )
+                    st.session_state.last_result = {
+                        "soil_name": soil_name,
+                        "confidence": confidence,
+                        "all_probs": all_probs,
+                        "soil_fert": soil_fert,
+                        "crop_recs": crop_recs,
+                        "dbg": dbg,
+                    }
+                except Exception as e:
+                    st.session_state.last_error = f"Prediction failed: {e}"
+                    st.session_state.last_result = None
+
+    if st.session_state.last_error:
+        if st.session_state.last_error != "No Soil Detected":
+            st.error(st.session_state.last_error)
+        else:
             st.markdown("""
-            <div style="background:#FFEBEE; border-left:4px solid #C62828;
-            border-radius:12px; padding:24px; margin:16px 0">
-              <h3 style="color:#C62828; margin:0">❌ No Soil Detected</h3>
-              <p style="color:#B71C1C; margin:12px 0">
-              Please upload a clear soil photograph.</p>
-              <p style="color:#555; font-size:14px; margin:0">
-              ✓ Red soil, Black soil, Clay soil close-ups<br>
-              ✓ Soil held in hands<br>
-              ✓ Soil in containers or farm fields<br>
-              ✗ People, screenshots, plants, sky not allowed
-              </p>
+        <div style="background:#FFEBEE; border-left:4px solid #C62828;
+        border-radius:12px; padding:24px; margin:16px 0">
+          <h3 style="color:#C62828; margin:0">No Soil Detected</h3>
+          <p style="color:#B71C1C; margin:12px 0">
+          Please upload a clear soil photograph.</p>
+          <p style="color:#555; font-size:14px; margin:0">
+          - Red soil, Black soil, Clay soil close-ups<br>
+          - Soil held in hands<br>
+          - Soil in containers or farm fields<br>
+          - People, screenshots, plants, sky not allowed
+          </p>
+        </div>
+        """, unsafe_allow_html=True)
+
+    if st.session_state.last_result:
+        res = st.session_state.last_result
+        soil_name = res["soil_name"]
+        confidence = res["confidence"]
+        all_probs = res["all_probs"]
+        soil_fert = res["soil_fert"]
+        crop_recs = res["crop_recs"]
+        dbg = res["dbg"]
+
+        color = SOIL_COLORS.get(soil_name, "#2E7D32")
+        st.markdown(f"""
+        <div style="background:{color}; padding:24px;
+        border-radius:16px; color:white; margin-bottom:16px">
+          <p style="opacity:0.8; margin:0; font-size:13px;
+          text-transform:uppercase; letter-spacing:2px; color:white">
+          Detected Soil Type</p>
+          <h1 style="margin:8px 0; font-size:36px; font-weight:800; color:white">
+          {soil_name}</h1>
+          <div style="background:rgba(255,255,255,0.2);
+          display:inline-block; padding:6px 16px;
+          border-radius:20px; font-size:14px; font-weight:600">
+          Confidence: {confidence}%</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        st.markdown("""
+        <p style="font-weight:700; color:#1B5E20;
+        font-size:15px; margin:16px 0 8px 0">
+        Soil Probability Breakdown</p>
+        """, unsafe_allow_html=True)
+        sorted_probs = sorted(all_probs.items(), key=lambda x: -x[1])
+        for soil, prob in sorted_probs:
+            bar_color = SOIL_COLORS.get(soil, "#2E7D32")
+            st.markdown(f"""
+            <div style="display:flex; align-items:center;
+            margin:6px 0; gap:10px">
+              <span style="width:110px; font-size:13px;
+              color:var(--prob-label,#333); flex-shrink:0">{soil}</span>
+              <div style="flex:1; background:var(--prob-track,#f0f0f0);
+              border-radius:6px; height:12px">
+                <div style="width:{prob}%; background:{bar_color};
+                height:12px; border-radius:6px"></div>
+              </div>
+              <span style="width:52px; text-align:right;
+              font-size:13px; font-weight:600;
+              color:{bar_color}">{prob:.1f}%</span>
             </div>
             """, unsafe_allow_html=True)
-            st.stop()
 
-        with st.spinner("Running AI inference…"):
-            try:
-                soil_name, confidence, all_probs, soil_fert, crop_recs, dbg = run_inference(
-                    img_model, tab_proj, fusion, xgb_clf, scaler,
-                    CLASS_NAMES, NUMERIC_COLS,
-                    img_bytes,
-                    n, p, k, temp, hum, rain, ph, yld, fert,
-                    season, irrig, prev, region,
-                )
+        st.markdown("<br>", unsafe_allow_html=True)
 
-                # ── Soil type card — dynamic color ─────────────
-                color = SOIL_COLORS.get(soil_name, "#2E7D32")
-                st.markdown(f"""
-                <div style="background:{color}; padding:24px;
-                border-radius:16px; color:white; margin-bottom:16px">
-                  <p style="opacity:0.8; margin:0; font-size:13px;
-                  text-transform:uppercase; letter-spacing:2px">
-                  Detected Soil Type</p>
-                  <h1 style="margin:8px 0; font-size:36px; font-weight:800">
-                  {soil_name}</h1>
-                  <div style="background:rgba(255,255,255,0.2);
-                  display:inline-block; padding:6px 16px;
-                  border-radius:20px; font-size:14px; font-weight:600">
-                  Confidence: {confidence}%</div>
+        st.markdown("""
+        <p style="font-weight:700; color:#1B5E20;
+        font-size:15px; margin:0 0 8px 0">
+        Recommended Crops</p>
+        """, unsafe_allow_html=True)
+        for crop in crop_recs:
+            icon  = CROP_ICONS.get(crop["name"], "")
+            stars = "?" * crop["stars"]
+            st.markdown(f"""
+            <div style="background:var(--card-bg,white); border:1px solid var(--card-border,#C8E6C9);
+            border-radius:12px; padding:16px; margin:8px 0;
+            border-left:4px solid #2E7D32">
+              <div style="display:flex; align-items:center; gap:12px">
+                <span style="font-size:32px">{icon}</span>
+                <div>
+                  <h4 style="margin:0; color:#1B5E20">
+                  {crop["name"]}</h4>
+                  <p style="margin:4px 0; color:#666; font-size:13px">
+                  {stars} &nbsp;Rank #{crop["rank"]}</p>
+                  <p style="margin:0; color:#2E7D32; font-size:13px">
+                   {crop["fertilizer"]} &nbsp;|&nbsp;
+                   {crop["npk"]}</p>
                 </div>
-                """, unsafe_allow_html=True)
+              </div>
+            </div>
+            """, unsafe_allow_html=True)
 
-                # ── Probability bars ───────────────────────────
-                st.markdown("""
-                <p style="font-weight:700; color:#1B5E20;
-                font-size:15px; margin:16px 0 8px 0">
-                Soil Probability Breakdown</p>
-                """, unsafe_allow_html=True)
-                sorted_probs = sorted(all_probs.items(), key=lambda x: -x[1])
-                for soil, prob in sorted_probs:
-                    bar_color = SOIL_COLORS.get(soil, "#2E7D32")
-                    st.markdown(f"""
-                    <div style="display:flex; align-items:center;
-                    margin:6px 0; gap:10px">
-                      <span style="width:110px; font-size:13px;
-                      color:var(--prob-label,#333); flex-shrink:0">{soil}</span>
-                      <div style="flex:1; background:var(--prob-track,#f0f0f0);
-                      border-radius:6px; height:12px">
-                        <div style="width:{prob}%; background:{bar_color};
-                        height:12px; border-radius:6px"></div>
-                      </div>
-                      <span style="width:52px; text-align:right;
-                      font-size:13px; font-weight:600;
-                      color:{bar_color}">{prob:.1f}%</span>
-                    </div>
-                    """, unsafe_allow_html=True)
+        st.markdown(f"""
+        <div style="background:var(--fert-bg,#FFF8E1); border-radius:12px;
+        padding:20px; border-left:4px solid #FF8F00; margin-top:16px">
+          <h4 style="color:#E65100; margin:0 0 12px 0">
+           Fertilizer Recommendation</h4>
+          <p style="margin:4px 0"><strong>Type:</strong>
+          {soil_fert["fertilizer"]}</p>
+          <p style="margin:4px 0"><strong>NPK Dosage:</strong>
+          {soil_fert["npk"]}</p>
+        </div>
+        """, unsafe_allow_html=True)
 
-                st.markdown("<br>", unsafe_allow_html=True)
+        with st.expander("Prediction Debug"):
+            st.write("Raw probs:", dbg["probs"])
+            st.write("Image feat std:", dbg["img_feat_std"])
 
-                # ── Recommended crops ──────────────────────────
-                st.markdown("""
-                <p style="font-weight:700; color:#1B5E20;
-                font-size:15px; margin:0 0 8px 0">
-                🌾 Recommended Crops</p>
-                """, unsafe_allow_html=True)
-                for crop in crop_recs:
-                    icon  = CROP_ICONS.get(crop["name"], "🌱")
-                    stars = "⭐" * crop["stars"]
-                    st.markdown(f"""
-                    <div style="background:var(--card-bg,white); border:1px solid var(--card-border,#C8E6C9);
-                    border-radius:12px; padding:16px; margin:8px 0;
-                    border-left:4px solid #2E7D32">
-                      <div style="display:flex; align-items:center; gap:12px">
-                        <span style="font-size:32px">{icon}</span>
-                        <div>
-                          <h4 style="margin:0; color:#1B5E20">
-                          {crop["name"]}</h4>
-                          <p style="margin:4px 0; color:#666; font-size:13px">
-                          {stars} &nbsp;Rank #{crop["rank"]}</p>
-                          <p style="margin:0; color:#2E7D32; font-size:13px">
-                          💊 {crop["fertilizer"]} &nbsp;|&nbsp;
-                          📏 {crop["npk"]}</p>
-                        </div>
-                      </div>
-                    </div>
-                    """, unsafe_allow_html=True)
-
-                # ── Soil fertilizer card ───────────────────────
-                st.markdown(f"""
-                <div style="background:var(--fert-bg,#FFF8E1); border-radius:12px;
-                padding:20px; border-left:4px solid #FF8F00; margin-top:16px">
-                  <h4 style="color:#E65100; margin:0 0 12px 0">
-                  🧴 Fertilizer Recommendation</h4>
-                  <p style="margin:4px 0"><strong>Type:</strong>
-                  {soil_fert["fertilizer"]}</p>
-                  <p style="margin:4px 0"><strong>NPK Dosage:</strong>
-                  {soil_fert["npk"]}</p>
-                </div>
-                """, unsafe_allow_html=True)
-
-                # ── Debug expander ─────────────────────────────
-                with st.expander("Prediction Debug"):
-                    st.write("Raw probs:", dbg["probs"])
-                    st.write("Image feat std:", dbg["img_feat_std"])
-
-            except Exception as e:
-                st.error(f"Prediction failed: {e}")
-                import traceback
-                st.code(traceback.format_exc())
-                st.markdown("**File status:**")
-                for fn, info in _file_status.items():
-                    st.write(f"- `{fn}`: {info['mb']:.1f} MB")

@@ -164,6 +164,57 @@ with open(mpath("scaler.pkl"), "rb") as fh:
 img_model.eval(); tab_proj.eval(); fusion.eval()
 print("Models loaded OK.")
 
+def is_soil_image(pil_img, img_model, transform):
+    """Rule-based validator + ResNet confidence."""
+    arr = np.array(pil_img.resize((200, 200)).convert("RGB")).astype(float)
+    r = arr[:, :, 0]; g = arr[:, :, 1]; b = arr[:, :, 2]
+    total = 200 * 200
+
+    cyan_pixels     = np.sum((b > 150) & (g > 150) & (r < 100)) / total
+    orange_neon     = np.sum((r > 220) & (g > 80) & (g < 170) & (b < 80)) / total
+    pink_neon       = np.sum((r > 200) & (b > 150) & (g < 100)) / total
+    bright_red_neon = np.sum((r > 220) & (g < 60) & (b < 60)) / total
+    if (cyan_pixels + orange_neon + pink_neon + bright_red_neon) > 0.02:
+        return False
+
+    skin = np.sum(
+        (r > 160) & (g > 110) & (b > 90) & (r > g) & (g > b) &
+        ((r + g + b) / 3 > 120) & ((r + g + b) / 3 < 210) &
+        ((r - b) > 25) & ((r - b) < 120)
+    ) / total
+    if skin > 0.18:
+        return False
+
+    if np.sum((b > r + 40) & (b > g + 30) & (b > 110)) / total > 0.22:
+        return False
+    if np.sum((g > r + 35) & (g > b + 35) & (g > 90)) / total > 0.22:
+        return False
+
+    if arr.mean() > 195:
+        return False
+
+    earth = np.sum(
+        (r > 70) & (g > 45) & (b > 25) &
+        (r >= g) & (g >= b) &
+        (r < 220) & (g < 180) & (b < 150)
+    ) / total
+    if earth < 0.06:
+        return False
+
+    h_diff = np.abs(np.diff(arr[:, :, 0].astype(float), axis=1)).mean()
+    v_diff = np.abs(np.diff(arr[:, :, 0].astype(float), axis=0)).mean()
+    if (h_diff + v_diff) / 2 > 28:
+        return False
+
+    img_t = transform(pil_img).unsqueeze(0)
+    with torch.no_grad():
+        out   = img_model(img_t, return_features=False)
+        probs = torch.softmax(out, dim=-1)[0]
+    if probs.max().item() * 100 < 40.0:
+        return False
+
+    return True
+
 # ── Lookup maps ────────────────────────────────────────────────
 SEASON_MAP = {"Kharif": 0, "Rabi": 1, "Zaid": 2}
 IRRIG_MAP  = {"Canal": 0, "Drip": 1, "Rainfed": 2, "Sprinkler": 3}
@@ -254,6 +305,10 @@ def predict():
             transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
         ])
         pil_img = Image.open(io.BytesIO(img_bytes)).convert("RGB")
+        if not is_soil_image(pil_img, img_model, tf):
+            return jsonify({
+                "error": "No soil detected. Please upload a clear soil photo."
+            }), 400
         img_t   = tf(pil_img).unsqueeze(0)
 
         # Tabular features
