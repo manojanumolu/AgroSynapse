@@ -346,6 +346,24 @@ def run_inference(img_model, tab_proj, fusion, xgb_clf, scaler,
     return soil_name, confidence, all_probs, soil_fert, crop_recs, debug
 
 
+# ── Load models (once per session) ───────────────────────────
+try:
+    img_model, tab_proj, fusion, xgb_clf, scaler, CLASS_NAMES, NUMERIC_COLS = load_all_models()
+    _models_ok = True
+except Exception as _load_err:
+    _models_ok = False
+    st.error(
+        f"**Model loading failed:** {_load_err}\n\n"
+        f"This usually means Git LFS files were not pulled or files are missing."
+    )
+    st.markdown("**File status at startup:**")
+    for _fn, _info in _file_status.items():
+        _ok  = _info["exists"] and _info["mb"] > 0.1
+        _ico = "OK" if _ok else "MISSING / TOO SMALL"
+        st.write(f"- `{_fn}`: {_info['mb']:.1f} MB — {_ico}")
+    st.stop()
+
+
 # ══════════════════════════════════════════════════════════════
 # SOIL IMAGE VALIDATOR
 # ══════════════════════════════════════════════════════════════
