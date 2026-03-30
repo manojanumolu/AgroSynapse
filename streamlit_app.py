@@ -1373,7 +1373,26 @@ if st.session_state.last_result:
     with st.container():
         st.markdown("<div id='card-results-hero'></div>", unsafe_allow_html=True)
         st.markdown(
-            f"""\n<div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;">\n  <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuB5sOP_w5upSSi1oVtLYbAxHzE38HGUNUPwE-2QHpSLKoAvBYZ05HkbeTebObk5JR6Oia0lIREuGPIJPGmiCsqpsdu0PV3bR7NeN7pNmYKxkiNzcgRoQ3XPP1puoUPiFHW8PLKihoLTW2Oj5YK_PggzfEG3rvfSqPilbfRdodkVyp7DanEglXjT_4vIaErxdz9-lxJkrKOjLwZ8F-HvsJnKE_pMec5QHUyr0f9H3LeA-k-HhYEseTWgVE8zmbXdKAEu4-WGsFl5egk" style="width:100%;border-radius:10px"/>\n  <div>\n    <div style="font-size:10px;letter-spacing:0.2em;color:#9aa0a6">RANK #1 HIGHLY RECOMMENDED</div>\n    <div style="display:flex;justify-content:space-between;align-items:center">\n      <div style="font-size:28px;font-weight:800">{top['name']}</div>\n      <div style="background:#E6F7ED;padding:6px 10px;border-radius:10px;font-weight:700">{confidence:.0f}% Match</div>\n    </div>\n    <p style="color:#6B7280">Based on your soil's properties, {top['name']} is ideal for the upcoming {season} season.</p>\n    <div class="custom-card" style="background:#F7F8FA;border:0">\n      <div style="font-weight:700">Scientific Fertilizer Plan</div>\n      <div>Type: {top['fertilizer']}</div>\n      <div>Ratio: {top['npk']}</div>\n    </div>\n  </div>\n</div>\n""",\n            unsafe_allow_html=True,\n        )
+            f"""
+<div style='display:grid;grid-template-columns:1fr 2fr;gap:16px;'>
+  <img src='https://lh3.googleusercontent.com/aida-public/AB6AXuB5sOP_w5upSSi1oVtLYbAxHzE38HGUNUPwE-2QHpSLKoAvBYZ05HkbeTebObk5JR6Oia0lIREuGPIJPGmiCsqpsdu0PV3bR7NeN7pNmYKxkiNzcgRoQ3XPP1puoUPiFHW8PLKihoLTW2Oj5YK_PggzfEG3rvfSqPilbfRdodkVyp7DanEglXjT_4vIaErxdz9-lxJkrKOjLwZ8F-HvsJnKE_pMec5QHUyr0f9H3LeA-k-HhYEseTWgVE8zmbXdKAEu4-WGsFl5egk' style='width:100%;border-radius:10px'/>
+  <div>
+    <div style='font-size:10px;letter-spacing:0.2em;color:#9aa0a6'>RANK #1 HIGHLY RECOMMENDED</div>
+    <div style='display:flex;justify-content:space-between;align-items:center'>
+      <div style='font-size:28px;font-weight:800'>{top['name']}</div>
+      <div style='background:#E6F7ED;padding:6px 10px;border-radius:10px;font-weight:700'>{confidence:.0f}% Match</div>
+    </div>
+    <p style='color:#6B7280'>Based on your soil's properties, {top['name']} is ideal for the upcoming {season} season.</p>
+    <div class='custom-card' style='background:#F7F8FA;border:0'>
+      <div style='font-weight:700'>Scientific Fertilizer Plan</div>
+      <div>Type: {top['fertilizer']}</div>
+      <div>Ratio: {top['npk']}</div>
+    </div>
+  </div>
+</div>
+""",
+            unsafe_allow_html=True,
+        )
 
     with st.container():
         st.markdown("<div id='card-results-chart'></div>", unsafe_allow_html=True)
@@ -1404,11 +1423,39 @@ if st.session_state.last_result:
             c2 = crop_recs[1]
             st.markdown("<div id='card-results-2'></div>", unsafe_allow_html=True)
             st.markdown(
-                f"""\n<div style="display:grid;grid-template-columns:96px 1fr;gap:12px;align-items:center;">\n  <img src="https://images.unsplash.com/photo-1446057032654-9d8885db76c6?auto=format&fit=crop&w=300&q=80" style="width:96px;height:96px;border-radius:10px;object-fit:cover"/>\n  <div>\n    <div style="font-size:10px;letter-spacing:0.2em;color:#9aa0a6">RANK #2</div>\n    <div style="display:flex;justify-content:space-between;align-items:center">\n      <div style="font-size:18px;font-weight:800">{c2['name']}</div>\n      <div style="background:#EAF2FF;padding:4px 8px;border-radius:999px;font-weight:700;font-size:11px">82% Match</div>\n    </div>\n    <div style="color:#6B7280;font-size:12px">Strong resilience</div>\n  </div>\n</div>\n""",\n                unsafe_allow_html=True,\n            )
+                f"""
+<div style='display:grid;grid-template-columns:96px 1fr;gap:12px;align-items:center;'>
+  <img src='https://images.unsplash.com/photo-1446057032654-9d8885db76c6?auto=format&fit=crop&w=300&q=80' style='width:96px;height:96px;border-radius:10px;object-fit:cover'/>
+  <div>
+    <div style='font-size:10px;letter-spacing:0.2em;color:#9aa0a6'>RANK #2</div>
+    <div style='display:flex;justify-content:space-between;align-items:center'>
+      <div style='font-size:18px;font-weight:800'>{c2['name']}</div>
+      <div style='background:#EAF2FF;padding:4px 8px;border-radius:999px;font-weight:700;font-size:11px'>82% Match</div>
+    </div>
+    <div style='color:#6B7280;font-size:12px'>Strong resilience</div>
+  </div>
+</div>
+""",
+                unsafe_allow_html=True,
+            )
     with r3:
         if len(crop_recs) > 2:
             c3 = crop_recs[2]
             st.markdown("<div id='card-results-3'></div>", unsafe_allow_html=True)
             st.markdown(
-                f"""\n<div style="display:grid;grid-template-columns:96px 1fr;gap:12px;align-items:center;">\n  <img src="https://images.unsplash.com/photo-1466692476868-aef1dfb1e735?auto=format&fit=crop&w=300&q=80" style="width:96px;height:96px;border-radius:10px;object-fit:cover"/>\n  <div>\n    <div style="font-size:10px;letter-spacing:0.2em;color:#9aa0a6">RANK #3</div>\n    <div style="display:flex;justify-content:space-between;align-items:center">\n      <div style="font-size:18px;font-weight:800">{c3['name']}</div>\n      <div style="background:#EAF2FF;padding:4px 8px;border-radius:999px;font-weight:700;font-size:11px">75% Match</div>\n    </div>\n    <div style="color:#6B7280;font-size:12px">Good market value</div>\n  </div>\n</div>\n""",\n                unsafe_allow_html=True,\n            )
+                f"""
+<div style='display:grid;grid-template-columns:96px 1fr;gap:12px;align-items:center;'>
+  <img src='https://images.unsplash.com/photo-1466692476868-aef1dfb1e735?auto=format&fit=crop&w=300&q=80' style='width:96px;height:96px;border-radius:10px;object-fit:cover'/>
+  <div>
+    <div style='font-size:10px;letter-spacing:0.2em;color:#9aa0a6'>RANK #3</div>
+    <div style='display:flex;justify-content:space-between;align-items:center'>
+      <div style='font-size:18px;font-weight:800'>{c3['name']}</div>
+      <div style='background:#EAF2FF;padding:4px 8px;border-radius:999px;font-weight:700;font-size:11px'>75% Match</div>
+    </div>
+    <div style='color:#6B7280;font-size:12px'>Good market value</div>
+  </div>
+</div>
+""",
+                unsafe_allow_html=True,
+            )
 
