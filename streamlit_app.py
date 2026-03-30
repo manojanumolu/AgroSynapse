@@ -179,9 +179,9 @@ def load_all_models():
     """
     # ── Validate model files before loading ────────────────────
     MIN_SIZES = {
-        "img_model.pt":     50,   # expect ~105 MB
-        "fusion_model.pt":  20,   # expect ~80 MB
-        "tab_projector.pt":  0.5, # expect ~1.6 MB
+        "img_model.pt":     25,   # fp16 shrinked
+        "fusion_model.pt":  10,
+        "tab_projector.pt":  0.2,
     }
     for fname, min_mb in MIN_SIZES.items():
         info = _file_status.get(fname, {})
@@ -210,12 +210,21 @@ def load_all_models():
     tab_p  = TabProjector(tab_dim, xgb_dim)
     fusion = FusionGRNModel(img_dim, xgb_dim, fused_dim, num_heads, num_cls)
 
-    img_m.load_state_dict(
-        torch.load(mpath("img_model.pt"),     map_location="cpu", weights_only=True))
-    tab_p.load_state_dict(
-        torch.load(mpath("tab_projector.pt"), map_location="cpu", weights_only=True))
-    fusion.load_state_dict(
-        torch.load(mpath("fusion_model.pt"),  map_location="cpu", weights_only=True))
+    def _load_fp16_state(path):
+        state = torch.load(path, map_location="cpu", weights_only=True)
+        if isinstance(state, dict):
+            out = {}
+            for k, v in state.items():
+                if torch.is_tensor(v) and v.dtype == torch.float16:
+                    out[k] = v.float()
+                else:
+                    out[k] = v
+            return out
+        return state
+
+    img_m.load_state_dict(_load_fp16_state(mpath("img_model.pt")))
+    tab_p.load_state_dict(_load_fp16_state(mpath("tab_projector.pt")))
+    fusion.load_state_dict(_load_fp16_state(mpath("fusion_model.pt")))
 
     xgb_clf = xgb.XGBClassifier()
     xgb_clf.load_model(mpath("xgb_model.json"))
