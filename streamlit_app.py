@@ -40,7 +40,7 @@ if "location_note" not in st.session_state:
 if "theme" not in st.session_state:
     st.session_state.theme = "light"
 if "sidebar_open" not in st.session_state:
-    st.session_state.sidebar_open = True
+    st.session_state.sidebar_open = False
 
 if st.session_state.theme == "dark":
     THEME_VARS = """<style>
@@ -1356,6 +1356,11 @@ st.markdown(
 
 # ── SIDEBAR ──────────────────────────────────────────────────────
 with st.sidebar:
+    if st.session_state.sidebar_open:
+        if st.button("≪", key="sidebar_close_btn", help="Close navigation", type="tertiary"):
+            st.session_state.sidebar_open = False
+            st.rerun()
+
     st.markdown("""
 <div style="padding:0 0.25rem 1.75rem">
   <h1 style="font-family:Manrope,sans-serif;font-size:1.125rem;font-weight:800;
@@ -1404,9 +1409,10 @@ top_m, top_l, top_t, top_s, top_n = st.columns([1, 9, 1, 1, 1], gap="small")
 
 with top_m:
     st.markdown('<span id="topbar-inline-marker"></span><span id="menu-toggle-marker"></span><div style="height:8px"></div>', unsafe_allow_html=True)
-    if st.button("☰", key="sidebar_toggle", help="Open/Close navigation", type="tertiary"):
-        st.session_state.sidebar_open = not st.session_state.sidebar_open
-        st.rerun()
+    if not st.session_state.sidebar_open:
+        if st.button("☰", key="sidebar_toggle", help="Open navigation", type="tertiary"):
+            st.session_state.sidebar_open = True
+            st.rerun()
 
 with top_l:
     st.markdown("""
