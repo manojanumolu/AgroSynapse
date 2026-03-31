@@ -16,3 +16,8 @@ venv/
 # OS
 .DS_Store
 Thumbs.db
+
+# Local IDE and scratch assets
+.idea/
+_model_backup/
+screen.png
