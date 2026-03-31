@@ -1460,6 +1460,12 @@ div[data-testid="stFileUploader"] section {
     background: var(--surface-container) !important; border: 2px dashed var(--outline) !important;
     border-radius: 0.75rem !important;
 }
+div[data-testid="stFileUploader"] small,
+div[data-testid="stFileUploader"] p,
+div[data-testid="stFileUploader"] span {
+    color: var(--text) !important;
+    font-weight: 700 !important;
+}
 
 /* ── CARD WRAPPING ──
    Target the stColumn that contains each marker ID.
@@ -1598,14 +1604,22 @@ with top_n:
     st.button("🔔", key="notifications_icon", help="Notifications", type="tertiary")
 
 # ── HERO HEADER ───────────────────────────────────────────────────
+is_dark_theme = st.session_state.theme == "dark"
+guide_panel_bg = "rgba(59,130,246,0.12)" if is_dark_theme else "var(--surface-container-lowest)"
+guide_title_color = "#cfe3ff" if is_dark_theme else "#1e3a5f"
+guide_value_color = "#e6f2ff" if is_dark_theme else "rgba(30,58,95,0.78)"
+guide_divider = "rgba(147,197,253,0.35)" if is_dark_theme else "rgba(30,58,95,0.10)"
+tip_bg = "rgba(255,255,255,0.10)" if is_dark_theme else "rgba(0,0,0,0.04)"
+tip_text = "#d7e2db" if is_dark_theme else "#5a6360"
+
 hero_l, hero_r = st.columns([3, 1])
 with hero_l:
     st.markdown("""
-<h1 style="font-family:Manrope,sans-serif;font-size:clamp(2.45rem, 6vw, 3.6rem);font-weight:800;color:#1E5C3A;
+<h1 style="font-family:Manrope,sans-serif;font-size:clamp(2.45rem, 6vw, 3.6rem);font-weight:900;color:var(--primary);
         letter-spacing:-0.025em;line-height:1.08;margin:0 0 0.875rem;word-break:normal;overflow-wrap:anywhere">
     Precise Agricultural Intelligence
 </h1>
-<p style="color:#404942;font-size:1rem;font-weight:400;line-height:1.55;
+<p style="color:var(--muted);font-size:1rem;font-weight:500;line-height:1.55;
     max-width:560px;margin:0 0 1.5rem">
   Synthesize complex soil data, real-time climate metrics, and historical
   yield patterns to generate laboratory-grade crop recommendations.
@@ -1617,29 +1631,29 @@ with hero_l:
 """, unsafe_allow_html=True)
 
 with hero_r:
-    st.markdown("""
-<div style="background:var(--surface-container-lowest);padding:1rem 1.125rem;border-radius:0.75rem;
+        st.markdown(f"""
+<div style="background:{guide_panel_bg};padding:1rem 1.125rem;border-radius:0.75rem;
      border:1px solid rgba(192,201,191,0.2);box-shadow:0 1px 3px rgba(0,0,0,0.05)">
   <div style="display:flex;align-items:center;gap:7px;margin-bottom:0.625rem">
     <span class="material-symbols-outlined"
       style="color:#1d4ed8;font-size:17px;font-variation-settings:'FILL' 1">info</span>
         <h3 style="font-family:Manrope,sans-serif;font-weight:900;font-size:12px;
-        text-transform:uppercase;letter-spacing:0.1em;color:#1e3a5f;margin:0">Farmer Unit Guide</h3>
+                text-transform:uppercase;letter-spacing:0.1em;color:{guide_title_color};margin:0">Farmer Unit Guide</h3>
   </div>
     <div style="font-size:13px">
     <div style="display:flex;justify-content:space-between;
-         border-bottom:1px solid rgba(30,58,95,0.08);padding-bottom:4px;margin-bottom:4px">
-      <span style="font-weight:900;color:#1e3a5f">Yield:</span>
-    <span style="font-weight:800;color:rgba(30,58,95,0.75)">t/ha</span>
+                 border-bottom:1px solid {guide_divider};padding-bottom:4px;margin-bottom:4px">
+            <span style="font-weight:900;color:{guide_title_color}">Yield:</span>
+        <span style="font-weight:900;color:{guide_value_color}">t/ha</span>
     </div>
     <div style="display:flex;justify-content:space-between;
-         border-bottom:1px solid rgba(30,58,95,0.08);padding-bottom:4px;margin-bottom:4px">
-      <span style="font-weight:900;color:#1e3a5f">NPK:</span>
-    <span style="font-weight:800;color:rgba(30,58,95,0.75)">kg/ha</span>
+                 border-bottom:1px solid {guide_divider};padding-bottom:4px;margin-bottom:4px">
+            <span style="font-weight:900;color:{guide_title_color}">NPK:</span>
+        <span style="font-weight:900;color:{guide_value_color}">kg/ha</span>
     </div>
     <div style="display:flex;justify-content:space-between">
-      <span style="font-weight:900;color:#1e3a5f">Area:</span>
-            <span style="font-weight:800;color:rgba(30,58,95,0.75)">1 acre = 0.4 ha</span>
+            <span style="font-weight:900;color:{guide_title_color}">Area:</span>
+                        <span style="font-weight:900;color:{guide_value_color}">1 acre = 0.4 ha</span>
     </div>
   </div>
 </div>
@@ -1653,10 +1667,10 @@ col_img, col_chem = st.columns(2, gap="large")
 with col_img:
     st.markdown('<span id="mrk-soil-img"></span>', unsafe_allow_html=True)
     st.markdown("""
-<h3 style="font-family:Manrope,sans-serif;font-size:2rem;font-weight:800;
-    color:#1E5C3A;display:flex;align-items:center;gap:8px;margin:0 0 1rem">
+<h3 style="font-family:Manrope,sans-serif;font-size:2rem;font-weight:900;
+    color:var(--primary);display:flex;align-items:center;gap:8px;margin:0 0 1rem">
   <span class="material-symbols-outlined"
-        style="color:#004425;font-size:1.6rem;font-variation-settings:'FILL' 1, 'wght' 600">image</span>
+        style="color:var(--primary);font-size:1.6rem;font-variation-settings:'FILL' 1, 'wght' 600">image</span>
   Soil Specimen Analysis
 </h3>
 """, unsafe_allow_html=True)
@@ -1667,10 +1681,10 @@ with col_img:
         st.session_state.last_error  = None
     if st.session_state.img_bytes:
         st.image(io.BytesIO(st.session_state.img_bytes), use_container_width=True)
-    st.markdown("""
-<div style="background:rgba(0,0,0,0.04);padding:0.75rem 0.875rem;border-radius:0.5rem;
+    st.markdown(f"""
+<div style="background:{tip_bg};padding:0.75rem 0.875rem;border-radius:0.5rem;
      margin-top:0.625rem">
-    <p style="font-size:13px;color:#5a6360;line-height:1.6;margin:0;font-weight:500">
+    <p style="font-size:13px;color:{tip_text};line-height:1.6;margin:0;font-weight:700">
     <strong>&#x1f4a1; Tip:</strong> Upload a clear close-up photo of soil for best results.
     Avoid photos with people, plants, or bright objects.
   </p>
