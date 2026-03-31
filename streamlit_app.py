@@ -3,13 +3,14 @@
 # Run: streamlit run streamlit_app.py
 
 import io, os, json, pickle
+from datetime import datetime
 import requests
 import numpy as np, pandas as pd
 import torch, torch.nn as nn
 import xgboost as xgb
 import streamlit as st
 import plotly.graph_objects as go
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 from torchvision import models, transforms
 
 # ── Page config ────────────────────────────────────────────────
@@ -1148,6 +1149,73 @@ def get_climate_data(village, district, state):
 # UI — Scientific Sanctuary  (exact match screen.png)
 # ==============================================================
 
+def _load_font(size=18, bold=False):
+    font_candidates = [
+        "C:/Windows/Fonts/arialbd.ttf" if bold else "C:/Windows/Fonts/arial.ttf",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf" if bold else "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+    ]
+    for fp in font_candidates:
+        if os.path.exists(fp):
+            try:
+                return ImageFont.truetype(fp, size=size)
+            except Exception:
+                pass
+    return ImageFont.load_default()
+
+
+def build_result_exports(result_data, season_name, img_bytes=None):
+    canvas = Image.new("RGB", (1400, 900), (245, 244, 240))
+    draw = ImageDraw.Draw(canvas)
+
+    title_f = _load_font(46, bold=True)
+    h_f = _load_font(34, bold=True)
+    b_f = _load_font(24, bold=True)
+    t_f = _load_font(22, bold=False)
+    s_f = _load_font(18, bold=False)
+
+    soil_name = result_data.get("soil_name", "Unknown")
+    confidence = float(result_data.get("confidence", 0))
+    recs = result_data.get("crop_recs", [])
+    top = recs[0] if recs else {"name": "N/A", "fertilizer": "N/A", "npk": "N/A"}
+
+    draw.text((52, 36), "Result Analysis and Recommendations", fill=(0, 68, 37), font=title_f)
+    draw.rounded_rectangle((45, 120, 1355, 855), radius=24, fill=(255, 255, 255), outline=(216, 220, 214), width=2)
+
+    if img_bytes:
+        try:
+            src = Image.open(io.BytesIO(img_bytes)).convert("RGB")
+            src.thumbnail((420, 420))
+            x = 75 + (420 - src.width) // 2
+            y = 220 + (420 - src.height) // 2
+            draw.rounded_rectangle((70, 210, 500, 640), radius=16, fill=(232, 236, 232))
+            canvas.paste(src, (x, y))
+        except Exception:
+            draw.rounded_rectangle((70, 210, 500, 640), radius=16, fill=(232, 236, 232))
+    else:
+        draw.rounded_rectangle((70, 210, 500, 640), radius=16, fill=(232, 236, 232))
+
+    draw.text((540, 190), f"Top Crop: {top['name']}", fill=(22, 28, 26), font=h_f)
+    draw.text((540, 255), f"Confidence: {confidence:.0f}%", fill=(0, 68, 37), font=b_f)
+    draw.text((540, 310), f"Detected Soil: {soil_name}", fill=(22, 28, 26), font=b_f)
+    draw.text((540, 365), f"Season: {season_name}", fill=(64, 73, 66), font=t_f)
+
+    draw.rounded_rectangle((540, 430, 1310, 635), radius=14, fill=(239, 238, 234), outline=(214, 218, 212), width=1)
+    draw.text((570, 465), "Scientific Fertilizer Recommendation", fill=(22, 28, 26), font=b_f)
+    draw.text((570, 525), f"Recommended Type: {top['fertilizer']}", fill=(64, 73, 66), font=t_f)
+    draw.text((570, 570), f"Ratio (N:P:K): {top['npk']}", fill=(64, 73, 66), font=t_f)
+
+    ts = datetime.now().strftime("Generated on %Y-%m-%d %H:%M")
+    draw.text((55, 865), ts, fill=(110, 120, 112), font=s_f)
+
+    png_buf = io.BytesIO()
+    canvas.save(png_buf, format="PNG")
+    png_bytes = png_buf.getvalue()
+
+    pdf_buf = io.BytesIO()
+    canvas.save(pdf_buf, format="PDF")
+    pdf_bytes = pdf_buf.getvalue()
+    return png_bytes, pdf_bytes
+
 CUSTOM_CSS = """
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Work+Sans:wght@300;400;500;600;700&display=swap');
@@ -1340,9 +1408,9 @@ div[data-testid="stTextInput"] label,
 div[data-testid="stSelectbox"] label,
 div[data-testid="stFileUploader"] label {
     font-family: 'Manrope', sans-serif !important;
-    font-size: 11px !important; font-weight: 900 !important;
-    text-transform: uppercase !important; letter-spacing: 0.12em !important;
-    color: #404942 !important;
+    font-size: 12px !important; font-weight: 900 !important;
+    text-transform: uppercase !important; letter-spacing: 0.13em !important;
+    color: #223129 !important;
 }
 div[data-testid="stFileUploader"] section {
     background: var(--surface-container) !important; border: 2px dashed var(--outline) !important;
@@ -1769,37 +1837,55 @@ with col_det:
 st.markdown("<div style='height:1.75rem'></div>", unsafe_allow_html=True)
 
 # ── ACTION BUTTONS ────────────────────────────────────────────────
-btn_l, btn_r = st.columns([3, 2], gap="large")
-with btn_l:
-    analyze_clicked = st.button(
-        "🔍 Analyze Soil & Predict Crop", type="primary", use_container_width=True
-    )
-with btn_r:
-    st.button(
-        "✨ Auto-Suggest Levels from Image", type="secondary", use_container_width=True
-    )
+analyze_clicked = st.button(
+    "🔍 Analyze Soil & Predict Crop", type="primary", use_container_width=True
+)
 
 st.markdown("<div style='height:3.5rem'></div>", unsafe_allow_html=True)
 
 # ── RESULTS SECTION ───────────────────────────────────────────────
-st.markdown("""
-<div style="display:flex;align-items:center;gap:1rem;margin-bottom:1.75rem;overflow:hidden">
-  <h2 style="font-family:Manrope,sans-serif;font-size:1.125rem;font-weight:900;
-      text-transform:uppercase;letter-spacing:0.15em;color:#004425;
-      white-space:nowrap;margin:0">
-    Result Analysis and Recommendations
-  </h2>
-  <div style="height:1px;background:rgba(192,201,191,0.4);flex:1"></div>
-  <div style="display:flex;gap:3px;flex-shrink:0">
-    <div style="padding:5px;border-radius:7px;cursor:pointer">
-      <span class="material-symbols-outlined" style="color:#004425;font-size:18px">picture_as_pdf</span>
-    </div>
-    <div style="padding:5px;border-radius:7px;cursor:pointer">
-      <span class="material-symbols-outlined" style="color:#004425;font-size:18px">save</span>
-    </div>
-  </div>
+report_png_bytes = None
+report_pdf_bytes = None
+if st.session_state.last_result:
+        try:
+                report_png_bytes, report_pdf_bytes = build_result_exports(
+                        st.session_state.last_result, season_disp, st.session_state.img_bytes
+                )
+        except Exception:
+                report_png_bytes, report_pdf_bytes = None, None
+
+hdr_t, hdr_p, hdr_s = st.columns([12, 1, 1], gap="small")
+with hdr_t:
+        st.markdown("""
+<div style="display:flex;align-items:center;gap:1rem;overflow:hidden;margin-top:2px">
+    <h2 style="font-family:Manrope,sans-serif;font-size:1.125rem;font-weight:900;
+            text-transform:uppercase;letter-spacing:0.15em;color:#004425;
+            white-space:nowrap;margin:0">Result Analysis and Recommendations</h2>
+    <div style="height:1px;background:rgba(192,201,191,0.4);flex:1"></div>
 </div>
 """, unsafe_allow_html=True)
+with hdr_p:
+        st.download_button(
+                "📄",
+                data=report_pdf_bytes if report_pdf_bytes else b"",
+                file_name=f"crop_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf",
+                mime="application/pdf",
+                key="download_report_pdf",
+                help="Download PDF report",
+                use_container_width=True,
+                disabled=report_pdf_bytes is None,
+        )
+with hdr_s:
+        st.download_button(
+                "💾",
+                data=report_png_bytes if report_png_bytes else b"",
+                file_name=f"crop_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png",
+                mime="image/png",
+                key="download_report_png",
+                help="Save report image",
+                use_container_width=True,
+                disabled=report_png_bytes is None,
+        )
 
 if not analyze_clicked and not st.session_state.last_result and not st.session_state.last_error:
     st.markdown("""
@@ -1833,6 +1919,7 @@ if analyze_clicked and st.session_state.img_bytes:
                 "all_probs":  all_probs,  "soil_fert":  soil_fert,
                 "crop_recs":  crop_recs,  "dbg":        dbg,
             }
+            st.rerun()
         except Exception as e:
             st.session_state.last_error  = f"Prediction failed: {e}"
             st.session_state.last_result = None
@@ -1848,19 +1935,16 @@ if st.session_state.last_result:
     soil_fert  = res["soil_fert"]
     crop_recs  = res["crop_recs"]
 
-    CROP_ICONS = {
-        "Cotton": "\U0001f33f", "Maize": "\U0001f33d", "Rice": "\U0001f33e",
-        "Wheat": "\U0001f33e", "Sugarcane": "\U0001f38b", "Potato": "\U0001f954",
-        "Tomato": "\U0001f345", "Groundnut": "\U0001f95c", "Soybean": "\U0001fad8",
-        "Sunflower": "\U0001f33b", "Barley": "\U0001f33e", "Mustard": "\U0001f33c",
-        "Chickpea": "\U0001fad8", "Watermelon": "\U0001f349", "Cucumber": "\U0001f952",
-        "Pumpkin": "\U0001f383", "Mango": "\U0001f96d", "Banana": "\U0001f34c",
-        "Cashew": "\U0001f330", "Rubber": "\U0001f333", "Tea": "\U0001f375",
-        "Coffee": "\u2615", "Tapioca": "\U0001f33f", "Turmeric": "\U0001f7e1",
-        "Ginger": "\U0001fada", "Pineapple": "\U0001f34d", "Jackfruit": "\U0001f348",
-        "Jute": "\U0001f33f", "Sorghum": "\U0001f33e", "Sesame": "\U0001f33f",
-        "Linseed": "\U0001f33c", "Safflower": "\U0001f33c", "Moong": "\U0001fad8",
-        "Taro": "\U0001f33f", "Spinach": "\U0001f96c", "Muskmelon": "\U0001f348",
+    CROP_IMAGE_MAP = {
+        "Cotton": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f4/Gossypium_hirsutum_%28cotton%29_plant.jpg/640px-Gossypium_hirsutum_%28cotton%29_plant.jpg",
+        "Sorghum": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a4/Sorghum_bicolor03.jpg/640px-Sorghum_bicolor03.jpg",
+        "Soybean": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8d/Soybean.USDA.jpg/640px-Soybean.USDA.jpg",
+        "Maize": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0c/Corncobs.jpg/640px-Corncobs.jpg",
+        "Rice": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7b/Rice_paddy.jpg/640px-Rice_paddy.jpg",
+        "Wheat": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/68/Trigo.jpg/640px-Trigo.jpg",
+        "Sugarcane": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/15/Sugarcane_field.jpg/640px-Sugarcane_field.jpg",
+        "Potato": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/60/Potato_harvest.jpg/640px-Potato_harvest.jpg",
+        "Tomato": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/88/Bright_red_tomato_and_cross_section02.jpg/640px-Bright_red_tomato_and_cross_section02.jpg",
     }
     SOIL_COLORS = {
         "Red Soil": "#C62828", "Black Soil": "#37474F", "Alluvial Soil": "#6D4C41",
@@ -1869,7 +1953,7 @@ if st.session_state.last_result:
     }
 
     top       = crop_recs[0]
-    top_icon  = CROP_ICONS.get(top["name"], "\U0001f331")
+    top_img   = CROP_IMAGE_MAP.get(top["name"], "https://source.unsplash.com/800x800/?crop,field")
     soil_col  = SOIL_COLORS.get(soil_name, "#004425")
     rank2_pct = max(10, int(confidence) - 12)
     rank3_pct = max(10, int(confidence) - 24)
@@ -1884,7 +1968,8 @@ if st.session_state.last_result:
      display:flex;min-height:280px">
   <div style="width:38%;background:{soil_col};display:flex;align-items:center;
        justify-content:center;min-height:240px;position:relative;flex-shrink:0">
-    <div style="font-size:4rem;line-height:1;text-align:center">{top_icon}</div>
+    <img src="{top_img}" alt="{top["name"]}"
+        style="width:100%;height:100%;object-fit:cover;display:block;opacity:0.92" />
     <div style="position:absolute;bottom:10px;left:0;right:0;text-align:center">
             <span style="background:rgba(0,0,0,0.3);color:white;font-size:10px;font-weight:900;
           padding:2px 8px;border-radius:999px;letter-spacing:0.06em">{soil_name}</span>
@@ -1897,7 +1982,7 @@ if st.session_state.last_result:
           letter-spacing:0.12em;margin:0 0 3px">RANK #1 &#xB7; HIGHLY RECOMMENDED</p>
       <div style="display:flex;justify-content:space-between;align-items:start;
            margin-bottom:0.625rem;flex-wrap:wrap;gap:6px">
-        <h3 style="font-family:Manrope,sans-serif;font-size:2rem;font-weight:900;
+        <h3 style="font-family:Manrope,sans-serif;font-size:2.2rem;font-weight:900;
             color:#1b1c1a;margin:0;line-height:1">{top["name"]}</h3>
         <div style="background:rgba(211,227,253,0.45);padding:8px 10px;
              border-radius:0.625rem;text-align:center;flex-shrink:0">
@@ -1940,13 +2025,13 @@ if st.session_state.last_result:
     with res_side:
         if len(crop_recs) > 1:
             c2    = crop_recs[1]
-            icon2 = CROP_ICONS.get(c2["name"], "\U0001f331")
+                        img2 = CROP_IMAGE_MAP.get(c2["name"], "https://source.unsplash.com/160x160/?crop,plant")
             st.markdown(f"""
 <div style="background:#f0f9ff;border-radius:1rem;padding:1.125rem;
      border:1px solid #bae6fd;display:flex;gap:0.875rem;margin-bottom:0.875rem">
   <div style="width:68px;height:68px;border-radius:0.625rem;background:#e0f2fe;
        flex-shrink:0;display:flex;align-items:center;justify-content:center">
-    <span style="font-size:2rem">{icon2}</span>
+        <img src="{img2}" alt="{c2["name"]}" style="width:100%;height:100%;object-fit:cover;border-radius:0.625rem" />
   </div>
   <div style="display:flex;flex-direction:column;justify-content:center;min-width:0">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">
@@ -1955,7 +2040,7 @@ if st.session_state.last_result:
       <span style="font-size:9px;font-weight:900;color:#0284c7;
           background:rgba(186,230,253,0.6);padding:1px 5px;border-radius:4px">{rank2_pct}%</span>
     </div>
-    <h4 style="font-family:Manrope,sans-serif;font-size:1rem;font-weight:800;
+    <h4 style="font-family:Manrope,sans-serif;font-size:1.08rem;font-weight:900;
         color:rgba(12,74,110,0.85);margin:0 0 2px;white-space:nowrap;
         overflow:hidden;text-overflow:ellipsis">{c2["name"]}</h4>
     <p style="font-size:10px;font-weight:600;color:#5a6360;margin:0">
@@ -1966,13 +2051,13 @@ if st.session_state.last_result:
 
         if len(crop_recs) > 2:
             c3    = crop_recs[2]
-            icon3 = CROP_ICONS.get(c3["name"], "\U0001f331")
+                        img3 = CROP_IMAGE_MAP.get(c3["name"], "https://source.unsplash.com/160x160/?farm,crop")
             st.markdown(f"""
 <div style="background:#f0fdf4;border-radius:1rem;padding:1.125rem;
      border:1px solid #bbf7d0;display:flex;gap:0.875rem;margin-bottom:0.875rem">
   <div style="width:68px;height:68px;border-radius:0.625rem;background:#dcfce7;
        flex-shrink:0;display:flex;align-items:center;justify-content:center">
-    <span style="font-size:2rem">{icon3}</span>
+        <img src="{img3}" alt="{c3["name"]}" style="width:100%;height:100%;object-fit:cover;border-radius:0.625rem" />
   </div>
   <div style="display:flex;flex-direction:column;justify-content:center;min-width:0">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">
@@ -1981,7 +2066,7 @@ if st.session_state.last_result:
       <span style="font-size:9px;font-weight:900;color:#16a34a;
           background:rgba(187,247,208,0.6);padding:1px 5px;border-radius:4px">{rank3_pct}%</span>
     </div>
-    <h4 style="font-family:Manrope,sans-serif;font-size:1rem;font-weight:800;
+    <h4 style="font-family:Manrope,sans-serif;font-size:1.08rem;font-weight:900;
         color:rgba(20,83,45,0.85);margin:0 0 2px;white-space:nowrap;
         overflow:hidden;text-overflow:ellipsis">{c3["name"]}</h4>
     <p style="font-size:10px;font-weight:600;color:#5a6360;margin:0">
