@@ -1223,6 +1223,17 @@ div[data-testid="stHorizontalBlock"]:has(#topbar-inline-marker) > div[data-testi
 /* Mobile drawer behavior for sidebar */
 @media (max-width: 900px) {
     .block-container { padding: 0 1rem 2rem !important; }
+    div[data-testid="stHorizontalBlock"]:has(#topbar-inline-marker) {
+        display: grid !important;
+        grid-template-columns: 40px minmax(0, 1fr) 40px 40px 40px !important;
+        align-items: center !important;
+        column-gap: 8px !important;
+    }
+    #topbar-title {
+        font-size: clamp(1rem, 5.6vw, 1.7rem) !important;
+        line-height: 1.1 !important;
+        white-space: normal !important;
+    }
     section[data-testid="stSidebar"] {
         position: fixed !important;
         left: 0 !important;
@@ -1236,6 +1247,13 @@ div[data-testid="stHorizontalBlock"]:has(#topbar-inline-marker) > div[data-testi
     }
     .mobile-sidebar-open section[data-testid="stSidebar"] {
         transform: translateX(0) !important;
+    }
+}
+@media (min-width: 901px) {
+    #menu-toggle-marker { display: none !important; }
+    section[data-testid="stSidebar"] {
+        transform: none !important;
+        position: relative !important;
     }
 }
 button[kind="tertiary"] {
@@ -1322,8 +1340,19 @@ div[data-testid="stColumn"]:has(#mrk-det) > div[data-testid="stVerticalBlock"] {
 
 st.markdown(THEME_VARS, unsafe_allow_html=True)
 st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
-sidebar_state_cls = "mobile-sidebar-open" if st.session_state.sidebar_open else "mobile-sidebar-closed"
-st.markdown(f"<div class='{sidebar_state_cls}'></div>", unsafe_allow_html=True)
+mobile_sidebar_transform = "translateX(0)" if st.session_state.sidebar_open else "translateX(-105%)"
+st.markdown(
+        f"""
+<style>
+@media (max-width: 900px) {{
+    section[data-testid='stSidebar'] {{
+        transform: {mobile_sidebar_transform} !important;
+    }}
+}}
+</style>
+""",
+        unsafe_allow_html=True,
+)
 
 # ── SIDEBAR ──────────────────────────────────────────────────────
 with st.sidebar:
@@ -1374,7 +1403,7 @@ st.markdown('<div style="height:6px"></div>', unsafe_allow_html=True)
 top_m, top_l, top_t, top_s, top_n = st.columns([1, 9, 1, 1, 1], gap="small")
 
 with top_m:
-    st.markdown('<span id="topbar-inline-marker"></span><div style="height:8px"></div>', unsafe_allow_html=True)
+    st.markdown('<span id="topbar-inline-marker"></span><span id="menu-toggle-marker"></span><div style="height:8px"></div>', unsafe_allow_html=True)
     if st.button("☰", key="sidebar_toggle", help="Open/Close navigation", type="tertiary"):
         st.session_state.sidebar_open = not st.session_state.sidebar_open
         st.rerun()
@@ -1382,7 +1411,7 @@ with top_m:
 with top_l:
     st.markdown("""
 <div style="padding:0.35rem 0 0.65rem;border-bottom:1px solid rgba(192,201,191,0.25)">
-    <h2 style="font-family:Manrope,sans-serif;font-size:1.2rem;font-weight:800;
+    <h2 id="topbar-title" style="font-family:Manrope,sans-serif;font-size:1.2rem;font-weight:800;
         color:var(--primary);margin:0">Agricultural Intelligence</h2>
     <span style="display:block;height:2px;width:56px;background:#4A8C5C;
             margin-top:6px;border-radius:999px"></span>
