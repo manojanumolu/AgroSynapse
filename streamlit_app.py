@@ -1838,7 +1838,7 @@ st.markdown("<div style='height:1.75rem'></div>", unsafe_allow_html=True)
 
 # ── ACTION BUTTONS ────────────────────────────────────────────────
 analyze_clicked = st.button(
-    "🔍 Analyze Soil & Predict Crop", type="primary", use_container_width=True
+    "🔍 Analyze Soil & Predict Crop", key="analyze_soil_btn", type="primary", use_container_width=True
 )
 
 st.markdown("<div style='height:3.5rem'></div>", unsafe_allow_html=True)
@@ -1919,7 +1919,6 @@ if analyze_clicked and st.session_state.img_bytes:
                 "all_probs":  all_probs,  "soil_fert":  soil_fert,
                 "crop_recs":  crop_recs,  "dbg":        dbg,
             }
-            st.rerun()
         except Exception as e:
             st.session_state.last_error  = f"Prediction failed: {e}"
             st.session_state.last_result = None
