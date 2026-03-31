@@ -39,6 +39,8 @@ if "location_note" not in st.session_state:
     st.session_state.location_note = ""
 if "theme" not in st.session_state:
     st.session_state.theme = "light"
+if "sidebar_open" not in st.session_state:
+    st.session_state.sidebar_open = True
 
 if st.session_state.theme == "dark":
     THEME_VARS = """<style>
@@ -1197,7 +1199,7 @@ button[data-testid="collapsedControl"] { background: #214130 !important; color: 
     width: 36px !important;
     height: 36px !important;
     min-height: 36px !important;
-    border-radius: 10px !important;
+    border-radius: 999px !important;
     border: 1px solid #E0E3DF !important;
     background: #F9F9F7 !important;
     color: #1E5C3A !important;
@@ -1205,6 +1207,36 @@ button[data-testid="collapsedControl"] { background: #214130 !important; color: 
     font-weight: 700 !important;
     padding: 0 !important;
     line-height: 1 !important;
+}
+
+/* Keep top bar controls in one row on mobile */
+div[data-testid="stHorizontalBlock"]:has(#topbar-inline-marker) {
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    gap: 0.5rem !important;
+}
+div[data-testid="stHorizontalBlock"]:has(#topbar-inline-marker) > div[data-testid="stColumn"] {
+    flex: 0 0 auto !important;
+    min-width: auto !important;
+}
+
+/* Mobile drawer behavior for sidebar */
+@media (max-width: 900px) {
+    .block-container { padding: 0 1rem 2rem !important; }
+    section[data-testid="stSidebar"] {
+        position: fixed !important;
+        left: 0 !important;
+        top: 0 !important;
+        height: 100vh !important;
+        z-index: 1100 !important;
+        transition: transform 180ms ease !important;
+    }
+    .mobile-sidebar-closed section[data-testid="stSidebar"] {
+        transform: translateX(-105%) !important;
+    }
+    .mobile-sidebar-open section[data-testid="stSidebar"] {
+        transform: translateX(0) !important;
+    }
 }
 button[kind="tertiary"] {
     width: 36px !important;
@@ -1290,6 +1322,8 @@ div[data-testid="stColumn"]:has(#mrk-det) > div[data-testid="stVerticalBlock"] {
 
 st.markdown(THEME_VARS, unsafe_allow_html=True)
 st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
+sidebar_state_cls = "mobile-sidebar-open" if st.session_state.sidebar_open else "mobile-sidebar-closed"
+st.markdown(f"<div class='{sidebar_state_cls}'></div>", unsafe_allow_html=True)
 
 # ── SIDEBAR ──────────────────────────────────────────────────────
 with st.sidebar:
@@ -1337,7 +1371,13 @@ with st.sidebar:
 
 # ── TOP APP BAR ───────────────────────────────────────────────────
 st.markdown('<div style="height:6px"></div>', unsafe_allow_html=True)
-top_l, top_t, top_s, top_n = st.columns([14, 1, 1, 1])
+top_m, top_l, top_t, top_s, top_n = st.columns([1, 9, 1, 1, 1], gap="small")
+
+with top_m:
+    st.markdown('<span id="topbar-inline-marker"></span><div style="height:8px"></div>', unsafe_allow_html=True)
+    if st.button("☰", key="sidebar_toggle", help="Open/Close navigation", type="tertiary"):
+        st.session_state.sidebar_open = not st.session_state.sidebar_open
+        st.rerun()
 
 with top_l:
     st.markdown("""
@@ -1357,28 +1397,20 @@ with top_t:
         st.rerun()
 
 with top_s:
-    st.markdown('''
-<div style="height:8px"></div>
-<div class="top-icon-btn">
-    <span class="material-symbols-outlined" style="color:#1E5C3A;font-size:20px">settings</span>
-</div>
-''', unsafe_allow_html=True)
+    st.markdown('<div style="height:8px"></div>', unsafe_allow_html=True)
+    st.button("⚙", key="settings_icon", help="Settings", type="tertiary")
 
 with top_n:
-    st.markdown('''
-<div style="height:8px"></div>
-<div class="top-icon-btn">
-    <span class="material-symbols-outlined" style="color:#1E5C3A;font-size:20px">notifications</span>
-</div>
-''', unsafe_allow_html=True)
+    st.markdown('<div style="height:8px"></div>', unsafe_allow_html=True)
+    st.button("🔔", key="notifications_icon", help="Notifications", type="tertiary")
 
 # ── HERO HEADER ───────────────────────────────────────────────────
 hero_l, hero_r = st.columns([3, 1])
 with hero_l:
     st.markdown("""
-<h1 style="font-family:Manrope,sans-serif;font-size:3rem;font-weight:800;color:#1E5C3A;
-    letter-spacing:-0.025em;line-height:1.1;margin:0 0 0.875rem">
-  Precise Agricultural<br>Intelligence
+<h1 style="font-family:Manrope,sans-serif;font-size:clamp(2.45rem, 6vw, 3.6rem);font-weight:800;color:#1E5C3A;
+        letter-spacing:-0.025em;line-height:1.08;margin:0 0 0.875rem;word-break:normal;overflow-wrap:anywhere">
+    Precise Agricultural Intelligence
 </h1>
 <p style="color:#404942;font-size:1rem;font-weight:400;line-height:1.55;
     max-width:560px;margin:0 0 1.5rem">
@@ -1514,7 +1546,7 @@ with env_col:
     ec1, ec2, ec3, ec4 = st.columns(4)
     with ec1:
         sel_state = st.selectbox(
-            "Select Your State",
+            "📍 Select Your State",
             options=["-- Select State --"] + sorted(INDIA_STATES_DISTRICTS.keys()),
             index=0,
             help="Choose your state to fetch local climate",
@@ -1522,16 +1554,16 @@ with env_col:
     with ec2:
         if sel_state and sel_state != "-- Select State --":
             sel_district = st.selectbox(
-                "Select Your District",
+                "🏛 Select Your District",
                 options=["-- Select District --"] + INDIA_STATES_DISTRICTS[sel_state],
                 index=0,
                 help="Choose your district",
             )
         else:
             sel_district = "-- Select District --"
-            st.selectbox("Select Your District", options=["-- Select State First --"], disabled=True)
+            st.selectbox("🏛 Select Your District", options=["-- Select State First --"], disabled=True, help="Choose your district")
     with ec3:
-        village = st.text_input("Enter Village / Town Name", placeholder="e.g. Ramtek", help="Optional village or town for better location context")
+        village = st.text_input("🗺 Enter Village / Town Name", placeholder="e.g. Ramtek", help="Optional village or town for better location context")
     with ec4:
         st.markdown("<div style='height:22px'></div>", unsafe_allow_html=True)
         fetch_btn = st.button("🌤 Fetch Local Data", type="primary", use_container_width=True)
