@@ -1337,9 +1337,10 @@ div[data-testid="stNumberInput"] label,
 div[data-testid="stTextInput"] label,
 div[data-testid="stSelectbox"] label,
 div[data-testid="stFileUploader"] label {
-    font-size: 10px !important; font-weight: 900 !important;
+    font-family: 'Manrope', sans-serif !important;
+    font-size: 11px !important; font-weight: 900 !important;
     text-transform: uppercase !important; letter-spacing: 0.12em !important;
-    color: rgba(64,73,66,0.65) !important;
+    color: #404942 !important;
 }
 div[data-testid="stFileUploader"] section {
     background: var(--surface-container) !important; border: 2px dashed var(--outline) !important;
@@ -1883,7 +1884,7 @@ if st.session_state.last_result:
        justify-content:center;min-height:240px;position:relative;flex-shrink:0">
     <div style="font-size:4rem;line-height:1;text-align:center">{top_icon}</div>
     <div style="position:absolute;bottom:10px;left:0;right:0;text-align:center">
-      <span style="background:rgba(0,0,0,0.3);color:white;font-size:9px;font-weight:700;
+            <span style="background:rgba(0,0,0,0.3);color:white;font-size:10px;font-weight:900;
           padding:2px 8px;border-radius:999px;letter-spacing:0.06em">{soil_name}</span>
     </div>
   </div>
@@ -2011,8 +2012,9 @@ if st.session_state.last_result:
         "margin-bottom:0.25rem'>Soil Probability Breakdown</h4>",
         unsafe_allow_html=True,
     )
-    labels = list(all_probs.keys())
-    values = [all_probs[k] for k in labels]
+    sorted_probs = sorted(all_probs.items(), key=lambda x: x[1], reverse=True)
+    labels = [k for k, _ in sorted_probs]
+    values = [v for _, v in sorted_probs]
     fig = go.Figure(go.Bar(
         x=values, y=labels, orientation="h",
         marker=dict(color="#004425", line=dict(width=0)),
