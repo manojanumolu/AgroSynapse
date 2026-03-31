@@ -1126,7 +1126,7 @@ def get_climate_data(village, district, state):
 # ==============================================================
 
 # ==============================================================
-# UI — Scientific Sanctuary  (screen.png exact match)
+# UI — Scientific Sanctuary  (exact match screen.png)
 # ==============================================================
 
 CUSTOM_CSS = """
@@ -1140,7 +1140,7 @@ CUSTOM_CSS = """
     font-family: 'Material Symbols Outlined' !important;
 }
 
-/* Global */
+/* ── Global ── */
 html, body, [class*="css"] { font-family: 'Work Sans', sans-serif !important; color: #404942; }
 .stApp, .main { background-color: #F2EFE8 !important; }
 .block-container { max-width: 1120px !important; padding: 0 2rem 3rem !important; }
@@ -1150,31 +1150,41 @@ header[data-testid="stHeader"] { display: none !important; }
 
 /* ── Sidebar ── */
 section[data-testid="stSidebar"] {
-    background: #2a4d3a !important;
+    background: #214130 !important;
     width: 240px !important; min-width: 240px !important;
 }
 section[data-testid="stSidebar"] > div {
-    background: #2a4d3a !important;
-    padding: 1.75rem 1.25rem !important;
+    background: #214130 !important;
+    padding: 1.75rem 1rem 1.25rem !important;
 }
 [data-testid="stSidebarNav"] { display: none !important; }
-button[data-testid="collapsedControl"] {
-    background: #2a4d3a !important; color: white !important;
-    border-radius: 0 !important;
+button[data-testid="collapsedControl"] { background: #214130 !important; color: white !important; }
+/* style the theme toggle button in sidebar */
+section[data-testid="stSidebar"] button[data-testid="baseButton-secondary"] {
+    background: rgba(255,255,255,0.08) !important;
+    color: rgba(255,255,255,0.75) !important;
+    border: 1px solid rgba(255,255,255,0.15) !important;
+    border-radius: 0.5rem !important;
+    font-size: 12px !important;
+    height: 2.25rem !important;
+    font-family: 'Work Sans', sans-serif !important;
+    font-weight: 600 !important;
 }
 
-/* ── Buttons ── */
-button[data-testid="baseButton-primary"] {
+/* ── Primary / Secondary buttons (main area) ── */
+.main button[data-testid="baseButton-primary"],
+.block-container button[data-testid="baseButton-primary"] {
     background: #004425 !important; color: #fff !important;
     border: none !important; border-radius: 0.75rem !important;
     font-weight: 700 !important; font-family: 'Manrope',sans-serif !important;
     font-size: 1rem !important; height: 3.25rem !important;
 }
-button[data-testid="baseButton-secondary"] {
+.main button[data-testid="baseButton-secondary"],
+.block-container button[data-testid="baseButton-secondary"] {
     background: #ffffff !important; color: #404942 !important;
     border: 2px solid rgba(0,68,37,0.18) !important; border-radius: 0.75rem !important;
     font-weight: 700 !important; font-family: 'Manrope',sans-serif !important;
-    font-size: 0.95rem !important; height: 3.25rem !important;
+    font-size: 0.9rem !important; height: 3.25rem !important;
 }
 
 /* ── Form inputs ── */
@@ -1202,34 +1212,28 @@ div[data-testid="stFileUploader"] section {
     border-radius: 0.75rem !important;
 }
 
-/* ── CARD WRAPPING via :has() markers ──
-   Each card column gets background + border-radius by targeting the
-   stVerticalBlock that contains our marker span.                    */
-
-/* Soil image card */
-div[data-testid="stVerticalBlock"]:has(> div > div > div > #mrk-soil-img) {
-    background: #e9e8e4 !important; border-radius: 0.75rem !important;
-    padding: 1.5rem !important; border: 1px solid rgba(192,201,191,0.15) !important;
+/* ── CARD WRAPPING ──
+   Target the stColumn that contains each marker ID.
+   stColumn is the direct wrapper; stVerticalBlock inside gets the visual card.
+   ─────────────────────────────────────────────────── */
+div[data-testid="stColumn"]:has(#mrk-soil-img),
+div[data-testid="stColumn"]:has(#mrk-chem),
+div[data-testid="stColumn"]:has(#mrk-env),
+div[data-testid="stColumn"]:has(#mrk-hist),
+div[data-testid="stColumn"]:has(#mrk-det) {
+    background: #e5e4e0 !important;
+    border-radius: 0.75rem !important;
+    border: 1px solid rgba(192,201,191,0.3) !important;
+    box-shadow: 0 2px 8px rgba(27,28,26,0.06) !important;
+    overflow: hidden !important;
 }
-/* Chemical profile card */
-div[data-testid="stVerticalBlock"]:has(> div > div > div > #mrk-chem) {
-    background: #e9e8e4 !important; border-radius: 0.75rem !important;
-    padding: 1.5rem !important; border: 1px solid rgba(192,201,191,0.15) !important;
-}
-/* Environmental section */
-div[data-testid="stVerticalBlock"]:has(> div > div > div > #mrk-env) {
-    background: #e9e8e4 !important; border-radius: 0.75rem !important;
-    padding: 1.5rem !important; border: 1px solid rgba(192,201,191,0.15) !important;
-}
-/* Farm history card */
-div[data-testid="stVerticalBlock"]:has(> div > div > div > #mrk-hist) {
-    background: #e9e8e4 !important; border-radius: 0.75rem !important;
-    padding: 1.5rem !important; border: 1px solid rgba(192,201,191,0.15) !important;
-}
-/* Farm details card */
-div[data-testid="stVerticalBlock"]:has(> div > div > div > #mrk-det) {
-    background: #e9e8e4 !important; border-radius: 0.75rem !important;
-    padding: 1.5rem !important; border: 1px solid rgba(192,201,191,0.15) !important;
+/* Inner block padding */
+div[data-testid="stColumn"]:has(#mrk-soil-img) > div[data-testid="stVerticalBlock"],
+div[data-testid="stColumn"]:has(#mrk-chem) > div[data-testid="stVerticalBlock"],
+div[data-testid="stColumn"]:has(#mrk-env) > div[data-testid="stVerticalBlock"],
+div[data-testid="stColumn"]:has(#mrk-hist) > div[data-testid="stVerticalBlock"],
+div[data-testid="stColumn"]:has(#mrk-det) > div[data-testid="stVerticalBlock"] {
+    padding: 1.25rem 1.25rem 1.25rem !important;
 }
 
 /* Scrollbar */
@@ -1245,14 +1249,14 @@ st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
 # ── SIDEBAR ──────────────────────────────────────────────────────
 with st.sidebar:
     st.markdown("""
-<div style="padding:0 0.25rem 2rem">
+<div style="padding:0 0.25rem 1.75rem">
   <h1 style="font-family:Manrope,sans-serif;font-size:1.125rem;font-weight:800;
-      color:white;letter-spacing:-0.02em;margin:0 0 4px">Scientific Sanctuary</h1>
-  <p style="font-size:10px;color:rgba(255,255,255,0.45);text-transform:uppercase;
+      color:white;letter-spacing:-0.02em;margin:0 0 3px">Scientific Sanctuary</h1>
+  <p style="font-size:10px;color:rgba(255,255,255,0.4);text-transform:uppercase;
       letter-spacing:0.2em;font-weight:600;margin:0">Agricultural Intelligence</p>
 </div>
-<nav style="display:flex;flex-direction:column;gap:2px">
-  <a style="display:flex;align-items:center;gap:10px;padding:11px 14px;
+<nav style="display:flex;flex-direction:column;gap:2px;margin-bottom:1.25rem">
+  <a style="display:flex;align-items:center;gap:10px;padding:10px 14px;
       background:#acf3ba;color:#2f7144;border-radius:999px;
       font-family:Manrope,sans-serif;font-size:13px;font-weight:700;
       letter-spacing:0.04em;text-decoration:none">
@@ -1260,51 +1264,64 @@ with st.sidebar:
       style="font-variation-settings:'FILL' 1;color:#2f7144;font-size:18px">analytics</span>
     Context
   </a>
-  <a style="display:flex;align-items:center;gap:10px;padding:11px 14px;
-      color:rgba(255,255,255,0.65);border-radius:999px;
+  <a style="display:flex;align-items:center;gap:10px;padding:10px 14px;
+      color:rgba(255,255,255,0.6);border-radius:999px;
       font-family:Manrope,sans-serif;font-size:13px;font-weight:700;text-decoration:none">
-    <span class="material-symbols-outlined" style="color:rgba(255,255,255,0.65);font-size:18px">input</span>
+    <span class="material-symbols-outlined" style="color:rgba(255,255,255,0.6);font-size:18px">input</span>
     Inputs
   </a>
-  <a style="display:flex;align-items:center;gap:10px;padding:11px 14px;
-      color:rgba(255,255,255,0.65);border-radius:999px;
+  <a style="display:flex;align-items:center;gap:10px;padding:10px 14px;
+      color:rgba(255,255,255,0.6);border-radius:999px;
       font-family:Manrope,sans-serif;font-size:13px;font-weight:700;text-decoration:none">
-    <span class="material-symbols-outlined" style="color:rgba(255,255,255,0.65);font-size:18px">science</span>
+    <span class="material-symbols-outlined" style="color:rgba(255,255,255,0.6);font-size:18px">science</span>
     Analysis
   </a>
-  <a style="display:flex;align-items:center;gap:10px;padding:11px 14px;
-      color:rgba(255,255,255,0.65);border-radius:999px;
+  <a style="display:flex;align-items:center;gap:10px;padding:10px 14px;
+      color:rgba(255,255,255,0.6);border-radius:999px;
       font-family:Manrope,sans-serif;font-size:13px;font-weight:700;text-decoration:none">
-    <span class="material-symbols-outlined" style="color:rgba(255,255,255,0.65);font-size:18px">settings</span>
+    <span class="material-symbols-outlined" style="color:rgba(255,255,255,0.6);font-size:18px">settings</span>
     Settings
   </a>
 </nav>
-<div style="margin-top:3rem;padding:1rem 0.25rem 0;border-top:1px solid rgba(255,255,255,0.1);
+""", unsafe_allow_html=True)
+
+    # Dark / Light mode toggle
+    _theme_icon  = "☀️ Light Mode" if st.session_state.theme == "dark" else "🌙 Dark Mode"
+    if st.button(_theme_icon, type="secondary", use_container_width=True):
+        st.session_state.theme = "dark" if st.session_state.theme == "light" else "light"
+        st.rerun()
+
+    st.markdown("""
+<div style="margin-top:1.5rem;padding:1rem 0.25rem 0;border-top:1px solid rgba(255,255,255,0.1);
      display:flex;align-items:center;gap:10px">
-  <div style="width:38px;height:38px;border-radius:50%;background:#acf3ba;
+  <div style="width:36px;height:36px;border-radius:50%;background:#acf3ba;
        display:flex;align-items:center;justify-content:center;flex-shrink:0">
-    <span class="material-symbols-outlined" style="color:#2f7144;font-size:20px">agriculture</span>
+    <span class="material-symbols-outlined" style="color:#2f7144;font-size:19px">agriculture</span>
   </div>
-  <p style="color:white;font-size:14px;font-weight:700;margin:0">Farmer</p>
+  <p style="color:white;font-size:13px;font-weight:700;margin:0">Farmer</p>
 </div>
 """, unsafe_allow_html=True)
 
 # ── TOP APP BAR ───────────────────────────────────────────────────
 st.markdown("""
-<div style="background:rgba(242,239,232,0.9);backdrop-filter:blur(20px);
+<div style="background:rgba(242,239,232,0.92);backdrop-filter:blur(20px);
      -webkit-backdrop-filter:blur(20px);padding:0.875rem 0;
-     border-bottom:1px solid rgba(192,201,191,0.2);
+     border-bottom:1px solid rgba(192,201,191,0.25);
      display:flex;justify-content:space-between;align-items:center;
      margin-bottom:2rem">
   <h2 style="font-family:Manrope,sans-serif;font-size:1.125rem;font-weight:700;
       color:#1e5c3a;margin:0">Agricultural Intelligence</h2>
-  <div style="display:flex;gap:4px">
+  <div style="display:flex;gap:2px">
     <div style="width:34px;height:34px;border-radius:50%;display:flex;
-         align-items:center;justify-content:center;cursor:pointer">
+         align-items:center;justify-content:center">
+      <span class="material-symbols-outlined" style="color:#1e5c3a;font-size:20px">dark_mode</span>
+    </div>
+    <div style="width:34px;height:34px;border-radius:50%;display:flex;
+         align-items:center;justify-content:center">
       <span class="material-symbols-outlined" style="color:#1e5c3a;font-size:20px">settings</span>
     </div>
     <div style="width:34px;height:34px;border-radius:50%;display:flex;
-         align-items:center;justify-content:center;cursor:pointer">
+         align-items:center;justify-content:center">
       <span class="material-symbols-outlined" style="color:#1e5c3a;font-size:20px">notifications</span>
     </div>
   </div>
@@ -1316,7 +1333,7 @@ hero_l, hero_r = st.columns([3, 1])
 with hero_l:
     st.markdown("""
 <h1 style="font-family:Manrope,sans-serif;font-size:2.75rem;font-weight:800;color:#004425;
-    letter-spacing:-0.02em;line-height:1.1;margin:0 0 0.75rem">
+    letter-spacing:-0.025em;line-height:1.1;margin:0 0 0.875rem">
   Precise Agricultural<br>Intelligence
 </h1>
 <p style="color:#404942;font-size:1rem;font-weight:300;line-height:1.7;
@@ -1328,35 +1345,34 @@ with hero_l:
 
 with hero_r:
     st.markdown("""
-<div style="background:#ffffff;padding:1.125rem;border-radius:0.75rem;
-     border:1px solid rgba(192,201,191,0.15);box-shadow:0 1px 3px rgba(0,0,0,0.05)">
+<div style="background:#ffffff;padding:1rem 1.125rem;border-radius:0.75rem;
+     border:1px solid rgba(192,201,191,0.2);box-shadow:0 1px 3px rgba(0,0,0,0.05)">
   <div style="display:flex;align-items:center;gap:7px;margin-bottom:0.625rem">
     <span class="material-symbols-outlined"
-      style="color:#1d4ed8;font-size:18px;font-variation-settings:'FILL' 1">info</span>
+      style="color:#1d4ed8;font-size:17px;font-variation-settings:'FILL' 1">info</span>
     <h3 style="font-family:Manrope,sans-serif;font-weight:900;font-size:10px;
-        text-transform:uppercase;letter-spacing:0.1em;color:#1e3a5f;margin:0">
-      Farmer Unit Guide</h3>
+        text-transform:uppercase;letter-spacing:0.1em;color:#1e3a5f;margin:0">Farmer Unit Guide</h3>
   </div>
   <div style="font-size:11px">
     <div style="display:flex;justify-content:space-between;
          border-bottom:1px solid rgba(30,58,95,0.08);padding-bottom:4px;margin-bottom:4px">
       <span style="font-weight:900;color:#1e3a5f">Yield:</span>
-      <span style="font-weight:700;color:rgba(30,58,95,0.65)">t/ha</span>
+      <span style="font-weight:700;color:rgba(30,58,95,0.6)">t/ha</span>
     </div>
     <div style="display:flex;justify-content:space-between;
          border-bottom:1px solid rgba(30,58,95,0.08);padding-bottom:4px;margin-bottom:4px">
       <span style="font-weight:900;color:#1e3a5f">NPK:</span>
-      <span style="font-weight:700;color:rgba(30,58,95,0.65)">kg/ha</span>
+      <span style="font-weight:700;color:rgba(30,58,95,0.6)">kg/ha</span>
     </div>
     <div style="display:flex;justify-content:space-between">
       <span style="font-weight:900;color:#1e3a5f">Area:</span>
-      <span style="font-weight:700;color:rgba(30,58,95,0.65)">1 acre = 0.4 ha</span>
+      <span style="font-weight:700;color:rgba(30,58,95,0.6)">1 acre = 0.4 ha</span>
     </div>
   </div>
 </div>
 """, unsafe_allow_html=True)
 
-st.markdown("<div style='height:1.5rem'></div>", unsafe_allow_html=True)
+st.markdown("<div style='height:1.75rem'></div>", unsafe_allow_html=True)
 
 # ── ROW 1: SOIL IMAGE + CHEMICAL PROFILE ─────────────────────────
 col_img, col_chem = st.columns(2, gap="large")
@@ -1364,9 +1380,10 @@ col_img, col_chem = st.columns(2, gap="large")
 with col_img:
     st.markdown('<span id="mrk-soil-img"></span>', unsafe_allow_html=True)
     st.markdown("""
-<h3 style="font-family:Manrope,sans-serif;font-size:1.25rem;font-weight:800;
+<h3 style="font-family:Manrope,sans-serif;font-size:1.125rem;font-weight:800;
     color:#1b1c1a;display:flex;align-items:center;gap:8px;margin:0 0 1rem">
-  <span class="material-symbols-outlined" style="color:#004425;font-size:1.5rem">image</span>
+  <span class="material-symbols-outlined"
+    style="color:#004425;font-size:1.375rem">image</span>
   Soil Specimen Analysis
 </h3>
 """, unsafe_allow_html=True)
@@ -1378,8 +1395,9 @@ with col_img:
     if st.session_state.img_bytes:
         st.image(io.BytesIO(st.session_state.img_bytes), use_container_width=True)
     st.markdown("""
-<div style="background:rgba(0,0,0,0.04);padding:0.75rem 1rem;border-radius:0.5rem;margin-top:0.75rem">
-  <p style="font-size:12px;color:#404942;line-height:1.6;margin:0">
+<div style="background:rgba(0,0,0,0.04);padding:0.75rem 0.875rem;border-radius:0.5rem;
+     margin-top:0.625rem">
+  <p style="font-size:12px;color:#5a6360;line-height:1.6;margin:0">
     <strong>&#x1f4a1; Tip:</strong> Upload a clear close-up photo of soil for best results.
     Avoid photos with people, plants, or bright objects.
   </p>
@@ -1398,11 +1416,11 @@ def _npk_bar(val, lo, hi, vmax):
     else:
         rl, gw, rr = lo_pct, hi_pct - lo_pct, 100 - hi_pct
     return (
-        f"<div style='height:4px;background:#e3e2df;border-radius:999px;"
-        f"overflow:hidden;display:flex;margin-top:6px'>"
-        f"<div style='width:{rl:.0f}%;background:#f87171'></div>"
+        f"<div style='height:4px;background:#d8d7d3;border-radius:999px;"
+        f"overflow:hidden;display:flex;margin-top:5px'>"
+        f"<div style='width:{rl:.0f}%;background:#ef4444'></div>"
         f"<div style='width:{gw:.0f}%;background:#22c55e'></div>"
-        f"<div style='width:{rr:.0f}%;background:#f87171'></div>"
+        f"<div style='width:{rr:.0f}%;background:#ef4444'></div>"
         f"</div>"
     )
 
@@ -1410,9 +1428,10 @@ def _npk_bar(val, lo, hi, vmax):
 with col_chem:
     st.markdown('<span id="mrk-chem"></span>', unsafe_allow_html=True)
     st.markdown("""
-<h3 style="font-family:Manrope,sans-serif;font-size:1.25rem;font-weight:800;
+<h3 style="font-family:Manrope,sans-serif;font-size:1.125rem;font-weight:800;
     color:#1b1c1a;display:flex;align-items:center;gap:8px;margin:0 0 1rem">
-  <span class="material-symbols-outlined" style="color:#004425;font-size:1.5rem">biotech</span>
+  <span class="material-symbols-outlined"
+    style="color:#004425;font-size:1.375rem">biotech</span>
   Chemical Profile
 </h3>
 """, unsafe_allow_html=True)
@@ -1420,25 +1439,26 @@ with col_chem:
     with cr1:
         n = st.number_input("Nitrogen (N) (mg/kg)", 0.0, 200.0, 90.0)
         st.markdown(_npk_bar(n, 80, 160, 200), unsafe_allow_html=True)
-        st.markdown("<div style='height:0.875rem'></div>", unsafe_allow_html=True)
+        st.markdown("<div style='height:0.75rem'></div>", unsafe_allow_html=True)
         k = st.number_input("Potassium (K) (mg/kg)", 0.0, 200.0, 43.0)
         st.markdown(_npk_bar(k, 40, 160, 200), unsafe_allow_html=True)
     with cr2:
         p = st.number_input("Phosphorus (P) (mg/kg)", 0.0, 200.0, 42.0)
         st.markdown(_npk_bar(p, 30, 100, 200), unsafe_allow_html=True)
-        st.markdown("<div style='height:0.875rem'></div>", unsafe_allow_html=True)
+        st.markdown("<div style='height:0.75rem'></div>", unsafe_allow_html=True)
         ph = st.number_input("Soil pH (ph)", 3.0, 10.0, 6.5, step=0.1)
         st.markdown(_npk_bar(ph, 6.0, 7.5, 10.0), unsafe_allow_html=True)
 
-st.markdown("<div style='height:2rem'></div>", unsafe_allow_html=True)
+st.markdown("<div style='height:1.75rem'></div>", unsafe_allow_html=True)
 
-# ── ENVIRONMENTAL CONDITIONS ──────────────────────────────────────
-with st.container():
+# ── ENVIRONMENTAL CONDITIONS (single full-width column for card styling) ──
+(env_col,) = st.columns(1)
+with env_col:
     st.markdown('<span id="mrk-env"></span>', unsafe_allow_html=True)
     st.markdown("""
-<h3 style="font-family:Manrope,sans-serif;font-size:1.25rem;font-weight:800;
-    color:#1b1c1a;display:flex;align-items:center;gap:8px;margin:0 0 1.25rem">
-  <span class="material-symbols-outlined" style="color:#004425;font-size:1.5rem">public</span>
+<h3 style="font-family:Manrope,sans-serif;font-size:1.125rem;font-weight:800;
+    color:#1b1c1a;display:flex;align-items:center;gap:8px;margin:0 0 1.125rem">
+  <span class="material-symbols-outlined" style="color:#004425;font-size:1.375rem">public</span>
   Auto-Fill Climate Data
 </h3>
 """, unsafe_allow_html=True)
@@ -1486,32 +1506,35 @@ with st.container():
 
     loc_note = st.session_state.location_note or st.session_state.location_name
     note_html = (
-        f"<p style='font-size:11px;color:rgba(64,73,66,0.55);font-style:italic;"
+        f"<p style='font-size:11px;color:rgba(64,73,66,0.5);font-style:italic;"
         f"font-weight:500;align-self:center;margin:0'>{loc_note}</p>"
         if loc_note else ""
     )
     st.markdown(f"""
-<div style="display:flex;flex-wrap:wrap;gap:0.75rem;margin:1rem 0;align-items:center">
-  <div style="background:#ffffff;display:flex;align-items:center;gap:8px;padding:9px 18px;
-       border-radius:999px;border:1px solid rgba(192,201,191,0.15);box-shadow:0 1px 2px rgba(0,0,0,0.04)">
+<div style="display:flex;flex-wrap:wrap;gap:0.625rem;margin:0.875rem 0 0.875rem;align-items:center">
+  <div style="background:#ffffff;display:flex;align-items:center;gap:7px;padding:8px 16px;
+       border-radius:999px;border:1px solid rgba(192,201,191,0.2);
+       box-shadow:0 1px 2px rgba(0,0,0,0.04)">
     <span class="material-symbols-outlined"
-      style="color:#286b3e;font-variation-settings:'FILL' 1;font-size:17px">thermostat</span>
-    <span style="font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:0.08em">Temperature:</span>
-    <span style="font-family:Manrope,sans-serif;font-weight:800;color:#1b1c1a;font-size:14px">{st.session_state.auto_temp}\u00b0C</span>
+      style="color:#286b3e;font-variation-settings:'FILL' 1;font-size:16px">thermostat</span>
+    <span style="font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:0.08em">Temperature:</span>
+    <span style="font-family:Manrope,sans-serif;font-weight:800;color:#1b1c1a;font-size:13px">{st.session_state.auto_temp}\u00b0C</span>
   </div>
-  <div style="background:#ffffff;display:flex;align-items:center;gap:8px;padding:9px 18px;
-       border-radius:999px;border:1px solid rgba(192,201,191,0.15);box-shadow:0 1px 2px rgba(0,0,0,0.04)">
+  <div style="background:#ffffff;display:flex;align-items:center;gap:7px;padding:8px 16px;
+       border-radius:999px;border:1px solid rgba(192,201,191,0.2);
+       box-shadow:0 1px 2px rgba(0,0,0,0.04)">
     <span class="material-symbols-outlined"
-      style="color:#004425;font-variation-settings:'FILL' 1;font-size:17px">humidity_percentage</span>
-    <span style="font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:0.08em">Humidity:</span>
-    <span style="font-family:Manrope,sans-serif;font-weight:800;color:#1b1c1a;font-size:14px">{st.session_state.auto_hum}%</span>
+      style="color:#004425;font-variation-settings:'FILL' 1;font-size:16px">humidity_percentage</span>
+    <span style="font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:0.08em">Humidity:</span>
+    <span style="font-family:Manrope,sans-serif;font-weight:800;color:#1b1c1a;font-size:13px">{st.session_state.auto_hum}%</span>
   </div>
-  <div style="background:#ffffff;display:flex;align-items:center;gap:8px;padding:9px 18px;
-       border-radius:999px;border:1px solid rgba(192,201,192,0.15);box-shadow:0 1px 2px rgba(0,0,0,0.04)">
+  <div style="background:#ffffff;display:flex;align-items:center;gap:7px;padding:8px 16px;
+       border-radius:999px;border:1px solid rgba(192,201,191,0.2);
+       box-shadow:0 1px 2px rgba(0,0,0,0.04)">
     <span class="material-symbols-outlined"
-      style="color:#3b82f6;font-variation-settings:'FILL' 1;font-size:17px">cloudy_snowing</span>
-    <span style="font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:0.08em">Rainfall:</span>
-    <span style="font-family:Manrope,sans-serif;font-weight:800;color:#1b1c1a;font-size:14px">{st.session_state.auto_rain}mm</span>
+      style="color:#3b82f6;font-variation-settings:'FILL' 1;font-size:16px">cloudy_snowing</span>
+    <span style="font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:0.08em">Rainfall:</span>
+    <span style="font-family:Manrope,sans-serif;font-weight:800;color:#1b1c1a;font-size:13px">{st.session_state.auto_rain}mm</span>
   </div>
   {note_html}
 </div>
@@ -1525,7 +1548,7 @@ with st.container():
     with et3:
         rain = st.number_input("Rainfall (mm)", 200.0, 3000.0, float(st.session_state.auto_rain), step=1.0)
 
-st.markdown("<div style='height:2rem'></div>", unsafe_allow_html=True)
+st.markdown("<div style='height:1.75rem'></div>", unsafe_allow_html=True)
 
 # ── FARM HISTORY & FARM DETAILS ───────────────────────────────────
 col_hist, col_det = st.columns(2, gap="large")
@@ -1533,7 +1556,7 @@ col_hist, col_det = st.columns(2, gap="large")
 with col_hist:
     st.markdown('<span id="mrk-hist"></span>', unsafe_allow_html=True)
     st.markdown("""
-<h3 style="font-family:Manrope,sans-serif;font-size:1.25rem;font-weight:800;
+<h3 style="font-family:Manrope,sans-serif;font-size:1.125rem;font-weight:800;
     color:#1b1c1a;display:flex;align-items:center;gap:8px;margin:0 0 1rem">
   &#128202; Farm History
 </h3>
@@ -1541,11 +1564,11 @@ with col_hist:
     yld  = st.number_input("Yield Last Season (t/ha)", 0.0, 15000.0, 2500.0)
     fert = st.number_input("Fertilizer Used (kg/ha)", 0.0, 1000.0, 120.0)
     st.markdown("""
-<div style="background:#eff6ff;padding:0.875rem 1rem;border-radius:0.5rem;
-     display:flex;align-items:start;gap:8px;border:1px solid #bfdbfe;margin-top:0.5rem">
+<div style="background:#eff6ff;padding:0.75rem 0.875rem;border-radius:0.5rem;
+     display:flex;align-items:start;gap:8px;border:1px solid #bfdbfe;margin-top:0.375rem">
   <span class="material-symbols-outlined"
-    style="color:#2563eb;font-size:18px;flex-shrink:0;margin-top:1px">info</span>
-  <p style="font-size:12px;color:rgba(30,58,95,0.75);line-height:1.6;margin:0;font-weight:500">
+    style="color:#2563eb;font-size:17px;flex-shrink:0;margin-top:1px">info</span>
+  <p style="font-size:12px;color:rgba(30,58,95,0.75);line-height:1.55;margin:0;font-weight:500">
     <strong>Unit Guide:</strong> Use tonnes per hectare for yield.
     For fertilizer, sum all NPK components applied last season.
   </p>
@@ -1555,7 +1578,7 @@ with col_hist:
 with col_det:
     st.markdown('<span id="mrk-det"></span>', unsafe_allow_html=True)
     st.markdown("""
-<h3 style="font-family:Manrope,sans-serif;font-size:1.25rem;font-weight:800;
+<h3 style="font-family:Manrope,sans-serif;font-size:1.125rem;font-weight:800;
     color:#1b1c1a;display:flex;align-items:center;gap:8px;margin:0 0 1rem">
   &#127806; Farm Details
 </h3>
@@ -1580,7 +1603,7 @@ with col_det:
     irrig  = IRRIG_INTERN[irrig_disp]
     region = REGION_INTERN[region_disp]
 
-st.markdown("<div style='height:2rem'></div>", unsafe_allow_html=True)
+st.markdown("<div style='height:1.75rem'></div>", unsafe_allow_html=True)
 
 # ── ACTION BUTTONS ────────────────────────────────────────────────
 btn_l, btn_r = st.columns([3, 2], gap="large")
@@ -1593,23 +1616,23 @@ with btn_r:
         "Auto-Suggest Levels from Image", type="secondary", use_container_width=True
     )
 
-st.markdown("<div style='height:4rem'></div>", unsafe_allow_html=True)
+st.markdown("<div style='height:3.5rem'></div>", unsafe_allow_html=True)
 
 # ── RESULTS SECTION ───────────────────────────────────────────────
 st.markdown("""
-<div style="display:flex;align-items:center;gap:1rem;margin-bottom:2rem;overflow:hidden">
-  <h2 style="font-family:Manrope,sans-serif;font-size:1.25rem;font-weight:900;
+<div style="display:flex;align-items:center;gap:1rem;margin-bottom:1.75rem;overflow:hidden">
+  <h2 style="font-family:Manrope,sans-serif;font-size:1.125rem;font-weight:900;
       text-transform:uppercase;letter-spacing:0.15em;color:#004425;
       white-space:nowrap;margin:0">
     Result Analysis and Recommendations
   </h2>
-  <div style="height:1px;background:rgba(192,201,191,0.35);flex:1"></div>
-  <div style="display:flex;gap:4px;flex-shrink:0">
-    <div style="padding:6px;border-radius:8px;cursor:pointer">
-      <span class="material-symbols-outlined" style="color:#004425;font-size:20px">picture_as_pdf</span>
+  <div style="height:1px;background:rgba(192,201,191,0.4);flex:1"></div>
+  <div style="display:flex;gap:3px;flex-shrink:0">
+    <div style="padding:5px;border-radius:7px;cursor:pointer">
+      <span class="material-symbols-outlined" style="color:#004425;font-size:18px">picture_as_pdf</span>
     </div>
-    <div style="padding:6px;border-radius:8px;cursor:pointer">
-      <span class="material-symbols-outlined" style="color:#004425;font-size:20px">save</span>
+    <div style="padding:5px;border-radius:7px;cursor:pointer">
+      <span class="material-symbols-outlined" style="color:#004425;font-size:18px">save</span>
     </div>
   </div>
 </div>
@@ -1617,8 +1640,8 @@ st.markdown("""
 
 if not analyze_clicked and not st.session_state.last_result and not st.session_state.last_error:
     st.markdown("""
-<div style="background:#e9e8e4;border-radius:0.75rem;padding:2.5rem;text-align:center;
-     color:rgba(64,73,66,0.5);font-weight:500;border:1px solid rgba(192,201,191,0.1)">
+<div style="background:#e5e4e0;border-radius:0.75rem;padding:2.5rem;text-align:center;
+     color:rgba(64,73,66,0.5);font-weight:500;border:1px solid rgba(192,201,191,0.2)">
   Upload a soil image and fill in the parameters above, then click Analyze.
 </div>
 """, unsafe_allow_html=True)
@@ -1688,61 +1711,61 @@ if st.session_state.last_result:
     rank2_pct = max(10, int(confidence) - 12)
     rank3_pct = max(10, int(confidence) - 24)
 
-    # ── 3-col grid: hero (2 cols) + side panel (1 col) ──────────
+    # ── 3-col grid ───────────────────────────────────────────────
     res_hero, res_side = st.columns([2, 1], gap="large")
 
     with res_hero:
         st.markdown(f"""
 <div style="background:#ffffff;border-radius:1rem;overflow:hidden;
-     box-shadow:0 2px 8px rgba(0,0,0,0.07);border:1px solid rgba(192,201,191,0.15);
-     display:flex;min-height:300px">
-  <div style="width:40%;background:{soil_col};display:flex;align-items:center;
-       justify-content:center;min-height:260px;position:relative">
-    <div style="font-size:4.5rem;line-height:1;text-align:center">{top_icon}</div>
-    <div style="position:absolute;bottom:12px;left:0;right:0;text-align:center">
-      <span style="background:rgba(0,0,0,0.35);color:white;font-size:10px;font-weight:700;
-          padding:3px 10px;border-radius:999px;letter-spacing:0.06em">{soil_name}</span>
+     box-shadow:0 2px 10px rgba(0,0,0,0.08);border:1px solid rgba(192,201,191,0.2);
+     display:flex;min-height:280px">
+  <div style="width:38%;background:{soil_col};display:flex;align-items:center;
+       justify-content:center;min-height:240px;position:relative;flex-shrink:0">
+    <div style="font-size:4rem;line-height:1;text-align:center">{top_icon}</div>
+    <div style="position:absolute;bottom:10px;left:0;right:0;text-align:center">
+      <span style="background:rgba(0,0,0,0.3);color:white;font-size:9px;font-weight:700;
+          padding:2px 8px;border-radius:999px;letter-spacing:0.06em">{soil_name}</span>
     </div>
   </div>
-  <div style="padding:1.75rem;display:flex;flex-direction:column;
+  <div style="padding:1.5rem;display:flex;flex-direction:column;
        justify-content:space-between;flex:1;min-width:0">
     <div>
       <p style="font-size:10px;font-weight:900;color:#004425;text-transform:uppercase;
           letter-spacing:0.12em;margin:0 0 3px">RANK #1 &#xB7; HIGHLY RECOMMENDED</p>
       <div style="display:flex;justify-content:space-between;align-items:start;
-           margin-bottom:0.75rem;flex-wrap:wrap;gap:6px">
-        <h3 style="font-family:Manrope,sans-serif;font-size:2.25rem;font-weight:900;
+           margin-bottom:0.625rem;flex-wrap:wrap;gap:6px">
+        <h3 style="font-family:Manrope,sans-serif;font-size:2rem;font-weight:900;
             color:#1b1c1a;margin:0;line-height:1">{top["name"]}</h3>
-        <div style="background:rgba(211,227,253,0.45);padding:8px 12px;
+        <div style="background:rgba(211,227,253,0.45);padding:8px 10px;
              border-radius:0.625rem;text-align:center;flex-shrink:0">
-          <p style="font-size:1.5rem;font-weight:900;color:#004425;margin:0;line-height:1">{confidence:.0f}%</p>
-          <p style="font-size:8px;font-weight:900;text-transform:uppercase;
+          <p style="font-size:1.375rem;font-weight:900;color:#004425;margin:0;line-height:1">{confidence:.0f}%</p>
+          <p style="font-size:7px;font-weight:900;text-transform:uppercase;
               letter-spacing:0.05em;color:#004425;margin:1px 0 0">Match Confidence</p>
         </div>
       </div>
-      <p style="color:#404942;font-size:13px;font-weight:400;line-height:1.6;margin-bottom:1rem">
+      <p style="color:#5a6360;font-size:12px;font-weight:400;line-height:1.6;margin-bottom:0.875rem">
         Based on your soil properties, <strong>{top["name"]}</strong> is ideal
         for the upcoming <strong>{season_disp}</strong> season.
       </p>
     </div>
-    <div style="background:#efeeea;padding:1rem 1.125rem;border-radius:0.625rem;
-         border:1px solid rgba(192,201,191,0.25)">
-      <p style="font-family:Manrope,sans-serif;font-weight:800;font-size:10px;
-          color:#1b1c1a;margin:0 0 0.625rem;display:flex;align-items:center;gap:5px;
-          text-transform:uppercase;letter-spacing:0.06em">
+    <div style="background:#efeeea;padding:1rem;border-radius:0.625rem;
+         border:1px solid rgba(192,201,191,0.3)">
+      <p style="font-family:Manrope,sans-serif;font-weight:800;font-size:9px;
+          color:#1b1c1a;margin:0 0 0.5rem;display:flex;align-items:center;gap:5px;
+          text-transform:uppercase;letter-spacing:0.07em">
         <span class="material-symbols-outlined"
-          style="color:#004425;font-size:15px;font-variation-settings:'FILL' 1">science</span>
+          style="color:#004425;font-size:14px;font-variation-settings:'FILL' 1">science</span>
         Scientific Fertilizer Recommendation
       </p>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.625rem">
         <div>
-          <p style="font-size:9px;font-weight:900;text-transform:uppercase;
-              color:rgba(64,73,66,0.45);margin:0 0 3px">Recommended Type</p>
+          <p style="font-size:8px;font-weight:900;text-transform:uppercase;
+              color:rgba(64,73,66,0.45);margin:0 0 2px">Recommended Type</p>
           <p style="font-size:13px;font-weight:900;color:#1b1c1a;margin:0">{top["fertilizer"]}</p>
         </div>
         <div>
-          <p style="font-size:9px;font-weight:900;text-transform:uppercase;
-              color:rgba(64,73,66,0.45);margin:0 0 3px">Ratio (N:P:K)</p>
+          <p style="font-size:8px;font-weight:900;text-transform:uppercase;
+              color:rgba(64,73,66,0.45);margin:0 0 2px">Ratio (N:P:K)</p>
           <p style="font-size:13px;font-weight:900;color:#1b1c1a;margin:0">{top["npk"]}</p>
         </div>
       </div>
@@ -1752,80 +1775,79 @@ if st.session_state.last_result:
 """, unsafe_allow_html=True)
 
     with res_side:
-        # Rank #2
         if len(crop_recs) > 1:
             c2    = crop_recs[1]
             icon2 = CROP_ICONS.get(c2["name"], "\U0001f331")
             st.markdown(f"""
 <div style="background:#f0f9ff;border-radius:1rem;padding:1.125rem;
-     border:1px solid #bae6fd;display:flex;gap:0.875rem;margin-bottom:1rem">
-  <div style="width:72px;height:72px;border-radius:0.625rem;background:#e0f2fe;
+     border:1px solid #bae6fd;display:flex;gap:0.875rem;margin-bottom:0.875rem">
+  <div style="width:68px;height:68px;border-radius:0.625rem;background:#e0f2fe;
        flex-shrink:0;display:flex;align-items:center;justify-content:center">
-    <span style="font-size:2.25rem">{icon2}</span>
+    <span style="font-size:2rem">{icon2}</span>
   </div>
   <div style="display:flex;flex-direction:column;justify-content:center;min-width:0">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">
-      <span style="font-size:10px;font-weight:900;color:#0c4a6e;
+      <span style="font-size:9px;font-weight:900;color:#0c4a6e;
           text-transform:uppercase;letter-spacing:0.08em">RANK #2</span>
       <span style="font-size:9px;font-weight:900;color:#0284c7;
-          background:rgba(186,230,253,0.6);padding:2px 5px;border-radius:4px">{rank2_pct}%</span>
+          background:rgba(186,230,253,0.6);padding:1px 5px;border-radius:4px">{rank2_pct}%</span>
     </div>
-    <h4 style="font-family:Manrope,sans-serif;font-size:1.0625rem;font-weight:800;
-        color:rgba(12,74,110,0.85);margin:0 0 2px;white-space:nowrap;overflow:hidden;
-        text-overflow:ellipsis">{c2["name"]}</h4>
-    <p style="font-size:10px;font-weight:600;color:#404942;margin:0">{c2["fertilizer"]}</p>
+    <h4 style="font-family:Manrope,sans-serif;font-size:1rem;font-weight:800;
+        color:rgba(12,74,110,0.85);margin:0 0 2px;white-space:nowrap;
+        overflow:hidden;text-overflow:ellipsis">{c2["name"]}</h4>
+    <p style="font-size:10px;font-weight:600;color:#5a6360;margin:0">
+      {c2["fertilizer"]} &#xB7; {c2["npk"]}</p>
   </div>
 </div>
 """, unsafe_allow_html=True)
 
-        # Rank #3
         if len(crop_recs) > 2:
             c3    = crop_recs[2]
             icon3 = CROP_ICONS.get(c3["name"], "\U0001f331")
             st.markdown(f"""
 <div style="background:#f0fdf4;border-radius:1rem;padding:1.125rem;
-     border:1px solid #bbf7d0;display:flex;gap:0.875rem;margin-bottom:1rem">
-  <div style="width:72px;height:72px;border-radius:0.625rem;background:#dcfce7;
+     border:1px solid #bbf7d0;display:flex;gap:0.875rem;margin-bottom:0.875rem">
+  <div style="width:68px;height:68px;border-radius:0.625rem;background:#dcfce7;
        flex-shrink:0;display:flex;align-items:center;justify-content:center">
-    <span style="font-size:2.25rem">{icon3}</span>
+    <span style="font-size:2rem">{icon3}</span>
   </div>
   <div style="display:flex;flex-direction:column;justify-content:center;min-width:0">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">
-      <span style="font-size:10px;font-weight:900;color:#14532d;
+      <span style="font-size:9px;font-weight:900;color:#14532d;
           text-transform:uppercase;letter-spacing:0.08em">RANK #3</span>
       <span style="font-size:9px;font-weight:900;color:#16a34a;
-          background:rgba(187,247,208,0.6);padding:2px 5px;border-radius:4px">{rank3_pct}%</span>
+          background:rgba(187,247,208,0.6);padding:1px 5px;border-radius:4px">{rank3_pct}%</span>
     </div>
-    <h4 style="font-family:Manrope,sans-serif;font-size:1.0625rem;font-weight:800;
-        color:rgba(20,83,45,0.85);margin:0 0 2px;white-space:nowrap;overflow:hidden;
-        text-overflow:ellipsis">{c3["name"]}</h4>
-    <p style="font-size:10px;font-weight:600;color:#404942;margin:0">{c3["fertilizer"]}</p>
+    <h4 style="font-family:Manrope,sans-serif;font-size:1rem;font-weight:800;
+        color:rgba(20,83,45,0.85);margin:0 0 2px;white-space:nowrap;
+        overflow:hidden;text-overflow:ellipsis">{c3["name"]}</h4>
+    <p style="font-size:10px;font-weight:600;color:#5a6360;margin:0">
+      {c3["fertilizer"]} &#xB7; {c3["npk"]}</p>
   </div>
 </div>
 """, unsafe_allow_html=True)
 
-        # NPK Forecast dark card
         st.markdown("""
-<div style="background:#004425;color:white;padding:1.125rem 1.25rem;border-radius:1rem;
+<div style="background:#004425;color:white;padding:1rem 1.125rem;border-radius:1rem;
      display:flex;align-items:center;justify-content:space-between;
-     box-shadow:0 4px 12px rgba(0,68,37,0.25)">
-  <div style="min-width:0;flex:1;margin-right:0.75rem">
+     box-shadow:0 4px 12px rgba(0,68,37,0.28)">
+  <div style="min-width:0;flex:1;margin-right:0.625rem">
     <p style="font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:0.1em;
-        color:rgba(255,255,255,0.55);margin:0 0 4px">NPK Forecast</p>
+        color:rgba(255,255,255,0.5);margin:0 0 3px">NPK Forecast</p>
     <p style="font-size:13px;font-weight:700;line-height:1.4;margin:0">
       Soil balance trending towards
       <span style="color:#acf3ba;text-decoration:underline">Hyper-Fertile</span> next season.
     </p>
   </div>
   <span class="material-symbols-outlined"
-    style="font-size:2.25rem;color:#acf3ba;flex-shrink:0">monitoring</span>
+    style="font-size:2rem;color:#acf3ba;flex-shrink:0">monitoring</span>
 </div>
 """, unsafe_allow_html=True)
 
     # ── Soil probability chart ───────────────────────────────────
-    st.markdown("<div style='height:1.5rem'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='height:1.25rem'></div>", unsafe_allow_html=True)
     st.markdown(
-        "<h4 style='font-family:Manrope,sans-serif;font-weight:800;font-size:1rem;"
+        "<h4 style='font-family:Manrope,sans-serif;font-weight:800;font-size:0.95rem;"
         "margin-bottom:0.25rem'>Soil Probability Breakdown</h4>",
         unsafe_allow_html=True,
     )
@@ -1836,7 +1858,7 @@ if st.session_state.last_result:
         marker=dict(color="#004425", line=dict(width=0)),
     ))
     fig.update_layout(
-        height=240,
+        height=230,
         margin=dict(l=10, r=10, t=10, b=10),
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
