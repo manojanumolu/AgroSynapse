@@ -1164,16 +1164,17 @@ def _load_font(size=18, bold=False):
 
 
 def build_result_exports(result_data, season_name, img_bytes=None):
+    # Uses only basic PIL rectangle/text — no rounded_rectangle, no alpha tuples
     W, H = 1400, 960
     canvas = Image.new("RGB", (W, H), (245, 244, 240))
-    draw = ImageDraw.Draw(canvas)
+    draw   = ImageDraw.Draw(canvas)
 
-    title_f = _load_font(40, bold=True)
-    h_f     = _load_font(32, bold=True)
-    b_f     = _load_font(22, bold=True)
-    t_f     = _load_font(20, bold=False)
-    s_f     = _load_font(16, bold=False)
-    lbl_f   = _load_font(14, bold=True)
+    title_f = _load_font(38, bold=True)
+    h_f     = _load_font(30, bold=True)
+    b_f     = _load_font(21, bold=True)
+    t_f     = _load_font(19, bold=False)
+    s_f     = _load_font(15, bold=False)
+    lbl_f   = _load_font(13, bold=True)
 
     soil_name  = result_data.get("soil_name", "Unknown")
     confidence = float(result_data.get("confidence", 0))
@@ -1182,87 +1183,81 @@ def build_result_exports(result_data, season_name, img_bytes=None):
     all_probs  = result_data.get("all_probs", {})
     top        = recs[0] if recs else {"name": "N/A", "fertilizer": "N/A", "npk": "N/A"}
 
-    # Header bar
-    draw.rectangle((0, 0, W, 80), fill=(0, 68, 37))
-    draw.text((40, 20), "Soil & Crop Recommendation Report", fill=(255, 255, 255), font=title_f)
-    ts = datetime.now().strftime("%Y-%m-%d  %H:%M")
-    draw.text((W - 260, 30), ts, fill=(172, 243, 186), font=s_f)
+    # ── Header ──
+    draw.rectangle([0, 0, W, 78], fill=(0, 68, 37))
+    draw.text((40, 18), "Soil & Crop Recommendation Report", fill=(255, 255, 255), font=title_f)
+    draw.text((W - 255, 30), datetime.now().strftime("%Y-%m-%d  %H:%M"), fill=(172, 243, 186), font=s_f)
 
-    # Main white card
-    draw.rounded_rectangle((30, 95, W - 30, H - 30), radius=20,
-                            fill=(255, 255, 255), outline=(216, 220, 214), width=1)
+    # ── White body ──
+    draw.rectangle([30, 92, W - 30, H - 28], fill=(255, 255, 255))
 
-    # Soil image panel
-    panel_x1, panel_y1, panel_x2, panel_y2 = 55, 115, 430, 540
-    draw.rounded_rectangle((panel_x1, panel_y1, panel_x2, panel_y2),
-                            radius=12, fill=(220, 224, 220))
+    # ── Soil image panel ──
+    px1, py1, px2, py2 = 55, 112, 430, 530
+    draw.rectangle([px1, py1, px2, py2], fill=(210, 215, 210))
     if img_bytes:
         try:
             src = Image.open(io.BytesIO(img_bytes)).convert("RGB")
-            src = src.resize((panel_x2 - panel_x1, panel_y2 - panel_y1), Image.LANCZOS)
-            canvas.paste(src, (panel_x1, panel_y1))
+            src = src.resize((px2 - px1, py2 - py1))
+            canvas.paste(src, (px1, py1))
         except Exception:
             pass
-    # Soil label overlay (RGB only — no alpha)
-    draw.rectangle((panel_x1, panel_y2 - 32, panel_x2, panel_y2), fill=(30, 30, 30))
-    draw.text((panel_x1 + 10, panel_y2 - 26), soil_name, fill=(255, 255, 255), font=lbl_f)
+    draw.rectangle([px1, py2 - 28, px2, py2], fill=(30, 30, 30))
+    draw.text((px1 + 8, py2 - 24), soil_name, fill=(255, 255, 255), font=lbl_f)
 
-    # Right info block
-    rx = 460
-    draw.text((rx, 120), f"Top Recommended Crop", fill=(64, 73, 66), font=lbl_f)
-    draw.text((rx, 148), top["name"], fill=(0, 68, 37), font=h_f)
-    draw.text((rx, 200), f"AI Confidence:  {confidence:.1f}%", fill=(30, 92, 58), font=b_f)
-    draw.text((rx, 242), f"Detected Soil:  {soil_name}", fill=(22, 28, 26), font=b_f)
-    draw.text((rx, 282), f"Season:         {season_name}", fill=(64, 73, 66), font=t_f)
+    # ── Right info ──
+    rx = 455
+    draw.text((rx, 118), "Top Recommended Crop", fill=(64, 73, 66), font=lbl_f)
+    draw.text((rx, 144), top["name"],                fill=(0, 68, 37),   font=h_f)
+    draw.text((rx, 194), f"AI Confidence:  {confidence:.1f}%", fill=(30, 92, 58), font=b_f)
+    draw.text((rx, 234), f"Detected Soil:  {soil_name}",       fill=(22, 28, 26), font=b_f)
+    draw.text((rx, 272), f"Season:         {season_name}",     fill=(64, 73, 66), font=t_f)
 
-    # Fertilizer box
-    draw.rounded_rectangle((rx, 320, W - 55, 460),
-                            radius=10, fill=(239, 238, 234), outline=(210, 215, 210), width=1)
-    draw.text((rx + 20, 336), "FERTILIZER RECOMMENDATION", fill=(0, 68, 37), font=lbl_f)
-    draw.text((rx + 20, 364), f"Type:   {top['fertilizer']}", fill=(22, 28, 26), font=b_f)
-    draw.text((rx + 20, 402), f"N:P:K:  {top['npk']}", fill=(64, 73, 66), font=t_f)
-    sf_text = f"Soil fertilizer: {soil_fert.get('fertilizer','N/A')}   ({soil_fert.get('npk','N/A')})"
-    draw.text((rx + 20, 434), sf_text, fill=(100, 110, 102), font=s_f)
+    # ── Fertilizer box ──
+    draw.rectangle([rx, 310, W - 52, 452], fill=(239, 238, 234))
+    draw.text((rx + 18, 326), "FERTILIZER RECOMMENDATION",     fill=(0, 68, 37),   font=lbl_f)
+    draw.text((rx + 18, 354), f"Type:   {top['fertilizer']}", fill=(22, 28, 26),  font=b_f)
+    draw.text((rx + 18, 392), f"N:P:K:  {top['npk']}",        fill=(64, 73, 66),  font=t_f)
+    sf_line = f"Soil rec: {soil_fert.get('fertilizer','N/A')}  ({soil_fert.get('npk','N/A')})"
+    draw.text((rx + 18, 424), sf_line,                         fill=(100, 110, 102), font=s_f)
 
-    # All crops list
-    cy = 560
-    draw.text((55, cy - 28), "All Crop Recommendations:", fill=(22, 28, 26), font=b_f)
+    # ── Crop list ──
+    cy = 550
+    draw.text((55, cy - 26), "All Crop Recommendations:", fill=(22, 28, 26), font=b_f)
     for i, cr in enumerate(recs):
-        x = 55 + i * 300
-        draw.rounded_rectangle((x, cy, x + 278, cy + 80),
-                                radius=8, fill=(245, 248, 245), outline=(210, 216, 210), width=1)
-        draw.text((x + 12, cy + 10), f"Rank #{cr['rank']}", fill=(0, 68, 37), font=lbl_f)
-        draw.text((x + 12, cy + 32), cr["name"], fill=(22, 28, 26), font=b_f)
-        draw.text((x + 12, cy + 60), cr["fertilizer"], fill=(64, 73, 66), font=s_f)
+        x = 55 + i * 295
+        draw.rectangle([x, cy, x + 275, cy + 78], fill=(245, 248, 245))
+        draw.text((x + 10, cy + 8),  f"Rank #{cr['rank']}", fill=(0, 68, 37),  font=lbl_f)
+        draw.text((x + 10, cy + 30), cr["name"],            fill=(22, 28, 26), font=b_f)
+        draw.text((x + 10, cy + 58), cr["fertilizer"],      fill=(64, 73, 66), font=s_f)
 
-    # Probability bars
-    by = 680
-    draw.text((55, by - 28), "Soil Probability Breakdown:", fill=(22, 28, 26), font=b_f)
-    bar_w = W - 110
-    sorted_probs = sorted(all_probs.items(), key=lambda x: x[1], reverse=True)
-    for j, (sname, pct) in enumerate(sorted_probs):
-        yy = by + j * 38
-        draw.text((55, yy + 4), f"{sname:<20}", fill=(64, 73, 66), font=s_f)
-        fill_w = int((pct / 100) * (bar_w - 220))
-        draw.rounded_rectangle((270, yy, 270 + bar_w - 220, yy + 20),
-                                radius=4, fill=(220, 224, 220))
-        if fill_w > 0:
-            draw.rounded_rectangle((270, yy, 270 + fill_w, yy + 20),
-                                    radius=4, fill=(0, 68, 37))
-        draw.text((270 + bar_w - 215, yy + 2), f"{pct:.1f}%", fill=(22, 28, 26), font=s_f)
+    # ── Probability bars ──
+    by = 668
+    draw.text((55, by - 26), "Soil Probability Breakdown:", fill=(22, 28, 26), font=b_f)
+    bar_max = W - 340
+    for j, (sname, pct) in enumerate(sorted(all_probs.items(), key=lambda x: x[1], reverse=True)):
+        yy = by + j * 36
+        draw.text((55, yy + 3), sname, fill=(64, 73, 66), font=s_f)
+        draw.rectangle([265, yy, 265 + bar_max, yy + 18], fill=(218, 222, 218))
+        fw = int((pct / 100) * bar_max)
+        if fw > 0:
+            draw.rectangle([265, yy, 265 + fw, yy + 18], fill=(0, 68, 37))
+        draw.text((265 + bar_max + 8, yy + 2), f"{pct:.1f}%", fill=(22, 28, 26), font=s_f)
 
-    # Footer
-    draw.rectangle((0, H - 28, W, H), fill=(0, 68, 37))
-    draw.text((40, H - 22), "Multimodal Soil & Crop Recommendation System  |  Accuracy: 98.67%",
+    # ── Footer ──
+    draw.rectangle([0, H - 28, W, H], fill=(0, 68, 37))
+    draw.text((40, H - 22), "Multimodal Soil & Crop Advisory  |  Accuracy: 98.67%",
               fill=(172, 243, 186), font=s_f)
 
+    # PNG
     png_buf = io.BytesIO()
     canvas.save(png_buf, format="PNG")
     png_bytes = png_buf.getvalue()
 
+    # PDF — PIL saves PNG canvas as single-page PDF (no extra kwargs needed)
     pdf_buf = io.BytesIO()
-    canvas.save(pdf_buf, format="PDF", resolution=150)
+    canvas.save(pdf_buf, format="PDF")
     pdf_bytes = pdf_buf.getvalue()
+
     return png_bytes, pdf_bytes
 
 CUSTOM_CSS = """
@@ -1909,41 +1904,38 @@ if st.session_state.last_result:
         report_png_bytes, report_pdf_bytes = None, None
         st.session_state["_export_err"] = traceback.format_exc()
 
-hdr_t, hdr_p, hdr_s = st.columns([12, 1, 1], gap="small")
-with hdr_t:
-        st.markdown("""
-<div style="display:flex;align-items:center;gap:1rem;overflow:hidden;margin-top:2px">
+st.markdown("""
+<div style="display:flex;align-items:center;gap:1rem;margin-top:2px;margin-bottom:0.75rem">
     <h2 style="font-family:Manrope,sans-serif;font-size:1.125rem;font-weight:900;
             text-transform:uppercase;letter-spacing:0.15em;color:#004425;
             white-space:nowrap;margin:0">Result Analysis and Recommendations</h2>
     <div style="height:1px;background:rgba(192,201,191,0.4);flex:1"></div>
 </div>
 """, unsafe_allow_html=True)
-with hdr_p:
-    st.download_button(
-        "📄 PDF",
-        data=report_pdf_bytes if report_pdf_bytes else b"no_result",
-        file_name=f"crop_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf",
-        mime="application/pdf",
-        key="download_report_pdf",
-        help="Download PDF report",
-        use_container_width=True,
-        disabled=report_pdf_bytes is None,
-    )
-with hdr_s:
-    st.download_button(
-        "🖼 PNG",
-        data=report_png_bytes if report_png_bytes else b"no_result",
-        file_name=f"crop_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png",
-        mime="image/png",
-        key="download_report_png",
-        help="Save report image",
-        use_container_width=True,
-        disabled=report_png_bytes is None,
-    )
+
+if report_pdf_bytes or report_png_bytes:
+    dl_c1, dl_c2, dl_c3 = st.columns([4, 2, 2], gap="small")
+    with dl_c2:
+        st.download_button(
+            "📄 Download PDF",
+            data=report_pdf_bytes,
+            file_name=f"crop_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf",
+            mime="application/pdf",
+            key="download_report_pdf",
+            use_container_width=True,
+        )
+    with dl_c3:
+        st.download_button(
+            "🖼 Save PNG",
+            data=report_png_bytes,
+            file_name=f"crop_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png",
+            mime="image/png",
+            key="download_report_png",
+            use_container_width=True,
+        )
 
 if st.session_state.get("_export_err"):
-    st.error(f"Export error: {st.session_state['_export_err']}")
+    st.error(f"Export error (please report): {st.session_state['_export_err']}")
 
 if not analyze_clicked and not st.session_state.last_result and not st.session_state.last_error:
     st.markdown("""
