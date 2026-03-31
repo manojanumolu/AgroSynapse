@@ -1204,9 +1204,13 @@ div[data-testid="stVerticalBlock"]:has(#theme-toggle-marker) div[data-testid="st
     border: 1px solid var(--outline) !important;
     background: var(--surface-container-highest) !important;
     color: var(--primary) !important;
+    font-family: 'Material Symbols Outlined' !important;
+    font-variation-settings: 'FILL' 1, 'wght' 600, 'GRAD' 0, 'opsz' 24;
     font-size: 18px !important;
-    font-weight: 700 !important;
+    font-weight: 600 !important;
     line-height: 1 !important;
+    letter-spacing: 0 !important;
+    text-transform: none !important;
     padding: 0 !important;
     white-space: nowrap !important;
 }
@@ -1333,7 +1337,7 @@ with top_l:
 
 with top_t:
     st.markdown('<div style="height:8px"></div><span id="theme-toggle-marker"></span>', unsafe_allow_html=True)
-    _theme_icon = ":sun_with_face:" if st.session_state.theme == "dark" else ":crescent_moon:"
+    _theme_icon = "light_mode" if st.session_state.theme == "dark" else "dark_mode"
     if st.button(_theme_icon, key="theme_toggle", help="Toggle theme"):
         st.session_state.theme = "dark" if st.session_state.theme == "light" else "light"
         st.rerun()
@@ -1367,6 +1371,10 @@ with hero_l:
   Synthesize complex soil data, real-time climate metrics, and historical
   yield patterns to generate laboratory-grade crop recommendations.
 </p>
+""", unsafe_allow_html=True)
+    st.markdown("""
+<div style="height:2px;width:76px;background:rgba(47,113,68,0.55);
+    border-radius:999px;margin-top:0.25rem"></div>
 """, unsafe_allow_html=True)
 
 with hero_r:
@@ -1406,10 +1414,10 @@ col_img, col_chem = st.columns(2, gap="large")
 with col_img:
     st.markdown('<span id="mrk-soil-img"></span>', unsafe_allow_html=True)
     st.markdown("""
-<h3 style="font-family:Manrope,sans-serif;font-size:1.125rem;font-weight:800;
+<h3 style="font-family:Manrope,sans-serif;font-size:2rem;font-weight:900;
     color:#1b1c1a;display:flex;align-items:center;gap:8px;margin:0 0 1rem">
   <span class="material-symbols-outlined"
-    style="color:#004425;font-size:1.375rem">image</span>
+        style="color:#004425;font-size:1.6rem;font-variation-settings:'FILL' 1, 'wght' 600">image</span>
   Soil Specimen Analysis
 </h3>
 """, unsafe_allow_html=True)
@@ -1442,7 +1450,7 @@ def _npk_bar(val, lo, hi, vmax):
     else:
         rl, gw, rr = lo_pct, hi_pct - lo_pct, 100 - hi_pct
     return (
-        f"<div style='height:4px;background:#d8d7d3;border-radius:999px;"
+        f"<div style='height:5px;background:#d8d7d3;border-radius:999px;"
         f"overflow:hidden;display:flex;margin-top:5px'>"
         f"<div style='width:{rl:.0f}%;background:#ef4444'></div>"
         f"<div style='width:{gw:.0f}%;background:#22c55e'></div>"
@@ -1454,10 +1462,10 @@ def _npk_bar(val, lo, hi, vmax):
 with col_chem:
     st.markdown('<span id="mrk-chem"></span>', unsafe_allow_html=True)
     st.markdown("""
-<h3 style="font-family:Manrope,sans-serif;font-size:1.125rem;font-weight:800;
+<h3 style="font-family:Manrope,sans-serif;font-size:2rem;font-weight:900;
     color:#1b1c1a;display:flex;align-items:center;gap:8px;margin:0 0 1rem">
   <span class="material-symbols-outlined"
-    style="color:#004425;font-size:1.375rem">biotech</span>
+        style="color:#004425;font-size:1.6rem;font-variation-settings:'FILL' 1, 'wght' 600">biotech</span>
   Chemical Profile
 </h3>
 """, unsafe_allow_html=True)
