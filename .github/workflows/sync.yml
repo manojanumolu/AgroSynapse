@@ -15,4 +15,4 @@ jobs:
       - name: Push to hub
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        run: git push --force https://user:$HF_TOKEN@huggingface.co/spaces/Manoj-27/agrifusion-ai-api main
+        run: git push --force https://Manoj-27:${HF_TOKEN}@huggingface.co/spaces/Manoj-27/agrifusion-ai-api main
