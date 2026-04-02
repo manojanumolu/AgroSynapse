@@ -1749,53 +1749,13 @@ with hero_r:
     <div style="font-size:13px">
     <div style="display:flex;justify-content:space-between;
                  border-bottom:1px solid {guide_divider};padding-bottom:4px;margin-bottom:4px">
-            <span style="font-weight:900;color:{guide_title_color}">N (General):</span>
-        <span style="font-weight:900;color:{guide_value_color}">60-140 mg/kg</span>
-    </div>
-    <div style="display:flex;justify-content:space-between;
-                 border-bottom:1px solid {guide_divider};padding-bottom:4px;margin-bottom:4px">
-            <span style="font-weight:900;color:{guide_title_color}">P (General):</span>
-        <span style="font-weight:900;color:{guide_value_color}">25-80 mg/kg</span>
-    </div>
-    <div style="display:flex;justify-content:space-between;
-                 border-bottom:1px solid {guide_divider};padding-bottom:4px;margin-bottom:4px">
-            <span style="font-weight:900;color:{guide_title_color}">K (General):</span>
-        <span style="font-weight:900;color:{guide_value_color}">35-120 mg/kg</span>
-    </div>
-    <div style="display:flex;justify-content:space-between;
-                 border-bottom:1px solid {guide_divider};padding-bottom:4px;margin-bottom:4px">
-            <span style="font-weight:900;color:{guide_title_color}">Soil pH:</span>
-        <span style="font-weight:900;color:{guide_value_color}">6.0-7.5</span>
-    </div>
-    <div style="display:flex;justify-content:space-between;
-                 border-bottom:1px solid {guide_divider};padding-bottom:4px;margin-bottom:4px">
-            <span style="font-weight:900;color:{guide_title_color}">Temperature:</span>
-        <span style="font-weight:900;color:{guide_value_color}">18-35 C</span>
-    </div>
-    <div style="display:flex;justify-content:space-between;
-                 border-bottom:1px solid {guide_divider};padding-bottom:4px;margin-bottom:4px">
-            <span style="font-weight:900;color:{guide_title_color}">Humidity:</span>
-        <span style="font-weight:900;color:{guide_value_color}">40-85 %</span>
-    </div>
-    <div style="display:flex;justify-content:space-between;
-                 border-bottom:1px solid {guide_divider};padding-bottom:4px;margin-bottom:4px">
-            <span style="font-weight:900;color:{guide_title_color}">Rainfall:</span>
-        <span style="font-weight:900;color:{guide_value_color}">400-2000 mm</span>
-    </div>
-    <div style="display:flex;justify-content:space-between;
-                 border-bottom:1px solid {guide_divider};padding-bottom:4px;margin-bottom:4px">
-            <span style="font-weight:900;color:{guide_title_color}">Fertilizer Used:</span>
-        <span style="font-weight:900;color:{guide_value_color}">80-300 kg/ha</span>
-    </div>
-    <div style="display:flex;justify-content:space-between;
-                 border-bottom:1px solid {guide_divider};padding-bottom:4px;margin-bottom:4px">
             <span style="font-weight:900;color:{guide_title_color}">Yield:</span>
-        <span style="font-weight:900;color:{guide_value_color}">2-8 t/ha</span>
+        <span style="font-weight:900;color:{guide_value_color}">t/ha</span>
     </div>
     <div style="display:flex;justify-content:space-between;
                  border-bottom:1px solid {guide_divider};padding-bottom:4px;margin-bottom:4px">
             <span style="font-weight:900;color:{guide_title_color}">NPK:</span>
-        <span style="font-weight:900;color:{guide_value_color}">Soil test mg/kg</span>
+        <span style="font-weight:900;color:{guide_value_color}">kg/ha</span>
     </div>
     <div style="display:flex;justify-content:space-between">
             <span style="font-weight:900;color:{guide_title_color}">Area:</span>
@@ -1870,16 +1830,16 @@ with col_chem:
 """, unsafe_allow_html=True)
     cr1, cr2 = st.columns(2)
     with cr1:
-        n = st.number_input("Nitrogen (N) (mg/kg)", 0.0, 200.0, 90.0, help="Nitrogen level in mg/kg")
+        n = st.number_input("Nitrogen (N) (mg/kg)", 0.0, 200.0, 90.0, help="General suitable range: 60-140 mg/kg")
         st.markdown(_npk_bar(n, 80, 160, 200), unsafe_allow_html=True)
         st.markdown("<div style='height:0.75rem'></div>", unsafe_allow_html=True)
-        k = st.number_input("Potassium (K) (mg/kg)", 0.0, 200.0, 43.0, help="Potassium level in mg/kg")
+        k = st.number_input("Potassium (K) (mg/kg)", 0.0, 200.0, 43.0, help="General suitable range: 35-120 mg/kg")
         st.markdown(_npk_bar(k, 40, 160, 200), unsafe_allow_html=True)
     with cr2:
-        p = st.number_input("Phosphorus (P) (mg/kg)", 0.0, 200.0, 42.0, help="Phosphorus level in mg/kg")
+        p = st.number_input("Phosphorus (P) (mg/kg)", 0.0, 200.0, 42.0, help="General suitable range: 25-80 mg/kg")
         st.markdown(_npk_bar(p, 30, 100, 200), unsafe_allow_html=True)
         st.markdown("<div style='height:0.75rem'></div>", unsafe_allow_html=True)
-        ph = st.number_input("Soil pH (ph)", 3.0, 10.0, 6.5, step=0.1, help="Soil pH value")
+        ph = st.number_input("Soil pH (ph)", 3.0, 10.0, 6.5, step=0.1, help="General suitable range: pH 6.0-7.5")
         st.markdown(_npk_bar(ph, 6.0, 7.5, 10.0), unsafe_allow_html=True)
 
 st.markdown("<div style='height:1.75rem'></div>", unsafe_allow_html=True)
@@ -1975,13 +1935,17 @@ with env_col:
 </div>
 """, unsafe_allow_html=True)
 
+    safe_temp = min(max(float(st.session_state.auto_temp), 10.0), 45.0)
+    safe_hum = min(max(float(st.session_state.auto_hum), 14.0), 100.0)
+    safe_rain = min(max(float(st.session_state.auto_rain), 200.0), 8000.0)
+
     et1, et2, et3 = st.columns(3)
     with et1:
-        temp = st.number_input("Temperature (\u00b0C)", 10.0, 45.0, float(st.session_state.auto_temp), step=0.1, help="Average local temperature")
+        temp = st.number_input("Temperature (\u00b0C)", 10.0, 45.0, safe_temp, step=0.1, help="General suitable range: 18-35 C")
     with et2:
-        hum  = st.number_input("Humidity (%)", 14.0, 100.0, float(st.session_state.auto_hum), step=0.1, help="Average relative humidity")
+        hum  = st.number_input("Humidity (%)", 14.0, 100.0, safe_hum, step=0.1, help="General suitable range: 40-85%")
     with et3:
-        rain = st.number_input("Rainfall (mm)", 200.0, 3000.0, float(st.session_state.auto_rain), step=1.0, help="Annualized rainfall in mm")
+        rain = st.number_input("Rainfall (mm)", 200.0, 8000.0, safe_rain, step=1.0, help="General suitable range: 400-2000 mm (high-rainfall zones may be higher)")
 
 st.markdown("<div style='height:1.75rem'></div>", unsafe_allow_html=True)
 
@@ -1996,8 +1960,8 @@ with col_hist:
   &#128202; Farm History
 </h3>
 """, unsafe_allow_html=True)
-    yld  = st.number_input("Yield Last Season (t/ha)", 0.0, 15000.0, 2500.0, help="Last season crop yield")
-    fert = st.number_input("Fertilizer Used (kg/ha)", 0.0, 1000.0, 120.0, help="Total fertilizer used last season")
+    yld  = st.number_input("Yield Last Season (t/ha)", 0.0, 15000.0, 2500.0, help="General suitable range: 2-8 t/ha")
+    fert = st.number_input("Fertilizer Used (kg/ha)", 0.0, 1000.0, 120.0, help="General suitable range: 80-300 kg/ha")
     st.markdown("""
 <div style="background:#eff6ff;padding:0.75rem 0.875rem;border-radius:0.5rem;
      display:flex;align-items:start;gap:8px;border:1px solid #bfdbfe;margin-top:0.375rem">
