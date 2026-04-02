@@ -5,25 +5,28 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SoilSense — Multimodal Crop & Soil Recommendation</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     /* ── Variables ─────────────────────────────────── */
     :root {
-      --green-900: #1b4332;
-      --green-800: #2d6a4f;
-      --green-700: #40916c;
-      --green-600: #52b788;
-      --green-300: #95d5b2;
-      --green-100: #d8f3dc;
-      --green-50:  #f0faf3;
+      --green-900: #1a3a2a;
+      --green-800: #1e5c3a;
+      --green-700: #2f7144;
+      --green-600: #4a8c5c;
+      --green-300: #acf3ba;
+      --green-100: #e6f7ed;
+      --green-50:  #f3faf6;
       --earth:     #7c5c3a;
       --earth-light: #c9a97a;
-      --sand:      #faf6ef;
+      --sand:      #f5f4f0;
       --white:     #ffffff;
-      --gray-100:  #f4f4f5;
-      --gray-200:  #e4e4e7;
-      --gray-400:  #a1a1aa;
-      --gray-600:  #52525b;
-      --gray-800:  #27272a;
+      --gray-100:  #f9f9f7;
+      --gray-200:  #e0e3df;
+      --gray-400:  #8a938c;
+      --gray-600:  #707971;
+      --gray-800:  #404942;
       --shadow-sm: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.06);
       --shadow-md: 0 4px 6px rgba(0,0,0,.07), 0 2px 4px rgba(0,0,0,.06);
       --shadow-lg: 0 10px 15px rgba(0,0,0,.08), 0 4px 6px rgba(0,0,0,.05);
@@ -34,40 +37,98 @@
     /* ── Reset ─────────────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-family: "Work Sans", sans-serif;
       background: var(--sand);
       color: var(--gray-800);
       min-height: 100vh;
       line-height: 1.5;
+      display: flex;
     }
+
+    /* ── Sidebar ───────────────────────────────────── */
+    .sidebar {
+      width: 240px;
+      background: var(--green-900);
+      color: white;
+      padding: 1.5rem 1rem;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      flex-shrink: 0;
+    }
+    .sidebar-title {
+      font-family: "Manrope", sans-serif;
+      font-weight: 800;
+      font-size: 1.15rem;
+      margin-bottom: .1rem;
+    }
+    .sidebar-sub {
+      font-size: .62rem;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,.5);
+      margin-bottom: 1.2rem;
+    }
+    .sidebar-pill {
+      display: flex;
+      align-items: center;
+      gap: .55rem;
+      border-radius: 999px;
+      padding: .52rem .75rem;
+      font-size: .8rem;
+      font-weight: 700;
+      color: rgba(255,255,255,.72);
+      margin-bottom: .35rem;
+    }
+    .sidebar-pill.active {
+      background: var(--green-300);
+      color: var(--green-700);
+    }
+
+    .app-shell { flex: 1; min-width: 0; }
 
     /* ── Header ────────────────────────────────────── */
     header {
-      background: linear-gradient(135deg, var(--green-900) 0%, var(--green-800) 60%, var(--green-700) 100%);
-      color: white;
-      padding: 1.25rem 2rem;
+      background: transparent;
+      color: var(--green-800);
+      padding: .85rem 1.5rem;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      box-shadow: 0 2px 8px rgba(0,0,0,.25);
+      border-bottom: 1px solid rgba(192,201,191,.35);
     }
     .header-left { display: flex; align-items: center; gap: .9rem; }
     .header-icon {
-      width: 48px; height: 48px; background: rgba(255,255,255,.15);
+      width: 42px; height: 42px; background: var(--green-100);
       border-radius: 12px; display: flex; align-items: center;
-      justify-content: center; font-size: 1.7rem;
+      justify-content: center; font-size: 1.45rem;
     }
-    .header-title { font-size: 1.5rem; font-weight: 700; letter-spacing: -.3px; }
-    .header-sub   { font-size: .8rem; color: var(--green-300); margin-top: 2px; }
+    .header-title { font-family: "Manrope", sans-serif; font-size: 1.15rem; font-weight: 800; letter-spacing: -.2px; }
+    .header-sub   { font-size: .75rem; color: var(--gray-600); margin-top: 2px; }
     .accuracy-badge {
-      background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.25);
-      padding: .35rem .85rem; border-radius: 999px; font-size: .8rem; font-weight: 600;
+      background: var(--white); border: 1px solid var(--gray-200);
+      padding: .35rem .85rem; border-radius: 999px; font-size: .8rem; font-weight: 700;
       letter-spacing: .5px;
     }
-    .accuracy-badge span { color: #a3e635; }
+    .accuracy-badge span { color: var(--green-800); }
 
     /* ── Main layout ───────────────────────────────── */
-    main { max-width: 1280px; margin: 0 auto; padding: 2rem 1.5rem; }
+    main { max-width: 1280px; margin: 0 auto; padding: 1.35rem 1.5rem 2rem; }
+    .hero {
+      margin-bottom: 1rem;
+    }
+    .hero h1 {
+      font-family: "Manrope", sans-serif;
+      color: var(--green-800);
+      font-size: clamp(1.7rem, 2.8vw, 2.3rem);
+      line-height: 1.15;
+      margin-bottom: .45rem;
+    }
+    .hero p {
+      color: var(--gray-600);
+      font-size: .95rem;
+      max-width: 800px;
+    }
     .grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -80,17 +141,18 @@
     .card {
       background: var(--white);
       border-radius: var(--radius);
-      box-shadow: var(--shadow-md);
+      box-shadow: 0 2px 8px rgba(27,28,26,.06);
+      border: 1px solid rgba(192,201,191,.28);
       overflow: hidden;
     }
     .card-header {
       background: linear-gradient(90deg, var(--green-50), var(--white));
-      border-bottom: 1px solid var(--green-100);
+      border-bottom: 1px solid var(--gray-200);
       padding: 1rem 1.4rem;
       display: flex; align-items: center; gap: .6rem;
     }
     .card-header-icon { font-size: 1.2rem; }
-    .card-header h2  { font-size: 1rem; font-weight: 600; color: var(--green-800); }
+    .card-header h2  { font-family: "Manrope", sans-serif; font-size: 1rem; font-weight: 800; color: var(--green-800); }
     .card-body { padding: 1.4rem; }
 
     /* ── Image upload ──────────────────────────────── */
@@ -154,6 +216,8 @@
     .field label {
       font-size: .72rem; font-weight: 600;
       color: var(--gray-600); display: flex; justify-content: space-between;
+      letter-spacing: .04em;
+      text-transform: uppercase;
     }
     .field label span { color: var(--gray-400); font-weight: 400; }
     .field input, .field select {
@@ -184,7 +248,7 @@
       width: 100%;
       margin-top: 1.4rem;
       padding: .85rem 2rem;
-      background: linear-gradient(135deg, var(--green-800), var(--green-700));
+      background: var(--green-800);
       color: white;
       border: none;
       border-radius: var(--radius);
@@ -197,7 +261,7 @@
     }
     .submit-btn:hover:not(:disabled) {
       transform: translateY(-1px);
-      box-shadow: 0 6px 16px rgba(45,106,79,.45);
+      box-shadow: 0 6px 16px rgba(30,92,58,.35);
     }
     .submit-btn:active { transform: translateY(0); }
     .submit-btn:disabled { opacity: .65; cursor: not-allowed; transform: none; }
@@ -246,7 +310,7 @@
     }
     .soil-icon-big { font-size: 2.8rem; }
     .soil-name-wrap .soil-label { font-size: .7rem; opacity: .8; letter-spacing: 1px; text-transform: uppercase; }
-    .soil-name-wrap .soil-name  { font-size: 1.5rem; font-weight: 700; line-height: 1.2; }
+    .soil-name-wrap .soil-name  { font-family: "Manrope", sans-serif; font-size: 1.5rem; font-weight: 800; line-height: 1.2; }
     .conf-badge {
       margin-left: auto;
       background: rgba(255,255,255,.2);
@@ -323,18 +387,33 @@
     .soil-laterite  { background: linear-gradient(135deg, #8b3a20, #b05030); }
     .soil-red       { background: linear-gradient(135deg, #9b1c1c, #c53030); }
     .soil-yellow    { background: linear-gradient(135deg, #856404, #b28a0a); }
+
+    @media (max-width: 1024px) {
+      .sidebar { display: none; }
+      body { display: block; }
+    }
   </style>
 </head>
 
 <body>
+
+<aside class="sidebar">
+  <div class="sidebar-title">Scientific Sanctuary</div>
+  <div class="sidebar-sub">Agricultural Intelligence</div>
+  <div class="sidebar-pill active">📊 Context</div>
+  <div class="sidebar-pill">🧪 Inputs</div>
+  <div class="sidebar-pill">🌾 Analysis</div>
+</aside>
+
+<div class="app-shell">
 
 <!-- ── Header ─────────────────────────────────────────────── -->
 <header>
   <div class="header-left">
     <div class="header-icon">🌱</div>
     <div>
-      <div class="header-title">SoilSense</div>
-      <div class="header-sub">Multimodal Crop &amp; Soil Recommendation System</div>
+      <div class="header-title">Agricultural Intelligence</div>
+      <div class="header-sub">Multimodal Soil and Crop Recommendation</div>
     </div>
   </div>
   <div class="accuracy-badge">Accuracy: <span>98.67%</span></div>
@@ -342,6 +421,11 @@
 
 <!-- ── Main ───────────────────────────────────────────────── -->
 <main>
+  <section class="hero">
+    <h1>Precise Agricultural Intelligence</h1>
+    <p>Synthesize soil image signals and farm context to generate high-quality crop and fertilizer recommendations.</p>
+  </section>
+
   <div class="grid">
 
     <!-- ── INPUT PANEL ─────────────────────────────────────── -->
@@ -369,16 +453,16 @@
         <div class="section-label">Soil &amp; Climate Parameters</div>
         <div class="inputs-grid">
           <div class="field">
-            <label>Nitrogen (N) <span>0–200</span></label>
-            <input type="number" id="n" name="n" placeholder="e.g. 90" min="0" max="200" step="0.1" value="90" />
+            <label>Nitrogen (N) <span>20–187</span></label>
+            <input type="number" id="n" name="n" placeholder="e.g. 90" min="20" max="187" step="0.1" value="90" />
           </div>
           <div class="field">
-            <label>Phosphorus (P) <span>0–200</span></label>
-            <input type="number" id="p" name="p" placeholder="e.g. 42" min="0" max="200" step="0.1" value="42" />
+            <label>Phosphorus (P) <span>10–101</span></label>
+            <input type="number" id="p" name="p" placeholder="e.g. 39" min="10" max="101" step="0.1" value="39" />
           </div>
           <div class="field">
-            <label>Potassium (K) <span>0–200</span></label>
-            <input type="number" id="k" name="k" placeholder="e.g. 43" min="0" max="200" step="0.1" value="43" />
+            <label>Potassium (K) <span>10–113</span></label>
+            <input type="number" id="k" name="k" placeholder="e.g. 54" min="10" max="113" step="0.1" value="54" />
           </div>
           <div class="field">
             <label>Temperature <span>0–50 °C</span></label>
@@ -389,8 +473,8 @@
             <input type="number" id="humidity" name="humidity" placeholder="e.g. 80" min="0" max="100" step="0.1" value="80" />
           </div>
           <div class="field">
-            <label>Rainfall <span>0–3000 mm</span></label>
-            <input type="number" id="rainfall" name="rainfall" placeholder="e.g. 200" min="0" max="3000" step="1" value="200" />
+            <label>Rainfall <span>200–8000 mm</span></label>
+            <input type="number" id="rainfall" name="rainfall" placeholder="e.g. 1200" min="200" max="8000" step="1" value="1200" />
           </div>
           <div class="field">
             <label>Soil pH <span>3–10</span></label>
@@ -404,6 +488,10 @@
             <label>Fertilizer Used <span>kg/ha</span></label>
             <input type="number" id="fert_used" name="fert_used" placeholder="e.g. 120" min="0" max="1000" step="1" value="120" />
           </div>
+        </div>
+
+        <div style="margin-top:.55rem;font-size:.76rem;color:var(--gray-600);font-weight:600;">
+          Ideal nutrient bands: N 60-140, P 25-80, K 35-120 (mg/kg)
         </div>
 
         <!-- Categorical parameters -->
@@ -519,6 +607,8 @@
   </div>
 </main>
 
+</div>
+
 <!-- ── Loading overlay ──────────────────────────────────────── -->
 <div class="loading-overlay hidden" id="loadingOverlay">
   <div class="spinner"></div>
@@ -593,6 +683,7 @@
   };
   const CROP_EMOJI = {
     'Rice': '🌾', 'Wheat': '🌾', 'Cotton': '🌿', 'Maize': '🌽',
+    'Chilli': '🌶️',
     'Sugarcane': '🎋', 'Tomato': '🍅', 'Potato': '🥔', 'Groundnut': '🥜',
     'Jute': '🌿', 'Barley': '🌾', 'Mustard': '🌻', 'Peas': '🫛',
     'Sorghum': '🌾', 'Soybean': '🌱', 'Sunflower': '🌻', 'Chickpea': '🫘',
