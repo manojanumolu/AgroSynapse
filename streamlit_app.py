@@ -309,6 +309,11 @@ PREV_MAP   = {"Cotton": 0, "Maize": 1, "Potato": 2, "Rice": 3,
                "Sugarcane": 4, "Tomato": 5, "Wheat": 6}
 REGION_MAP = {"Central": 0, "East": 1, "North": 2, "South": 3, "West": 4}
 
+# Dataset-aligned numeric bounds from Soil_Nutrients.csv
+DATASET_N_RANGE = (20.0, 187.0)
+DATASET_P_RANGE = (10.0, 101.0)
+DATASET_K_RANGE = (10.0, 113.0)
+
 SOIL_FERT_MAP = {
     "Alluvial Soil": {"fertilizer": "NPK 20:20:0 + Zinc",  "npk": "N:P:K = 80:40:20 kg/ha"},
     "Black Soil":    {"fertilizer": "Urea + MOP",           "npk": "N:P:K = 60:30:30 kg/ha"},
@@ -1830,13 +1835,25 @@ with col_chem:
 """, unsafe_allow_html=True)
     cr1, cr2 = st.columns(2)
     with cr1:
-        n = st.number_input("Nitrogen (N) (mg/kg)", 0.0, 200.0, 90.0, help="General suitable range: 60-140 mg/kg")
+        n = st.number_input(
+            "Nitrogen (N) (mg/kg)",
+            DATASET_N_RANGE[0], DATASET_N_RANGE[1], 76.0,
+            help="Dataset range: 20-187 mg/kg",
+        )
         st.markdown(_npk_bar(n, 80, 160, 200), unsafe_allow_html=True)
         st.markdown("<div style='height:0.75rem'></div>", unsafe_allow_html=True)
-        k = st.number_input("Potassium (K) (mg/kg)", 0.0, 200.0, 43.0, help="General suitable range: 35-120 mg/kg")
+        k = st.number_input(
+            "Potassium (K) (mg/kg)",
+            DATASET_K_RANGE[0], DATASET_K_RANGE[1], 54.0,
+            help="Dataset range: 10-113 mg/kg",
+        )
         st.markdown(_npk_bar(k, 40, 160, 200), unsafe_allow_html=True)
     with cr2:
-        p = st.number_input("Phosphorus (P) (mg/kg)", 0.0, 200.0, 42.0, help="General suitable range: 25-80 mg/kg")
+        p = st.number_input(
+            "Phosphorus (P) (mg/kg)",
+            DATASET_P_RANGE[0], DATASET_P_RANGE[1], 39.0,
+            help="Dataset range: 10-101 mg/kg",
+        )
         st.markdown(_npk_bar(p, 30, 100, 200), unsafe_allow_html=True)
         st.markdown("<div style='height:0.75rem'></div>", unsafe_allow_html=True)
         ph = st.number_input("Soil pH (ph)", 3.0, 10.0, 6.5, step=0.1, help="General suitable range: pH 6.0-7.5")
@@ -1985,18 +2002,25 @@ with col_det:
 
     SEASON_OPTS   = ["Kharif (Monsoon)", "Rabi (Winter)", "Zaid (Summer)"]
     SEASON_INTERN = {"Kharif (Monsoon)": "Kharif", "Rabi (Winter)": "Rabi", "Zaid (Summer)": "Zaid"}
-    IRRIG_OPTS    = ["Canal Irrigation", "Drip Irrigation", "Sprinkler", "Rain-fed"]
+    IRRIG_OPTS    = ["Canal Irrigation", "Drip Irrigation", "Sprinkler Irrigation", "Rainfed"]
     IRRIG_INTERN  = {"Canal Irrigation": "Canal", "Drip Irrigation": "Drip",
-                     "Sprinkler": "Sprinkler", "Rain-fed": "Rainfed"}
-    PREV_OPTS     = ["Wheat", "Rice", "Maize", "Cotton", "Potato", "Sugarcane", "Tomato"]
-    REGION_OPTS   = ["South Zone", "Central Zone", "North Zone", "East Zone", "West Zone"]
+                     "Sprinkler Irrigation": "Sprinkler", "Rainfed": "Rainfed"}
+    PREV_OPTS     = ["Cotton", "Maize", "Potato", "Rice", "Sugarcane", "Tomato", "Wheat"]
+    REGION_OPTS   = ["Central Zone", "East Zone", "North Zone", "South Zone", "West Zone"]
     REGION_INTERN = {"South Zone": "South", "Central Zone": "Central",
                      "North Zone": "North", "East Zone": "East", "West Zone": "West"}
 
-    season_disp = st.selectbox("Current Season",    SEASON_OPTS, help="Select current farming season")
-    irrig_disp  = st.selectbox("Irrigation System", IRRIG_OPTS, help="Select irrigation setup")
-    prev        = st.selectbox("Previous Crop",      PREV_OPTS, help="Select last grown crop")
-    region_disp = st.selectbox("Geographic Region",  REGION_OPTS, help="Select your region")
+    st.markdown(
+        "<p style='font-size:11px;color:var(--muted);margin:0 0 0.5rem'>"
+        "Farm details options are aligned to your dataset categories for Season, Irrigation, Previous Crop, and Region."
+        "</p>",
+        unsafe_allow_html=True,
+    )
+
+    season_disp = st.selectbox("Current Season",    SEASON_OPTS, help="Dataset options: Kharif, Rabi, Zaid")
+    irrig_disp  = st.selectbox("Irrigation System", IRRIG_OPTS, help="Dataset options: Canal, Drip, Rainfed, Sprinkler")
+    prev        = st.selectbox("Previous Crop",      PREV_OPTS, help="Dataset options: Cotton, Maize, Potato, Rice, Sugarcane, Tomato, Wheat")
+    region_disp = st.selectbox("Geographic Region",  REGION_OPTS, help="Dataset options: Central, East, North, South, West")
 
     season = SEASON_INTERN[season_disp]
     irrig  = IRRIG_INTERN[irrig_disp]
