@@ -320,6 +320,7 @@ SOIL_FERT_MAP = {
 
 CROP_FERT_MAP = {
     "Cotton":    {"fertilizer": "NPK 17:17:17",  "npk": "50:50:50 kg/ha"},
+    "Chilli":    {"fertilizer": "NPK 19:19:19 + Potash", "npk": "120:60:60 kg/ha"},
     "Maize":     {"fertilizer": "Urea + DAP",    "npk": "120:60:40 kg/ha"},
     "Potato":    {"fertilizer": "NPK 15:15:15",  "npk": "180:120:80 kg/ha"},
     "Rice":      {"fertilizer": "Urea + SSP",    "npk": "100:50:25 kg/ha"},
@@ -338,25 +339,82 @@ SOIL_COLORS = {
 }
 
 CROP_MAP = {
-    ("Red Soil",      "Kharif"): ["Cotton",    "Maize",      "Groundnut",  "Tomato"],
+    ("Red Soil",      "Kharif"): ["Cotton",    "Maize",      "Groundnut",  "Tomato", "Chilli"],
     ("Red Soil",      "Rabi")  : ["Wheat",     "Sunflower",  "Linseed",    "Potato"],
-    ("Red Soil",      "Zaid")  : ["Watermelon","Cucumber",   "Bitter Gourd","Moong"],
+    ("Red Soil",      "Zaid")  : ["Watermelon","Cucumber",   "Bitter Gourd","Moong", "Chilli"],
     ("Alluvial Soil", "Kharif"): ["Rice",      "Sugarcane",  "Maize",      "Jute"],
-    ("Alluvial Soil", "Rabi")  : ["Wheat",     "Mustard",    "Barley",     "Peas"],
+    ("Alluvial Soil", "Rabi")  : ["Wheat",     "Mustard",    "Barley",     "Peas", "Chilli"],
     ("Alluvial Soil", "Zaid")  : ["Watermelon","Muskmelon",  "Cucumber",   "Moong"],
     ("Black Soil",    "Kharif"): ["Cotton",    "Sorghum",    "Soybean",    "Groundnut"],
     ("Black Soil",    "Rabi")  : ["Wheat",     "Chickpea",   "Linseed",    "Safflower"],
-    ("Black Soil",    "Zaid")  : ["Sunflower", "Sesame",     "Maize",      "Moong"],
+    ("Black Soil",    "Zaid")  : ["Sunflower", "Sesame",     "Maize",      "Moong", "Chilli"],
     ("Clay Soil",     "Kharif"): ["Rice",      "Jute",       "Sugarcane",  "Taro"],
     ("Clay Soil",     "Rabi")  : ["Wheat",     "Barley",     "Mustard",    "Spinach"],
-    ("Clay Soil",     "Zaid")  : ["Cucumber",  "Bitter Gourd","Pumpkin",   "Moong"],
+    ("Clay Soil",     "Zaid")  : ["Cucumber",  "Bitter Gourd","Pumpkin",   "Moong", "Chilli"],
     ("Laterite Soil", "Kharif"): ["Cashew",    "Rubber",     "Tea",        "Coffee"],
     ("Laterite Soil", "Rabi")  : ["Tapioca",   "Groundnut",  "Turmeric",   "Ginger"],
     ("Laterite Soil", "Zaid")  : ["Mango",     "Pineapple",  "Jackfruit",  "Banana"],
     ("Yellow Soil",   "Kharif"): ["Rice",      "Maize",      "Groundnut",  "Sesame"],
-    ("Yellow Soil",   "Rabi")  : ["Wheat",     "Mustard",    "Potato",     "Barley"],
+    ("Yellow Soil",   "Rabi")  : ["Wheat",     "Mustard",    "Potato",     "Barley", "Chilli"],
     ("Yellow Soil",   "Zaid")  : ["Sunflower", "Moong",      "Cucumber",   "Tomato"],
 }
+
+CROP_PROFILES = {
+    "Wheat":      {"n": (80, 150), "p": (30, 70),  "k": (35, 80),  "ph": (6.0, 7.8), "temp": (12, 30), "hum": (40, 75), "rain": (300, 1200), "fert": (80, 260), "yld": (1800, 6500), "irrig": ["Canal", "Sprinkler"]},
+    "Rice":       {"n": (70, 140), "p": (20, 60),  "k": (20, 60),  "ph": (5.0, 7.2), "temp": (20, 36), "hum": (60, 98), "rain": (900, 3000), "fert": (70, 260), "yld": (1800, 8000), "irrig": ["Canal", "Rainfed"]},
+    "Cotton":     {"n": (60, 130), "p": (25, 65),  "k": (35, 90),  "ph": (5.8, 8.0), "temp": (20, 38), "hum": (35, 75), "rain": (500, 1400), "fert": (80, 300), "yld": (1000, 4500), "irrig": ["Drip", "Canal"]},
+    "Watermelon": {"n": (55, 120), "p": (20, 60),  "k": (40, 120), "ph": (5.8, 7.5), "temp": (22, 38), "hum": (35, 75), "rain": (250, 1100), "fert": (60, 240), "yld": (8000, 35000), "irrig": ["Drip", "Sprinkler"]},
+    "Maize":      {"n": (70, 150), "p": (25, 70),  "k": (30, 90),  "ph": (5.8, 7.8), "temp": (18, 36), "hum": (40, 85), "rain": (450, 1500), "fert": (70, 280), "yld": (1800, 9000), "irrig": ["Canal", "Rainfed", "Sprinkler"]},
+    "Tomato":     {"n": (80, 180), "p": (35, 120), "k": (60, 180), "ph": (6.0, 7.5), "temp": (18, 34), "hum": (40, 82), "rain": (300, 1500), "fert": (120, 360), "yld": (9000, 45000), "irrig": ["Drip", "Sprinkler"]},
+    "Chilli":     {"n": (70, 150), "p": (30, 90),  "k": (50, 140), "ph": (6.0, 7.3), "temp": (20, 35), "hum": (40, 75), "rain": (450, 1300), "fert": (90, 320), "yld": (1200, 9000), "irrig": ["Drip", "Sprinkler", "Canal"]},
+    "Potato":     {"n": (90, 170), "p": (40, 110), "k": (70, 170), "ph": (5.2, 6.8), "temp": (10, 28), "hum": (45, 85), "rain": (350, 1400), "fert": (120, 360), "yld": (8000, 40000), "irrig": ["Canal", "Sprinkler"]},
+    "Sugarcane":  {"n": (80, 190), "p": (30, 90),  "k": (50, 170), "ph": (6.0, 8.2), "temp": (20, 38), "hum": (45, 90), "rain": (700, 3000), "fert": (140, 420), "yld": (30000, 140000), "irrig": ["Canal", "Drip"]},
+}
+
+DEFAULT_CROP_PROFILE = {
+    "n": (55, 150), "p": (20, 90), "k": (25, 140),
+    "ph": (5.5, 7.8), "temp": (16, 36), "hum": (35, 88),
+    "rain": (300, 2200), "fert": (60, 340), "yld": (1500, 20000),
+    "irrig": ["Canal", "Drip", "Rainfed", "Sprinkler"],
+}
+
+def _range_score(value, lo, hi):
+    if lo <= value <= hi:
+        return 1.0
+    span = max(hi - lo, 1e-6)
+    if value < lo:
+        return max(0.0, 1.0 - (lo - value) / (span * 1.5))
+    return max(0.0, 1.0 - (value - hi) / (span * 1.5))
+
+
+def _crop_suitability_score(crop, n, p, k, ph, temp, hum, rain, yld, fert, irrig, prev, region):
+    prof = CROP_PROFILES.get(crop, DEFAULT_CROP_PROFILE)
+    score = 0.0
+
+    score += 1.6 * _range_score(n, *prof["n"])
+    score += 1.2 * _range_score(p, *prof["p"])
+    score += 1.3 * _range_score(k, *prof["k"])
+    score += 1.1 * _range_score(ph, *prof["ph"])
+    score += 1.0 * _range_score(temp, *prof["temp"])
+    score += 0.8 * _range_score(hum, *prof["hum"])
+    score += 0.8 * _range_score(rain, *prof["rain"])
+    score += 0.6 * _range_score(yld, *prof["yld"])
+    score += 0.6 * _range_score(fert, *prof["fert"])
+
+    if irrig in prof.get("irrig", []):
+        score += 0.45
+
+    if prev == crop:
+        score -= 0.35
+
+    if crop in {"Cotton", "Sugarcane"} and region in {"South", "West"}:
+        score += 0.1
+    if crop in {"Wheat", "Mustard", "Barley"} and region in {"North", "Central"}:
+        score += 0.1
+    if crop in {"Rice", "Jute"} and region in {"East", "South"}:
+        score += 0.1
+
+    return score
 
 
 # ══════════════════════════════════════════════════════════════
@@ -419,11 +477,22 @@ def run_inference(img_model, tab_proj, fusion, xgb_clf, scaler,
         (soil_name, season),
         CROP_MAP.get((soil_name, "Kharif"), ["Wheat", "Rice", "Maize"]))
 
+    scored_crops = []
+    for crop in crops_all:
+        score = _crop_suitability_score(
+            crop, n, p, k, ph, temp, hum, rain, yld, fert, irrig, prev, region
+        )
+        scored_crops.append((crop, score))
+    scored_crops.sort(key=lambda x: x[1], reverse=True)
+
     crop_recs = []
-    for i, crop in enumerate(crops_all[:3]):
+    for i, (crop, score) in enumerate(scored_crops[:3]):
         cf = CROP_FERT_MAP.get(crop, {"fertilizer": "NPK 14:14:14", "npk": "60:40:20 kg/ha"})
         crop_recs.append({"name": crop, "rank": i + 1, "stars": 5 - i,
-                           "fertilizer": cf["fertilizer"], "npk": cf["npk"]})
+                           "fertilizer": cf["fertilizer"], "npk": cf["npk"],
+                           "score": round(float(score), 3)})
+
+    debug["crop_scores"] = {c: round(float(s), 3) for c, s in scored_crops}
 
     return soil_name, confidence, all_probs, soil_fert, crop_recs, debug
 
@@ -1680,13 +1749,53 @@ with hero_r:
     <div style="font-size:13px">
     <div style="display:flex;justify-content:space-between;
                  border-bottom:1px solid {guide_divider};padding-bottom:4px;margin-bottom:4px">
+            <span style="font-weight:900;color:{guide_title_color}">N (General):</span>
+        <span style="font-weight:900;color:{guide_value_color}">60-140 mg/kg</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;
+                 border-bottom:1px solid {guide_divider};padding-bottom:4px;margin-bottom:4px">
+            <span style="font-weight:900;color:{guide_title_color}">P (General):</span>
+        <span style="font-weight:900;color:{guide_value_color}">25-80 mg/kg</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;
+                 border-bottom:1px solid {guide_divider};padding-bottom:4px;margin-bottom:4px">
+            <span style="font-weight:900;color:{guide_title_color}">K (General):</span>
+        <span style="font-weight:900;color:{guide_value_color}">35-120 mg/kg</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;
+                 border-bottom:1px solid {guide_divider};padding-bottom:4px;margin-bottom:4px">
+            <span style="font-weight:900;color:{guide_title_color}">Soil pH:</span>
+        <span style="font-weight:900;color:{guide_value_color}">6.0-7.5</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;
+                 border-bottom:1px solid {guide_divider};padding-bottom:4px;margin-bottom:4px">
+            <span style="font-weight:900;color:{guide_title_color}">Temperature:</span>
+        <span style="font-weight:900;color:{guide_value_color}">18-35 C</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;
+                 border-bottom:1px solid {guide_divider};padding-bottom:4px;margin-bottom:4px">
+            <span style="font-weight:900;color:{guide_title_color}">Humidity:</span>
+        <span style="font-weight:900;color:{guide_value_color}">40-85 %</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;
+                 border-bottom:1px solid {guide_divider};padding-bottom:4px;margin-bottom:4px">
+            <span style="font-weight:900;color:{guide_title_color}">Rainfall:</span>
+        <span style="font-weight:900;color:{guide_value_color}">400-2000 mm</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;
+                 border-bottom:1px solid {guide_divider};padding-bottom:4px;margin-bottom:4px">
+            <span style="font-weight:900;color:{guide_title_color}">Fertilizer Used:</span>
+        <span style="font-weight:900;color:{guide_value_color}">80-300 kg/ha</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;
+                 border-bottom:1px solid {guide_divider};padding-bottom:4px;margin-bottom:4px">
             <span style="font-weight:900;color:{guide_title_color}">Yield:</span>
-        <span style="font-weight:900;color:{guide_value_color}">t/ha</span>
+        <span style="font-weight:900;color:{guide_value_color}">2-8 t/ha</span>
     </div>
     <div style="display:flex;justify-content:space-between;
                  border-bottom:1px solid {guide_divider};padding-bottom:4px;margin-bottom:4px">
             <span style="font-weight:900;color:{guide_title_color}">NPK:</span>
-        <span style="font-weight:900;color:{guide_value_color}">kg/ha</span>
+        <span style="font-weight:900;color:{guide_value_color}">Soil test mg/kg</span>
     </div>
     <div style="display:flex;justify-content:space-between">
             <span style="font-weight:900;color:{guide_title_color}">Area:</span>
