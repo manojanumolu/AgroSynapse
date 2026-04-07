@@ -771,10 +771,18 @@ def load_leaf_model():
                 f.write(model_bytes)
             try:
                 import keras
-                keras_model = keras.models.load_model(model_path)
+                try:
+                    keras.config.enable_unsafe_deserialization()
+                except Exception:
+                    pass
+                keras_model = keras.models.load_model(
+                    model_path, safe_mode=False, compile=False
+                )
             except Exception:
                 import tensorflow as tf
-                keras_model = tf.keras.models.load_model(model_path)
+                keras_model = tf.keras.models.load_model(
+                    model_path, compile=False
+                )
 
         keras_model._leaf_img_size = img_size   # attach for use in inference
         print(f"[OK] Leaf model loaded — MobileNetV2 {img_size}×{img_size}, {len(cls_labels)} classes.")
