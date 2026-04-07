@@ -697,57 +697,70 @@ LEAF_TREATMENT_MAP = {
 
 @st.cache_resource(show_spinner="Loading Leaf Disease Model…")
 def load_leaf_model():
-    """Load universal leaf disease ResNet-50 from agrofusion_universal_v2.pkl.
-    Returns (model, class_names, fertilizer_map) — falls back to built-in maps if file missing.
+    """Load the AgroFusion Universal v2 leaf disease model (Keras MobileNetV2, 128×128).
+    pkl structure: model_bytes (Keras ZIP), class_labels, fertilizer_dict, img_size.
+    Returns (keras_model, class_labels_list, fertilizer_dict) or (None, fallback, fallback).
     """
     pkl_path = mpath("agrofusion_universal_v2.pkl")
     if not os.path.exists(pkl_path):
+        print("[WARN] agrofusion_universal_v2.pkl not found — leaf model unavailable.")
         return None, LEAF_CLASS_NAMES, LEAF_TREATMENT_MAP
     try:
+        import tempfile
+        # ── Load payload ──────────────────────────────────────
         with open(pkl_path, "rb") as fh:
             payload = pickle.load(fh)
-        if isinstance(payload, dict):
-            raw_model  = payload.get("model", payload.get("model_state_dict"))
-            cls_names  = payload.get("class_names", LEAF_CLASS_NAMES)
-            fert_map   = payload.get("fertilizer_map", LEAF_TREATMENT_MAP)
-        else:
-            raw_model  = payload
-            cls_names  = LEAF_CLASS_NAMES
-            fert_map   = LEAF_TREATMENT_MAP
-        nc = len(cls_names) if cls_names else 38
-        leaf_resnet = models.resnet50(weights=None)
-        leaf_resnet.fc = nn.Linear(leaf_resnet.fc.in_features, nc)
-        if isinstance(raw_model, dict):
-            leaf_resnet.load_state_dict(raw_model, strict=False)
-        elif raw_model is not None:
-            leaf_resnet.load_state_dict(raw_model, strict=False)
-        leaf_resnet.eval()
-        return leaf_resnet, cls_names, fert_map
+
+        cls_labels = payload.get("class_labels", LEAF_CLASS_NAMES)
+        fert_dict  = payload.get("fertilizer_dict", LEAF_TREATMENT_MAP)
+        img_size   = int(payload.get("img_size", 128))
+
+        # ── Load Keras model from bytes ────────────────────────
+        model_bytes = payload.get("model_bytes")
+        if model_bytes is None:
+            return None, cls_labels, fert_dict
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            model_path = os.path.join(tmpdir, "leaf_model.keras")
+            with open(model_path, "wb") as f:
+                f.write(model_bytes)
+            try:
+                import keras
+                keras_model = keras.models.load_model(model_path)
+            except Exception:
+                import tensorflow as tf
+                keras_model = tf.keras.models.load_model(model_path)
+
+        keras_model._leaf_img_size = img_size   # attach for use in inference
+        print(f"[OK] Leaf model loaded — MobileNetV2 {img_size}×{img_size}, {len(cls_labels)} classes.")
+        return keras_model, cls_labels, fert_dict
+
     except Exception as _e:
         print(f"[WARN] leaf model load error: {_e}")
         return None, LEAF_CLASS_NAMES, LEAF_TREATMENT_MAP
 
 
-def run_leaf_inference(model, class_names, img_bytes):
-    """Run leaf disease classification on an uploaded leaf image."""
-    tf = transforms.Compose([
-        transforms.Resize((224, 224)),
-        transforms.ToTensor(),
-        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
-    ])
-    pil_img  = Image.open(io.BytesIO(img_bytes)).convert("RGB")
-    img_t    = tf(pil_img).unsqueeze(0)
-    with torch.no_grad():
-        logits = model(img_t)
-        probs  = torch.softmax(logits, dim=-1)[0].cpu().numpy()
-    pred_idx   = int(np.argmax(probs))
-    pred_class = class_names[pred_idx] if pred_idx < len(class_names) else "Unknown"
-    confidence = round(float(probs[pred_idx]) * 100, 2)
-    top5       = sorted(
-        [(class_names[i], round(float(probs[i]) * 100, 2)) for i in range(len(class_names))],
+def run_leaf_inference(model, class_labels, img_bytes):
+    """Run leaf disease classification. Returns (pred_class, confidence_pct, top5_list)."""
+    img_size = getattr(model, "_leaf_img_size", 128)
+
+    # ── Preprocess: MobileNetV2 expects float32 in [-1, 1] ────
+    pil_img = Image.open(io.BytesIO(img_bytes)).convert("RGB").resize(
+        (img_size, img_size), Image.LANCZOS
+    )
+    arr = np.array(pil_img, dtype=np.float32)   # (H, W, 3) uint8 → float32
+    arr = (arr / 127.5) - 1.0                    # scale to [-1, 1]
+    arr = np.expand_dims(arr, 0)                 # (1, H, W, 3)
+
+    probs    = model.predict(arr, verbose=0)[0]  # shape (num_classes,)
+    pred_idx = int(np.argmax(probs))
+    pred_cls = class_labels[pred_idx] if pred_idx < len(class_labels) else "Unknown"
+    conf     = round(float(probs[pred_idx]) * 100, 2)
+    top5     = sorted(
+        [(class_labels[i], round(float(probs[i]) * 100, 2)) for i in range(len(class_labels))],
         key=lambda x: x[1], reverse=True
     )[:5]
-    return pred_class, confidence, top5
+    return pred_cls, conf, top5
 
 
 _leaf_model, _leaf_classes, _leaf_fert_map = load_leaf_model()
@@ -1774,48 +1787,76 @@ div[data-testid="stColumn"]:has(#mrk-det) > div[data-testid="stVerticalBlock"] {
 # Renders full-screen dark landing; execution halts with st.stop()
 # ══════════════════════════════════════════════════════════════
 if st.session_state.page == "splash":
-    st.markdown("""
+    # ── Encode background_splash.jpg as base64 for CSS injection ──
+    import base64 as _b64
+    _splash_bg_css = ""
+    _splash_bg_path = mpath("background_splash.jpg")
+    if os.path.exists(_splash_bg_path):
+        with open(_splash_bg_path, "rb") as _f:
+            _splash_b64 = _b64.b64encode(_f.read()).decode()
+        _splash_bg_css = (
+            f"background-image: url('data:image/jpeg;base64,{_splash_b64}') !important;"
+            "background-size: cover !important;"
+            "background-position: center center !important;"
+            "background-repeat: no-repeat !important;"
+        )
+
+    st.markdown(f"""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&family=Plus+Jakarta+Sans:wght@200..800&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
-.material-symbols-outlined {
+.material-symbols-outlined {{
     font-family: 'Material Symbols Outlined' !important;
     font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
     vertical-align: middle;
-}
-html, body { background-color: #0d0f0d !important; }
-.stApp, .main { background: linear-gradient(160deg, #0a110a 0%, #0d0f0d 55%, #060d06 100%) !important; }
-.block-container { max-width: 960px !important; padding: 3rem 2rem 2rem !important; }
-section[data-testid="stSidebar"] { display: none !important; }
-header[data-testid="stHeader"] { display: none !important; }
-#MainMenu, footer, .stDeployButton { display: none !important; visibility: hidden !important; }
-/* Glass card button override */
-button.splash-card-btn {
-    all: unset;
-}
-div[data-testid="stButton"] > button {
-    background: rgba(24, 26, 24, 0.45) !important;
-    backdrop-filter: blur(32px) !important;
-    -webkit-backdrop-filter: blur(32px) !important;
-    border: 1px solid rgba(71, 72, 70, 0.18) !important;
+}}
+html, body {{ background-color: #1a2e1a !important; }}
+.stApp, .main {{
+    {_splash_bg_css}
+    background-color: #1a2e1a !important;
+}}
+/* Dark overlay on top of the photo for readability */
+.stApp::before {{
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: rgba(5, 12, 5, 0.58);
+    z-index: 0;
+    pointer-events: none;
+}}
+.block-container {{
+    position: relative;
+    z-index: 1;
+    max-width: 960px !important;
+    padding: 3rem 2rem 2rem !important;
+}}
+section[data-testid="stSidebar"] {{ display: none !important; }}
+header[data-testid="stHeader"] {{ display: none !important; }}
+#MainMenu, footer, .stDeployButton {{ display: none !important; visibility: hidden !important; }}
+div[data-testid="stButton"] > button {{
+    background: rgba(20, 28, 20, 0.52) !important;
+    backdrop-filter: blur(28px) !important;
+    -webkit-backdrop-filter: blur(28px) !important;
+    border: 1px solid rgba(180, 252, 194, 0.15) !important;
     border-radius: 0.75rem !important;
     color: #faf9f6 !important;
     font-family: 'Manrope', sans-serif !important;
-    font-size: 1.5rem !important;
+    font-size: 1.4rem !important;
     font-weight: 800 !important;
     width: 100% !important;
-    min-height: 220px !important;
-    padding: 2.5rem 2rem !important;
+    min-height: 200px !important;
+    padding: 2.25rem 2rem !important;
     text-align: left !important;
-    line-height: 1.3 !important;
-    transition: background 0.3s, box-shadow 0.3s !important;
+    line-height: 1.35 !important;
+    transition: background 0.3s, box-shadow 0.3s, border-color 0.3s !important;
     cursor: pointer !important;
-}
-div[data-testid="stButton"] > button:hover {
-    background: rgba(180, 252, 194, 0.08) !important;
-    box-shadow: 0 0 60px rgba(180, 252, 194, 0.08) !important;
-    border-color: rgba(180, 252, 194, 0.25) !important;
-}
+    white-space: pre-line !important;
+}}
+div[data-testid="stButton"] > button:hover {{
+    background: rgba(180, 252, 194, 0.10) !important;
+    box-shadow: 0 0 50px rgba(180, 252, 194, 0.10) !important;
+    border-color: rgba(180, 252, 194, 0.35) !important;
+}}
 </style>
 """, unsafe_allow_html=True)
 
@@ -1881,35 +1922,19 @@ div[data-testid="stButton"] > button:hover {
             st.session_state.page = "leaf"
             st.rerun()
 
-    # ── Technical readout footer ──
+    # ── Technical readout footer (station status only) ──
     st.markdown("""
-<div style="margin-top:4rem;display:flex;justify-content:space-between;align-items:end;
-     padding:0 0.5rem;flex-wrap:wrap;gap:1rem">
-  <div style="display:flex;gap:2.5rem;flex-wrap:wrap">
-    <div>
-      <p style="font-family:'Plus Jakarta Sans',sans-serif;font-size:0.6rem;font-weight:700;
-          text-transform:uppercase;letter-spacing:0.12em;color:#ababa8;margin:0 0 3px">Station Status</p>
-      <p style="font-family:Manrope,sans-serif;font-size:0.7rem;font-weight:700;
-          color:#b4fcc2;display:flex;align-items:center;gap:6px;margin:0">
-        <span style="width:6px;height:6px;background:#b4fcc2;border-radius:50%;
-              display:inline-block;animation:pulse 2s infinite"></span>
-        SYNAPSE-ALPHA ACTIVE
-      </p>
-    </div>
-    <div>
-      <p style="font-family:'Plus Jakarta Sans',sans-serif;font-size:0.6rem;font-weight:700;
-          text-transform:uppercase;letter-spacing:0.12em;color:#ababa8;margin:0 0 3px">Model Accuracy</p>
-      <p style="font-family:Manrope,sans-serif;font-size:0.7rem;font-weight:700;color:#faf9f6;margin:0">98.67%</p>
-    </div>
-  </div>
-  <div style="text-align:right">
-    <p style="font-family:'Plus Jakarta Sans',sans-serif;font-size:0.6rem;font-weight:700;
-        text-transform:uppercase;letter-spacing:0.2em;color:#ababa8;margin:0 0 4px">Developed By</p>
-    <p style="font-family:Manrope,sans-serif;font-size:0.8rem;font-weight:800;
-        letter-spacing:0.1em;color:#faf9f6;margin:0">ETHOS AGRI-SYSTEMS</p>
+<div style="margin-top:3.5rem;padding:0 0.5rem">
+  <div style="display:flex;align-items:center;gap:8px">
+    <span style="width:7px;height:7px;background:#b4fcc2;border-radius:50%;
+          display:inline-block;animation:pulse 2s infinite;flex-shrink:0"></span>
+    <p style="font-family:'Plus Jakarta Sans',sans-serif;font-size:0.65rem;font-weight:700;
+        text-transform:uppercase;letter-spacing:0.18em;color:#b4fcc2;margin:0">
+      SYNAPSE-ALPHA ACTIVE
+    </p>
   </div>
 </div>
-<style>@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }</style>
+<style>@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.35} }</style>
 """, unsafe_allow_html=True)
 
     st.stop()
@@ -1996,35 +2021,78 @@ with st.sidebar:
         st.session_state.leaf_result = None
         st.rerun()
 
-    _crop_active  = "background:#acf3ba;color:#2f7144;" if st.session_state.page == "crop"  else "color:rgba(255,255,255,0.6);"
-    _leaf_active  = "background:#acf3ba;color:#2f7144;" if st.session_state.page == "leaf"  else "color:rgba(255,255,255,0.6);"
-    _crop_icon_c  = "#2f7144" if st.session_state.page == "crop" else "rgba(255,255,255,0.6)"
-    _leaf_icon_c  = "#2f7144" if st.session_state.page == "leaf" else "rgba(255,255,255,0.6)"
+    # ── Sidebar nav buttons ──────────────────────────────────────────
+    _crop_active = st.session_state.page == "crop"
+    _leaf_active = st.session_state.page == "leaf"
 
-    st.markdown(f"""
-<nav style="display:flex;flex-direction:column;gap:2px;margin-bottom:1.25rem;margin-top:0.5rem">
-  <a style="display:flex;align-items:center;gap:10px;padding:10px 14px;
-      {_crop_active}border-radius:999px;
-      font-family:Manrope,sans-serif;font-size:13px;font-weight:700;
-      letter-spacing:0.04em;text-decoration:none;cursor:pointer">
-    <span class="material-symbols-outlined"
-      style="font-variation-settings:'FILL' 1;color:{_crop_icon_c};font-size:18px">analytics</span>
-    Predictive Cultivation
-  </a>
-  <a style="display:flex;align-items:center;gap:10px;padding:10px 14px;
-      {_leaf_active}border-radius:999px;
-      font-family:Manrope,sans-serif;font-size:13px;font-weight:700;text-decoration:none;cursor:pointer">
-    <span class="material-symbols-outlined" style="color:{_leaf_icon_c};font-size:18px">psychology</span>
-    Phyto-Diagnostic Suite
-  </a>
-  <a style="display:flex;align-items:center;gap:10px;padding:10px 14px;
-      color:rgba(255,255,255,0.6);border-radius:999px;
-      font-family:Manrope,sans-serif;font-size:13px;font-weight:700;text-decoration:none">
-    <span class="material-symbols-outlined" style="color:rgba(255,255,255,0.6);font-size:18px">science</span>
-    Analysis
-  </a>
-</nav>
-""", unsafe_allow_html=True)
+    # Style active vs inactive via injected CSS on the button keys
+    st.markdown("""
+<style>
+div[data-testid="stSidebar"] div[data-testid="stButton"]:has(button[kind="secondary"]) { }
+button[data-testid="baseButton-secondary"] { text-align:left!important; }
+</style>""", unsafe_allow_html=True)
+
+    _nav_base = """
+<style>
+.nav-btn-crop button, .nav-btn-leaf button {
+    background: transparent !important;
+    color: rgba(255,255,255,0.65) !important;
+    border: none !important;
+    border-radius: 999px !important;
+    font-family: Manrope, sans-serif !important;
+    font-size: 13px !important;
+    font-weight: 700 !important;
+    text-align: left !important;
+    padding: 10px 14px !important;
+    width: 100% !important;
+    transition: background 0.2s, color 0.2s !important;
+}
+.nav-btn-crop button:hover, .nav-btn-leaf button:hover {
+    background: rgba(172,243,186,0.15) !important;
+    color: #acf3ba !important;
+}
+.nav-btn-crop-active button {
+    background: #acf3ba !important;
+    color: #2f7144 !important;
+    border: none !important;
+    border-radius: 999px !important;
+    font-family: Manrope, sans-serif !important;
+    font-size: 13px !important;
+    font-weight: 700 !important;
+    text-align: left !important;
+    padding: 10px 14px !important;
+    width: 100% !important;
+}
+.nav-btn-leaf-active button {
+    background: #acf3ba !important;
+    color: #2f7144 !important;
+    border: none !important;
+    border-radius: 999px !important;
+    font-family: Manrope, sans-serif !important;
+    font-size: 13px !important;
+    font-weight: 700 !important;
+    text-align: left !important;
+    padding: 10px 14px !important;
+    width: 100% !important;
+}
+</style>
+"""
+    st.markdown(_nav_base, unsafe_allow_html=True)
+
+    _crop_cls = "nav-btn-crop-active" if _crop_active else "nav-btn-crop"
+    _leaf_cls = "nav-btn-leaf-active" if _leaf_active else "nav-btn-leaf"
+
+    st.markdown(f'<div class="{_crop_cls}">', unsafe_allow_html=True)
+    if st.button("📊  Predictive Cultivation", key="nav_crop_btn", use_container_width=True):
+        st.session_state.page = "crop"
+        st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    st.markdown(f'<div class="{_leaf_cls}">', unsafe_allow_html=True)
+    if st.button("🔬  Phyto-Diagnostic Suite", key="nav_leaf_btn", use_container_width=True):
+        st.session_state.page = "leaf"
+        st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
 
     st.markdown("""
 <div style="margin-top:1.5rem;padding:1rem 0.25rem 0;border-top:1px solid rgba(255,255,255,0.1);
@@ -2164,114 +2232,133 @@ if st.session_state.page == "leaf":
 
     with _lc_results:
         if st.session_state.leaf_result:
-            _lr       = st.session_state.leaf_result
-            _cls      = _lr["pred_class"]
-            _conf     = _lr["confidence"]
-            _top5     = _lr["top5"]
-            _treat    = _leaf_fert_map.get(_cls, {})
-            _cname    = _treat.get("common_name", _cls.replace("___", " — ").replace("_", " "))
+            _lr   = st.session_state.leaf_result
+            _cls  = _lr["pred_class"]
+            _conf = _lr["confidence"]
+            _top5 = _lr["top5"]
+
+            # ── Resolve treatment from pkl fertilizer_dict ──────────
+            _treat      = _leaf_fert_map.get(_cls, {})
+            # pkl uses disease_common_name; built-in map uses common_name
+            _cname      = (
+                _treat.get("disease_common_name")
+                or _treat.get("common_name")
+                or _cls.replace("___", " — ").replace("_", " ")
+            )
+            _primary    = (
+                _treat.get("primary_treatment", "Apply appropriate fungicide/bactericide. Consult an agronomist.")
+            )
+            _fert_rec   = (
+                _treat.get("fertilizer_recommendation")
+                or _treat.get("fertilizer", "Maintain balanced NPK fertilization.")
+            )
+            _cultural   = _treat.get("cultural_practices", "Practice good field hygiene and crop rotation.")
+
             _is_healthy = "healthy" in _cls.lower()
-            _badge_bg   = "rgba(195,232,209,0.45)" if _is_healthy else "rgba(255,209,180,0.45)"
+            _badge_bg   = "#c3e8d1" if _is_healthy else "#ffd9b3"
             _badge_col  = "#1E5C3A" if _is_healthy else "#7a3a00"
             _badge_txt  = "Healthy" if _is_healthy else "Pathogen Detected"
+            _primary_c  = "#1E5C3A"   # explicit — avoid CSS var() in st.html blocks
+            _muted_c    = "#444744"
 
-            # ── Detection Result ──
-            st.markdown(f"""
-<div style="background:var(--surface-container-low);border-radius:0.75rem;padding:1.5rem;
-     box-shadow:0 2px 8px rgba(0,0,0,0.05);margin-bottom:1.25rem">
+            # ── Detection Result card (st.html avoids markdown parser) ──
+            _conf_bar_w = min(int(_conf), 100)
+            try:
+                st.html(f"""
+<div style="background:#f9f9f7;border-radius:12px;padding:1.5rem;
+     box-shadow:0 2px 8px rgba(0,0,0,0.05);margin-bottom:1.25rem;
+     border:1px solid rgba(0,0,0,0.05)">
   <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:1.25rem">
     <div style="display:flex;align-items:center;gap:8px">
-      <span class="material-symbols-outlined" style="color:var(--primary);font-size:1.4rem">biotech</span>
+      <span style="font-family:'Material Symbols Outlined';color:{_primary_c};
+            font-size:1.4rem;font-variation-settings:'FILL' 0,'wght' 400">biotech</span>
       <h4 style="font-family:Manrope,sans-serif;font-size:1.05rem;font-weight:800;
-          color:var(--primary);margin:0">Detection Result</h4>
+          color:{_primary_c};margin:0">Detection Result</h4>
     </div>
     <div style="background:{_badge_bg};color:{_badge_col};padding:4px 12px;border-radius:999px;
-         font-size:0.6rem;font-weight:800;text-transform:uppercase;letter-spacing:0.07em">
+         font-size:0.6rem;font-weight:800;text-transform:uppercase;letter-spacing:0.07em;
+         font-family:'Plus Jakarta Sans',sans-serif">
       {_badge_txt}
     </div>
   </div>
-  <h5 style="font-family:Manrope,sans-serif;font-size:1.6rem;font-weight:900;
-      color:var(--text);margin:0 0 1.25rem">{_cname}</h5>
-  <div style="display:flex;justify-content:space-between;margin-bottom:4px">
-    <span style="font-size:0.65rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em">Confidence Level</span>
-    <span style="font-size:0.65rem;font-weight:800;color:var(--primary)">{_conf}%</span>
+  <h5 style="font-family:Manrope,sans-serif;font-size:1.5rem;font-weight:900;
+      color:#1a1c1a;margin:0 0 1.25rem">{_cname}</h5>
+  <div style="display:flex;justify-content:space-between;margin-bottom:5px">
+    <span style="font-size:0.65rem;font-weight:800;color:{_muted_c};
+        text-transform:uppercase;letter-spacing:0.1em;font-family:'Plus Jakarta Sans',sans-serif">
+      Confidence Level</span>
+    <span style="font-size:0.65rem;font-weight:800;color:{_primary_c}">{_conf}%</span>
   </div>
   <div style="height:8px;width:100%;background:#e6e8e4;border-radius:999px;overflow:hidden">
-    <div style="height:100%;width:{_conf}%;background:var(--primary);border-radius:999px"></div>
+    <div style="height:100%;width:{_conf_bar_w}%;background:{_primary_c};
+         border-radius:999px;transition:width 0.4s ease"></div>
   </div>
 </div>
-""", unsafe_allow_html=True)
+""")
+            except AttributeError:
+                st.markdown(f"### {_cname}\n**Confidence:** {_conf}%", unsafe_allow_html=False)
 
-            # ── Treatment Plan ──
-            _primary   = _treat.get("primary_treatment",   "No specific treatment data available.")
-            _fert_rec  = _treat.get("fertilizer",           "Maintain balanced NPK fertilization.")
-            _cultural  = _treat.get("cultural_practices",   "Practice good field hygiene and crop rotation.")
+            # ── Treatment Plan card ──────────────────────────────────
+            def _section_html(icon, label, text):
+                import html as _html
+                safe_text = _html.escape(str(text))
+                return f"""
+<div style="margin-bottom:1.5rem">
+  <div style="display:flex;align-items:center;gap:6px;margin-bottom:0.625rem">
+    <span style="font-family:'Material Symbols Outlined';color:{_primary_c};font-size:1rem;
+          font-variation-settings:'FILL' 0,'wght' 300">{icon}</span>
+    <span style="font-size:0.6rem;font-weight:800;color:{_muted_c};
+        text-transform:uppercase;letter-spacing:0.15em;
+        font-family:'Plus Jakarta Sans',sans-serif">{label}</span>
+  </div>
+  <p style="font-size:0.84rem;font-weight:500;color:{_muted_c};line-height:1.65;margin:0">
+    {safe_text}
+  </p>
+</div>"""
 
-            st.markdown(f"""
-<div style="background:var(--surface-container-low);border-radius:0.75rem;
+            _plan_html = f"""
+<div style="background:#f9f9f7;border-radius:12px;border:1px solid rgba(0,0,0,0.05);
      box-shadow:0 2px 8px rgba(0,0,0,0.05)">
-  <div style="padding:1.25rem 1.5rem;border-bottom:1px solid rgba(0,0,0,0.05);
+  <div style="padding:1.25rem 1.5rem;border-bottom:1px solid rgba(0,0,0,0.06);
        display:flex;align-items:center;gap:8px">
-    <span class="material-symbols-outlined" style="color:var(--primary);font-size:1.4rem">medical_services</span>
+    <span style="font-family:'Material Symbols Outlined';color:{_primary_c};font-size:1.4rem;
+          font-variation-settings:'FILL' 0,'wght' 400">medical_services</span>
     <h4 style="font-family:Manrope,sans-serif;font-size:1.05rem;font-weight:800;
-        color:var(--primary);margin:0">Treatment Plan</h4>
+        color:{_primary_c};margin:0">Treatment Plan</h4>
   </div>
-  <div style="padding:1.25rem 1.5rem">
-
-    <div style="margin-bottom:1.5rem">
-      <div style="display:flex;align-items:center;gap:6px;margin-bottom:0.5rem">
-        <span class="material-symbols-outlined" style="color:var(--primary);font-size:1rem">health_and_safety</span>
-        <span style="font-size:0.6rem;font-weight:800;color:var(--muted);
-            text-transform:uppercase;letter-spacing:0.15em">Primary Treatment</span>
-      </div>
-      <p style="font-size:0.83rem;font-weight:500;color:var(--muted);
-          line-height:1.6;margin:0">{_primary}</p>
-    </div>
-
-    <div style="margin-bottom:1.5rem">
-      <div style="display:flex;align-items:center;gap:6px;margin-bottom:0.5rem">
-        <span class="material-symbols-outlined" style="color:var(--primary);font-size:1rem">science</span>
-        <span style="font-size:0.6rem;font-weight:800;color:var(--muted);
-            text-transform:uppercase;letter-spacing:0.15em">Fertilizer Recommendation</span>
-      </div>
-      <p style="font-size:0.83rem;font-weight:500;color:var(--muted);
-          line-height:1.6;margin:0">{_fert_rec}</p>
-    </div>
-
-    <div>
-      <div style="display:flex;align-items:center;gap:6px;margin-bottom:0.5rem">
-        <span class="material-symbols-outlined" style="color:var(--primary);font-size:1rem">agriculture</span>
-        <span style="font-size:0.6rem;font-weight:800;color:var(--muted);
-            text-transform:uppercase;letter-spacing:0.15em">Cultural Practices</span>
-      </div>
-      <p style="font-size:0.83rem;font-weight:500;color:var(--muted);
-          line-height:1.6;margin:0">{_cultural}</p>
-    </div>
-
+  <div style="padding:1.5rem 1.5rem 0.5rem">
+    {_section_html("health_and_safety", "Primary Treatment", _primary)}
+    {_section_html("science", "Fertilizer Recommendation", _fert_rec)}
+    {_section_html("agriculture", "Cultural Practices", _cultural)}
   </div>
-</div>
-""", unsafe_allow_html=True)
+</div>"""
+            try:
+                st.html(_plan_html)
+            except AttributeError:
+                st.markdown(_plan_html, unsafe_allow_html=True)
 
-            # ── Top-5 confidence breakdown ──
-            st.markdown("<div style='height:1rem'></div>", unsafe_allow_html=True)
+            # ── Top-5 confidence breakdown ───────────────────────────
+            st.markdown("<div style='height:0.75rem'></div>", unsafe_allow_html=True)
             st.markdown(
                 "<p style='font-size:11px;font-weight:800;text-transform:uppercase;"
-                "letter-spacing:0.1em;color:var(--muted);margin:0 0 0.5rem'>Top-5 Predictions</p>",
+                "letter-spacing:0.1em;color:#444744;margin:0 0 0.5rem'>"
+                "Top-5 Predictions</p>",
                 unsafe_allow_html=True,
             )
             for _tn, _tp in _top5:
-                _t_label = _tn.replace("___", " — ").replace("_", " ")
-                st.markdown(f"""
-<div style="display:flex;justify-content:space-between;align-items:center;
-     margin-bottom:6px;gap:8px">
-  <span style="font-size:12px;font-weight:600;color:var(--text);
-        white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px">{_t_label}</span>
-  <div style="flex:1;height:5px;background:#e6e8e4;border-radius:999px;overflow:hidden">
-    <div style="height:100%;width:{_tp}%;background:var(--primary);border-radius:999px"></div>
-  </div>
-  <span style="font-size:12px;font-weight:800;color:var(--primary);flex-shrink:0">{_tp}%</span>
-</div>
-""", unsafe_allow_html=True)
+                _t_label  = _tn.replace("___", " — ").replace("_", " ")
+                _bar_pct  = min(int(_tp), 100)
+                st.markdown(
+                    f"<div style='display:flex;align-items:center;gap:8px;margin-bottom:6px'>"
+                    f"<span style='font-size:12px;font-weight:600;color:#1a1c1a;"
+                    f"white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:1 1 140px;max-width:180px'>"
+                    f"{_t_label}</span>"
+                    f"<div style='flex:2;height:5px;background:#e6e8e4;border-radius:999px;overflow:hidden'>"
+                    f"<div style='height:100%;width:{_bar_pct}%;background:#1E5C3A;border-radius:999px'></div></div>"
+                    f"<span style='font-size:12px;font-weight:800;color:#1E5C3A;flex-shrink:0'>{_tp}%</span>"
+                    f"</div>",
+                    unsafe_allow_html=True,
+                )
 
         else:
             # Empty state

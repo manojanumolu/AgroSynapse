@@ -1,7 +1,5 @@
 flask
 flask-cors
-torch>=2.0.0
-torchvision>=0.15.0
 xgboost>=2.0.0
 numpy>=1.24.0
 pandas>=2.0.0
@@ -10,5 +8,5 @@ pillow>=10.0.0
 streamlit>=1.28.0
 requests
 plotly>=5.22.0
-# Leaf disease model dependencies (already satisfied by torch/torchvision above)
+tensorflow-cpu>=2.12.0
 # git-lfs must be installed system-wide for .pkl model tracking

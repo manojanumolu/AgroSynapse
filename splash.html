@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AgroSynapse AI - Atmospheric Intelligence</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&amp;family=Plus+Jakarta+Sans:wght@200..800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-surface": "#faf9f6",
+                        "surface-container": "#181a18",
+                        "on-background": "#faf9f6",
+                        "primary-fixed": "#b4fcc2",
+                        "primary-container": "#6baf7c",
+                        "surface-container-high": "#1e201e",
+                        "on-error": "#490006",
+                        "surface": "#0d0f0d",
+                        "on-secondary-container": "#b3d9c3",
+                        "primary-fixed-dim": "#a6edb5",
+                        "outline": "#747673",
+                        "on-primary-container": "#002911",
+                        "inverse-on-surface": "#545553",
+                        "primary": "#b4fcc2",
+                        "on-tertiary": "#526262",
+                        "on-tertiary-fixed-variant": "#556665",
+                        "error-dim": "#d7383b",
+                        "tertiary-fixed": "#dff1f0",
+                        "tertiary-fixed-dim": "#d1e3e2",
+                        "surface-container-lowest": "#000000",
+                        "surface-container-low": "#121412",
+                        "inverse-surface": "#faf9f6",
+                        "surface-tint": "#b4fcc2",
+                        "inverse-primary": "#286b3f",
+                        "on-tertiary-fixed": "#394949",
+                        "secondary-fixed-dim": "#b7ddc7",
+                        "primary-dim": "#a6edb5",
+                        "error": "#ff716c",
+                        "secondary-fixed": "#c5ebd4",
+                        "secondary-dim": "#b7ddc7",
+                        "surface-dim": "#0d0f0d",
+                        "error-container": "#9f0519",
+                        "surface-variant": "#242624",
+                        "on-error-container": "#ffa8a3",
+                        "on-primary-fixed-variant": "#2a6d40",
+                        "tertiary": "#ebfdfc",
+                        "surface-container-highest": "#242624",
+                        "background": "#0d0f0d",
+                        "surface-bright": "#2a2d2a",
+                        "on-primary-fixed": "#015026",
+                        "secondary-container": "#2c4e3d",
+                        "on-secondary": "#375947",
+                        "on-primary": "#1e6337",
+                        "outline-variant": "#474846",
+                        "on-tertiary-container": "#495a59",
+                        "tertiary-container": "#ddefee",
+                        "secondary": "#c5ebd4",
+                        "on-surface-variant": "#ababa8",
+                        "on-secondary-fixed": "#244635",
+                        "tertiary-dim": "#c1d2d1",
+                        "on-secondary-fixed-variant": "#406351"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Manrope"],
+                        "body": ["Manrope"],
+                        "label": ["Plus Jakarta Sans"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Manrope', sans-serif;
+            background-color: #0d0f0d;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-pane {
+            background: rgba(24, 26, 24, 0.4);
+            backdrop-filter: blur(32px);
+            -webkit-backdrop-filter: blur(32px);
+        }
+        .ghost-border {
+            border: 1px solid rgba(71, 72, 70, 0.15);
+        }
+        .atmospheric-gradient {
+            background: radial-gradient(circle at center, transparent 0%, rgba(13, 15, 13, 0.8) 100%);
+        }
+    </style>
+</head>
+<body class="text-on-surface min-h-screen relative overflow-hidden">
+<!-- Level 0 (Earth): Background Image Layer -->
+<div class="fixed inset-0 z-0">
+<img alt="Vast potato and tomato field at dawn with soft atmospheric mist and golden sunlight" class="w-full h-full object-cover filter brightness-50 contrast-125 scale-105" data-alt="Wide angle view of a lush green agricultural field at dawn with thick morning mist and soft golden sunlight breaking through clouds" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC_4_5TG-VAHnxZLJdeXsrTmA67hhAp3WSG5znRuFCRAoJnFw11ntLiNqVPWaY3q7Z_c2lEN6eT-LOQAb2WwzSjLXUauGqqg_e42Meq9-ExH5WOgS9ODvIfIJ2_LG_IEuVUAJICV1r0syTAWRwhNFeW2xRclJqzZOi2EajAF7DQvAJDPBYy_qdz37qdJHEU7BEbQz8EGAlq3qkZofqHTfNm-d_cWQjFwr7WGf54uPwmhj0p8Rl4pZKj3909MiWIA9Tk8ynWWeX-HhTZ"/>
+<div class="absolute inset-0 atmospheric-gradient"></div>
+</div>
+<!-- Navigation Shell (TopAppBar Implementation) -->
+<header class="fixed top-0 w-full z-50 flex justify-between items-center px-8 h-16 w-full z-50 bg-emerald-950/40 backdrop-blur-xl border-b border-white/15 shadow-2xl shadow-emerald-900/20 font-manrope tracking-tight">
+<div class="flex items-center gap-4">
+<div class="p-2 hover:bg-white/10 transition-all duration-300 rounded-full cursor-pointer active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-emerald-300">home</span>
+</div>
+</div>
+<div class="flex items-center gap-8">
+<nav class="hidden md:flex items-center gap-6">
+<a class="text-stone-300 hover:text-white transition-colors" href="#">Documentation</a>
+<a class="text-stone-300 hover:text-white transition-colors" href="#">Satellite Map</a>
+</nav>
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-emerald-300">account_circle</span>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="relative z-10 min-h-screen flex flex-col items-center justify-center px-6 pt-16">
+<!-- Central Branding Anchor -->
+<div class="text-center mb-16">
+<div class="inline-flex items-center gap-3 mb-4">
+<div class="w-12 h-12 glass-pane ghost-border rounded-xl flex items-center justify-center text-primary">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">psychology</span>
+</div>
+</div>
+<h1 class="text-4xl md:text-6xl font-extrabold tracking-tighter text-white mb-2 font-headline">
+                AgroSynapse AI
+            </h1>
+<p class="text-on-surface-variant font-label text-sm uppercase tracking-[0.3em] font-medium">
+                Atmospheric Intelligence
+            </p>
+</div>
+<!-- Navigation Cards (Asymmetric Bento-ish Layout) -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-5xl">
+<!-- Card 1: Predictive Cultivation -->
+<div class="group relative glass-pane ghost-border rounded-xl p-8 transition-all duration-500 hover:bg-emerald-400/10 hover:shadow-[0_0_50px_rgba(180,252,194,0.1)] cursor-pointer">
+<div class="absolute top-6 right-8 opacity-20 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-primary-fixed" style="font-variation-settings: 'FILL' 0;">temp_preferences_custom</span>
+</div>
+<div class="mb-12">
+<span class="text-xs font-label text-primary uppercase tracking-widest mb-4 block">Agricultural Core</span>
+<h2 class="text-3xl font-bold text-white mb-3 font-headline">Predictive Cultivation</h2>
+<p class="text-on-surface-variant text-lg leading-relaxed">
+                        Multimodal Soil-to-Crop Fusion
+                    </p>
+</div>
+<div class="flex items-center gap-3">
+<div class="h-[1px] flex-grow bg-white/10 group-hover:bg-primary/30 transition-colors"></div>
+<span class="material-symbols-outlined text-primary-fixed group-hover:translate-x-1 transition-transform">arrow_forward</span>
+</div>
+</div>
+<!-- Card 2: Phyto-Diagnostic Suite -->
+<div class="group relative glass-pane ghost-border rounded-xl p-8 transition-all duration-500 hover:bg-emerald-400/10 hover:shadow-[0_0_50px_rgba(180,252,194,0.1)] cursor-pointer">
+<div class="absolute top-6 right-8 opacity-20 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-primary-fixed" style="font-variation-settings: 'FILL' 0;">psychology</span>
+</div>
+<div class="mb-12">
+<span class="text-xs font-label text-primary uppercase tracking-widest mb-4 block">Neural Vision</span>
+<h2 class="text-3xl font-bold text-white mb-3 font-headline">Phyto-Diagnostic Suite</h2>
+<p class="text-on-surface-variant text-lg leading-relaxed">
+                        Leaf-to-Cure Vision
+                    </p>
+</div>
+<div class="flex items-center gap-3">
+<div class="h-[1px] flex-grow bg-white/10 group-hover:bg-primary/30 transition-colors"></div>
+<span class="material-symbols-outlined text-primary-fixed group-hover:translate-x-1 transition-transform">arrow_forward</span>
+</div>
+</div>
+</div>
+<!-- Technical Readout Footer -->
+<footer class="absolute bottom-12 w-full px-12 flex justify-between items-end">
+<div class="hidden md:block">
+<div class="flex gap-8">
+<div>
+<p class="text-[10px] font-label text-on-surface-variant uppercase tracking-tighter mb-1">Station Status</p>
+<p class="text-xs font-headline font-semibold text-emerald-300 flex items-center gap-2">
+<span class="w-1.5 h-1.5 bg-emerald-300 rounded-full animate-pulse"></span>
+                            SYNAPSE-ALPHA ACTIVE
+                        </p>
+</div>
+<div>
+<p class="text-[10px] font-label text-on-surface-variant uppercase tracking-tighter mb-1">Atmospheric Humidity</p>
+<p class="text-xs font-headline font-semibold text-white">68.4% RH</p>
+</div>
+</div>
+</div>
+<div class="text-right">
+<p class="text-[10px] font-label text-on-surface-variant uppercase tracking-[0.2em] mb-2">Developed By</p>
+<div class="h-6 overflow-hidden">
+<span class="text-sm font-headline font-bold text-white tracking-widest">ETHOS AGRI-SYSTEMS</span>
+</div>
+</div>
+</footer>
+</main>
+<!-- Background Mist Effect (Decorative) -->
+<div class="fixed top-1/4 -left-20 w-96 h-96 bg-primary/5 blur-[120px] rounded-full pointer-events-none"></div>
+<div class="fixed bottom-1/4 -right-20 w-80 h-80 bg-emerald-900/10 blur-[100px] rounded-full pointer-events-none"></div>
+</body></html>
