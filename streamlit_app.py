@@ -42,6 +42,12 @@ if "theme" not in st.session_state:
     st.session_state.theme = "light"
 if "sidebar_open" not in st.session_state:
     st.session_state.sidebar_open = False
+if "page" not in st.session_state:
+    st.session_state.page = "splash"
+if "leaf_img_bytes" not in st.session_state:
+    st.session_state.leaf_img_bytes = None
+if "leaf_result" not in st.session_state:
+    st.session_state.leaf_result = None
 
 if st.session_state.theme == "dark":
     THEME_VARS = """<style>
@@ -620,6 +626,131 @@ def is_soil_image(pil_img):
         prob = torch.softmax(out, dim=-1)[0]
     soil_prob = prob[1].item()
     return soil_prob > 0.60
+
+
+# ══════════════════════════════════════════════════════════════
+# LEAF DISEASE MODEL — Universal PlantVillage ResNet-50
+# ══════════════════════════════════════════════════════════════
+
+LEAF_CLASS_NAMES = [
+    "Apple___Apple_scab", "Apple___Black_rot", "Apple___Cedar_apple_rust",
+    "Apple___healthy", "Blueberry___healthy",
+    "Cherry_(including_sour)___Powdery_mildew", "Cherry_(including_sour)___healthy",
+    "Corn_(maize)___Cercospora_leaf_spot_Gray_leaf_spot", "Corn_(maize)___Common_rust_",
+    "Corn_(maize)___Northern_Leaf_Blight", "Corn_(maize)___healthy",
+    "Grape___Black_rot", "Grape___Esca_(Black_Measles)",
+    "Grape___Leaf_blight_(Isariopsis_Leaf_Spot)", "Grape___healthy",
+    "Orange___Haunglongbing_(Citrus_greening)",
+    "Peach___Bacterial_spot", "Peach___healthy",
+    "Pepper,_bell___Bacterial_spot", "Pepper,_bell___healthy",
+    "Potato___Early_blight", "Potato___Late_blight", "Potato___healthy",
+    "Raspberry___healthy", "Soybean___healthy", "Squash___Powdery_mildew",
+    "Strawberry___Leaf_scorch", "Strawberry___healthy",
+    "Tomato___Bacterial_spot", "Tomato___Early_blight", "Tomato___Late_blight",
+    "Tomato___Leaf_Mold", "Tomato___Septoria_leaf_spot",
+    "Tomato___Spider_mites_Two-spotted_spider_mite", "Tomato___Target_Spot",
+    "Tomato___Tomato_Yellow_Leaf_Curl_Virus", "Tomato___Tomato_mosaic_virus",
+    "Tomato___healthy",
+]
+
+LEAF_TREATMENT_MAP = {
+    "Apple___Apple_scab": {"common_name": "Apple Scab", "primary_treatment": "Apply fungicides containing captan, myclobutanil, or mancozeb at 7-10 day intervals during wet spring weather. Remove and destroy fallen infected leaves in autumn.", "fertilizer": "Maintain balanced nutrition. Avoid excess nitrogen which promotes susceptible soft growth. Apply potassium to strengthen cell walls.", "cultural_practices": "Improve air circulation by pruning. Rake and remove fallen leaves. Use resistant apple varieties for new plantings."},
+    "Apple___Black_rot": {"common_name": "Apple Black Rot", "primary_treatment": "Prune out dead wood and cankers during dry weather. Apply copper-based fungicides or captan. Remove mummified fruits from branches and ground.", "fertilizer": "Ensure adequate calcium and potassium. Avoid high nitrogen fertilization. A 10-10-10 balanced NPK is recommended.", "cultural_practices": "Thin fruits to reduce crowding and improve air circulation. Remove and destroy infected plant material promptly."},
+    "Apple___Cedar_apple_rust": {"common_name": "Cedar Apple Rust", "primary_treatment": "Apply myclobutanil or propiconazole fungicides starting at pink bud stage and repeat through petal fall. Remove nearby cedar/juniper host plants if possible.", "fertilizer": "Standard balanced apple fertilization. Moderate nitrogen, adequate potassium and phosphorus for immunity.", "cultural_practices": "Plant resistant apple varieties. Remove cedar galls (orange jelly masses) in early spring before they release spores."},
+    "Apple___healthy": {"common_name": "Apple (Healthy)", "primary_treatment": "No treatment required. Continue preventive fungicide schedule and good orchard sanitation to maintain plant health.", "fertilizer": "Annual balanced NPK fertilization (10-10-10 or adjusted per soil test). Apply in early spring.", "cultural_practices": "Annual pruning for air circulation, regular irrigation, pest monitoring, and orchard floor management."},
+    "Blueberry___healthy": {"common_name": "Blueberry (Healthy)", "primary_treatment": "No disease detected. Maintain preventive care schedule.", "fertilizer": "Acidic soil fertilizer (ammonium sulfate). Keep soil pH 4.5-5.5. Avoid phosphorus excess.", "cultural_practices": "Mulch with pine bark or sawdust. Ensure well-drained acidic soil. Protect from birds during harvest."},
+    "Cherry_(including_sour)___Powdery_mildew": {"common_name": "Cherry Powdery Mildew", "primary_treatment": "Apply sulfur-based fungicides or potassium bicarbonate at first sign of symptoms. Repeat every 7-14 days. Myclobutanil is also effective.", "fertilizer": "Reduce nitrogen applications which cause excessive soft growth susceptible to mildew. Increase potassium for plant hardiness.", "cultural_practices": "Improve air circulation by pruning. Avoid overhead irrigation. Plant resistant varieties."},
+    "Cherry_(including_sour)___healthy": {"common_name": "Cherry (Healthy)", "primary_treatment": "No disease detected. Preventive copper sprays in early spring can protect against bacterial and fungal diseases.", "fertilizer": "Balanced N-P-K fertilization. Apply in early spring based on soil test.", "cultural_practices": "Annual pruning, proper irrigation, and pest monitoring. Maintain good sanitation around the orchard."},
+    "Corn_(maize)___Cercospora_leaf_spot_Gray_leaf_spot": {"common_name": "Corn Gray Leaf Spot", "primary_treatment": "Apply foliar fungicides (strobilurins or triazoles) at first sign of disease. Applications at V6-V8 stage are most effective. Use resistant hybrids.", "fertilizer": "Maintain adequate nitrogen for good plant vigor (120-150 kg N/ha). Potassium deficiency increases susceptibility.", "cultural_practices": "Crop rotation with non-host crops for 1-2 years. Till infected crop residue. Improve field drainage."},
+    "Corn_(maize)___Common_rust_": {"common_name": "Corn Common Rust", "primary_treatment": "Apply strobilurin or triazole fungicides at early infection stages. Prioritize high-value seed corn fields. Use resistant hybrids for next season.", "fertilizer": "Maintain adequate potassium levels (60-80 kg K/ha) for improved disease resistance. Balanced NPK fertilization.", "cultural_practices": "Plant resistant hybrids. Early planting to avoid peak rust pressure. Scout fields regularly in summer."},
+    "Corn_(maize)___Northern_Leaf_Blight": {"common_name": "Corn Northern Leaf Blight", "primary_treatment": "Apply fungicides (propiconazole or azoxystrobin) at VT/R1 stage if disease is present above the ear leaf. Use resistant hybrids.", "fertilizer": "Ensure nitrogen adequacy (120-150 kg N/ha). Potassium helps with disease tolerance. Foliar zinc applications can help.", "cultural_practices": "Rotate crops, bury infected residue, use resistant hybrids. Avoid late planting."},
+    "Corn_(maize)___healthy": {"common_name": "Corn (Healthy)", "primary_treatment": "No disease detected. Continue routine scouting and preventive management.", "fertilizer": "Side-dress with nitrogen at V6 stage. Maintain P and K per soil test recommendations.", "cultural_practices": "Maintain proper plant density, weed control, and irrigation for optimal yield."},
+    "Grape___Black_rot": {"common_name": "Grape Black Rot", "primary_treatment": "Apply mancozeb, myclobutanil, or captan fungicides starting at budbreak and continue through fruit set. Critical protection period is 2-5 weeks post bloom.", "fertilizer": "Avoid excess nitrogen. Maintain balanced potassium for cell wall strength. Use 5-5-5 NPK as base.", "cultural_practices": "Remove mummified berries and infected canes in winter. Train vines to maximize air circulation. Eliminate overhead irrigation."},
+    "Grape___Esca_(Black_Measles)": {"common_name": "Grape Esca (Black Measles)", "primary_treatment": "No effective chemical cure. Prune out infected wood during dry weather using disinfected tools. Paint pruning wounds with fungicidal paste.", "fertilizer": "Avoid excess nitrogen. Phosphorus and potassium support root and vascular health. Regular foliar iron applications if deficient.", "cultural_practices": "Delay pruning until late winter to reduce infection risk. Remove and burn severely affected vines. Disinfect pruning tools between vines."},
+    "Grape___Leaf_blight_(Isariopsis_Leaf_Spot)": {"common_name": "Grape Leaf Blight", "primary_treatment": "Apply copper-based fungicides or mancozeb at first sign. Repeat applications every 10-14 days during wet periods.", "fertilizer": "Maintain balanced nutrition. Excess nitrogen promotes dense canopy which increases disease humidity.", "cultural_practices": "Improve trellis system for better air circulation. Avoid overhead irrigation. Remove infected leaves promptly."},
+    "Grape___healthy": {"common_name": "Grape (Healthy)", "primary_treatment": "No disease detected. Maintain preventive fungicide program and good vineyard sanitation.", "fertilizer": "Standard vineyard fertilization based on tissue and soil analysis. Typical: 60-80 kg N/ha, adjusted for vigor.", "cultural_practices": "Annual pruning, canopy management, and pest monitoring. Ensure good drainage."},
+    "Orange___Haunglongbing_(Citrus_greening)": {"common_name": "Citrus Greening (HLB)", "primary_treatment": "No cure exists. Remove and destroy infected trees to prevent spread. Control Asian Citrus Psyllid vector with systemic insecticides (imidacloprid, spirotetramat).", "fertilizer": "Nutritional therapy: foliar micronutrient sprays (Zn, Mn, Fe, Mg, Cu). Enhanced trunk injections of macro and micronutrients to support compromised nutrient uptake.", "cultural_practices": "Use certified disease-free nursery stock. Establish psyllid monitoring programs. Consider replanting with tolerant rootstock combinations."},
+    "Peach___Bacterial_spot": {"common_name": "Peach Bacterial Spot", "primary_treatment": "Apply copper bactericides or oxytetracycline starting at petal fall. Repeat at 5-7 day intervals during wet weather.", "fertilizer": "Maintain moderate nitrogen (50-70 kg N/ha). Excess nitrogen promotes soft, susceptible tissue. Potassium improves bark integrity.", "cultural_practices": "Prune for air circulation. Use resistant varieties. Avoid overhead irrigation. Shelter from wind-driven rain."},
+    "Peach___healthy": {"common_name": "Peach (Healthy)", "primary_treatment": "No disease detected. Annual dormant copper spray program is recommended for prevention.", "fertilizer": "Apply nitrogen in split doses: 50% at dormancy break, 50% at fruit development stage.", "cultural_practices": "Annual pruning for open center shape. Thin fruit to 15-20 cm spacing for quality and disease prevention."},
+    "Pepper,_bell___Bacterial_spot": {"common_name": "Bell Pepper Bacterial Spot", "primary_treatment": "Apply copper bactericides (copper hydroxide or copper sulfate) at first symptom. Repeat every 5-7 days during wet weather.", "fertilizer": "Reduce nitrogen. Increase calcium (foliar calcium sprays at 1-2 g/L) and potassium. Use 12-6-18 NPK ratio.", "cultural_practices": "Use disease-free seed or transplants. Rotate crops (avoid peppers/tomatoes for 2-3 years). Avoid overhead irrigation."},
+    "Pepper,_bell___healthy": {"common_name": "Bell Pepper (Healthy)", "primary_treatment": "No disease detected. Preventive copper applications in high-risk weather periods.", "fertilizer": "NPK: 120:60:80 kg/ha as base. Side-dress with nitrogen at first fruit set.", "cultural_practices": "Stake plants, use drip irrigation, and scout for early signs of pests/disease."},
+    "Potato___Early_blight": {"common_name": "Potato Early Blight", "primary_treatment": "Apply chlorothalonil, mancozeb, or azoxystrobin fungicides at first symptom. Repeat every 7-10 days. Start applications before symptoms appear in high-risk periods.", "fertilizer": "Increase potassium (80-100 kg K/ha) to strengthen cell walls. Avoid excessive nitrogen. Switch to 5-10-15 NPK ratio during recovery.", "cultural_practices": "Remove infected lower leaves promptly. Use drip irrigation to keep foliage dry. Ensure 60 cm plant spacing for air circulation."},
+    "Potato___Late_blight": {"common_name": "Potato Late Blight", "primary_treatment": "URGENT: Apply systemic fungicides (metalaxyl, dimethomorph, or cymoxanil) immediately. Rotate fungicide classes to prevent resistance. Destroy severely infected plots.", "fertilizer": "Reduce nitrogen to slow soft tissue growth. Increase potassium (90-120 kg K/ha). Calcium foliar sprays help.", "cultural_practices": "Plant certified disease-free seed. Harvest before complete vine death. Destroy cull piles. Use resistant varieties. Avoid overhead irrigation."},
+    "Potato___healthy": {"common_name": "Potato (Healthy)", "primary_treatment": "No disease detected. Preventive fungicide applications during warm, humid weather are recommended.", "fertilizer": "NPK: 180:120:80 kg/ha. Split nitrogen: 50% at planting, 50% at hilling. Apply potassium in full at planting.", "cultural_practices": "Hill plants at 2-3 weeks post-emergence. Maintain consistent soil moisture with drip or furrow irrigation."},
+    "Raspberry___healthy": {"common_name": "Raspberry (Healthy)", "primary_treatment": "No disease detected. Maintain preventive care.", "fertilizer": "Apply 60-80 kg N/ha in early spring. Add composted organic matter annually.", "cultural_practices": "Prune out floricanes after harvest. Maintain narrow rows for air circulation."},
+    "Soybean___healthy": {"common_name": "Soybean (Healthy)", "primary_treatment": "No disease detected. Scout regularly for early disease detection.", "fertilizer": "Inoculate with Bradyrhizobium for nitrogen fixation. Apply phosphorus and potassium per soil test.", "cultural_practices": "Rotate with non-legume crops. Maintain proper plant population (300,000-350,000 plants/ha)."},
+    "Squash___Powdery_mildew": {"common_name": "Squash Powdery Mildew", "primary_treatment": "Apply potassium bicarbonate, sulfur, or neem oil at first white powder appearance. Systemic fungicides (myclobutanil) provide longer protection.", "fertilizer": "Reduce nitrogen, increase potassium. Foliar silicon applications (1-2 g/L potassium silicate) significantly increase resistance.", "cultural_practices": "Improve air circulation by proper vine training. Avoid overhead irrigation. Remove severely infected leaves."},
+    "Strawberry___Leaf_scorch": {"common_name": "Strawberry Leaf Scorch", "primary_treatment": "Apply captan or myclobutanil fungicide at first symptom. Repeat every 10-14 days. Remove infected leaves from the planting.", "fertilizer": "Maintain balanced nutrition. Avoid excess nitrogen late in season. Potassium improves disease tolerance.", "cultural_practices": "Renovate strawberry beds after harvest. Improve drainage. Increase row spacing for air circulation."},
+    "Strawberry___healthy": {"common_name": "Strawberry (Healthy)", "primary_treatment": "No disease detected. Continue preventive care.", "fertilizer": "Apply 60-80 kg N/ha in split doses. Ensure adequate phosphorus for root development.", "cultural_practices": "Renovate and replant every 3-4 years. Use drip irrigation. Mulch with straw to prevent soil splash."},
+    "Tomato___Bacterial_spot": {"common_name": "Tomato Bacterial Spot", "primary_treatment": "Apply copper bactericides at first sign. Combine with mancozeb for improved efficacy. Applications every 5-7 days during wet weather are critical.", "fertilizer": "Reduce nitrogen. Increase calcium (0.5-1 g/L CaCl2 foliar spray) and potassium. Use 12-6-18 NPK ratio.", "cultural_practices": "Use certified disease-free seed/transplants. Avoid overhead irrigation. Stake plants. Implement 2-3 year crop rotation."},
+    "Tomato___Early_blight": {"common_name": "Tomato Early Blight", "primary_treatment": "Remove and destroy infected lower leaves immediately. Apply copper-based fungicides or chlorothalonil every 7-10 days until symptoms clear.", "fertilizer": "Increase potassium (80-100 kg K/ha) to strengthen cell walls. Reduce heavy nitrogen application. Switch to 5-10-15 NPK ratio during recovery.", "cultural_practices": "Utilize drip irrigation to keep foliage dry. Stake plants to improve airflow. Increase spacing to at least 60 cm. Mulch the soil base to prevent spore splash-back."},
+    "Tomato___Late_blight": {"common_name": "Tomato Late Blight", "primary_treatment": "Apply systemic fungicides (metalaxyl-M or dimethomorph) immediately upon detection. Alternate with chlorothalonil to prevent resistance. Remove severely infected plants.", "fertilizer": "Reduce nitrogen to limit soft tissue. Increase potassium (100-120 kg K/ha). Foliar calcium (1 g/L CaCl2) sprays strengthen cell walls.", "cultural_practices": "Remove and destroy infected debris. Avoid overhead irrigation. Space plants 60-75 cm apart. Scout daily during cool, wet weather."},
+    "Tomato___Leaf_Mold": {"common_name": "Tomato Leaf Mold", "primary_treatment": "Apply chlorothalonil or copper-based fungicides. Ensure good air circulation to reduce humidity below 85%. Applications every 7-10 days.", "fertilizer": "Balanced nutrition. Avoid excess nitrogen. Calcium sprays help cell wall integrity in high-humidity conditions.", "cultural_practices": "Reduce relative humidity in greenhouses below 85%. Increase plant spacing. Remove lower leaves to improve airflow."},
+    "Tomato___Septoria_leaf_spot": {"common_name": "Tomato Septoria Leaf Spot", "primary_treatment": "Apply chlorothalonil, copper, or mancozeb fungicides at first symptom. Remove infected leaves. Repeat every 7-10 days during wet weather.", "fertilizer": "Maintain balanced NPK. Potassium improves disease tolerance. Avoid excessive nitrogen.", "cultural_practices": "Mulch to prevent soil splash. Stake plants. Avoid working in wet fields. Rotate crops for 3 years."},
+    "Tomato___Spider_mites_Two-spotted_spider_mite": {"common_name": "Tomato Spider Mites", "primary_treatment": "Apply miticides (abamectin, bifenazate) or insecticidal soap/neem oil for organic control. Predatory mites (Phytoseiulus persimilis) provide biological control.", "fertilizer": "Ensure adequate watering to reduce plant stress. Excess nitrogen increases spider mite population. Increase potassium for plant hardiness.", "cultural_practices": "Monitor undersides of leaves. Increase humidity around plants (mites thrive in dry conditions). Remove heavily infested leaves."},
+    "Tomato___Target_Spot": {"common_name": "Tomato Target Spot", "primary_treatment": "Apply azoxystrobin or chlorothalonil fungicides at first symptom. Continue at 7-14 day intervals. Protectant fungicides are more effective than curative.", "fertilizer": "Balanced nutrition with adequate potassium. Avoid excess nitrogen.", "cultural_practices": "Improve air circulation. Remove infected leaves. Avoid overhead irrigation. Implement crop rotation."},
+    "Tomato___Tomato_Yellow_Leaf_Curl_Virus": {"common_name": "Tomato Yellow Leaf Curl Virus", "primary_treatment": "No cure exists. Remove and destroy infected plants. Control whitefly vector with imidacloprid or pyrethroids. Use reflective silver mulches to deter whiteflies.", "fertilizer": "Maintain plant vigor with balanced NPK (200:150:200 kg/ha). Foliar potassium and calcium sprays strengthen immunity.", "cultural_practices": "Use TYLCV-resistant tomato varieties. Install insect-proof screens in greenhouses. Rogue out symptomatic plants early."},
+    "Tomato___Tomato_mosaic_virus": {"common_name": "Tomato Mosaic Virus", "primary_treatment": "No cure exists. Remove and destroy infected plants. Disinfect tools with 10% bleach solution between plants. Virus spreads mechanically.", "fertilizer": "Maintain good plant nutrition with balanced NPK fertilization for non-infected plants.", "cultural_practices": "Wash hands before working with plants. Use certified virus-free transplants. Control aphid vectors. Avoid tobacco use near plants."},
+    "Tomato___healthy": {"common_name": "Tomato (Healthy)", "primary_treatment": "No disease detected. Preventive copper-based fungicide applications during cool, wet periods reduce disease risk.", "fertilizer": "NPK: 200:150:200 kg/ha. Side-dress nitrogen at first flower stage and again at first fruit set.", "cultural_practices": "Stake all plants. Use drip irrigation. Scout 2x weekly during fruiting. Remove suckers and lower leaves as plant matures."},
+}
+
+
+@st.cache_resource(show_spinner="Loading Leaf Disease Model…")
+def load_leaf_model():
+    """Load universal leaf disease ResNet-50 from agrofusion_universal_v2.pkl.
+    Returns (model, class_names, fertilizer_map) — falls back to built-in maps if file missing.
+    """
+    pkl_path = mpath("agrofusion_universal_v2.pkl")
+    if not os.path.exists(pkl_path):
+        return None, LEAF_CLASS_NAMES, LEAF_TREATMENT_MAP
+    try:
+        with open(pkl_path, "rb") as fh:
+            payload = pickle.load(fh)
+        if isinstance(payload, dict):
+            raw_model  = payload.get("model", payload.get("model_state_dict"))
+            cls_names  = payload.get("class_names", LEAF_CLASS_NAMES)
+            fert_map   = payload.get("fertilizer_map", LEAF_TREATMENT_MAP)
+        else:
+            raw_model  = payload
+            cls_names  = LEAF_CLASS_NAMES
+            fert_map   = LEAF_TREATMENT_MAP
+        nc = len(cls_names) if cls_names else 38
+        leaf_resnet = models.resnet50(weights=None)
+        leaf_resnet.fc = nn.Linear(leaf_resnet.fc.in_features, nc)
+        if isinstance(raw_model, dict):
+            leaf_resnet.load_state_dict(raw_model, strict=False)
+        elif raw_model is not None:
+            leaf_resnet.load_state_dict(raw_model, strict=False)
+        leaf_resnet.eval()
+        return leaf_resnet, cls_names, fert_map
+    except Exception as _e:
+        print(f"[WARN] leaf model load error: {_e}")
+        return None, LEAF_CLASS_NAMES, LEAF_TREATMENT_MAP
+
+
+def run_leaf_inference(model, class_names, img_bytes):
+    """Run leaf disease classification on an uploaded leaf image."""
+    tf = transforms.Compose([
+        transforms.Resize((224, 224)),
+        transforms.ToTensor(),
+        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
+    ])
+    pil_img  = Image.open(io.BytesIO(img_bytes)).convert("RGB")
+    img_t    = tf(pil_img).unsqueeze(0)
+    with torch.no_grad():
+        logits = model(img_t)
+        probs  = torch.softmax(logits, dim=-1)[0].cpu().numpy()
+    pred_idx   = int(np.argmax(probs))
+    pred_class = class_names[pred_idx] if pred_idx < len(class_names) else "Unknown"
+    confidence = round(float(probs[pred_idx]) * 100, 2)
+    top5       = sorted(
+        [(class_names[i], round(float(probs[i]) * 100, 2)) for i in range(len(class_names))],
+        key=lambda x: x[1], reverse=True
+    )[:5]
+    return pred_class, confidence, top5
+
+
+_leaf_model, _leaf_classes, _leaf_fert_map = load_leaf_model()
 
 
 # ══════════════════════════════════════════════════════════════
@@ -1638,6 +1769,152 @@ div[data-testid="stColumn"]:has(#mrk-det) > div[data-testid="stVerticalBlock"] {
 </style>
 """
 
+# ══════════════════════════════════════════════════════════════
+# SPLASH PAGE — "Ethereal Harvest" (Atmospheric Intelligence)
+# Renders full-screen dark landing; execution halts with st.stop()
+# ══════════════════════════════════════════════════════════════
+if st.session_state.page == "splash":
+    st.markdown("""
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&family=Plus+Jakarta+Sans:wght@200..800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
+.material-symbols-outlined {
+    font-family: 'Material Symbols Outlined' !important;
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    vertical-align: middle;
+}
+html, body { background-color: #0d0f0d !important; }
+.stApp, .main { background: linear-gradient(160deg, #0a110a 0%, #0d0f0d 55%, #060d06 100%) !important; }
+.block-container { max-width: 960px !important; padding: 3rem 2rem 2rem !important; }
+section[data-testid="stSidebar"] { display: none !important; }
+header[data-testid="stHeader"] { display: none !important; }
+#MainMenu, footer, .stDeployButton { display: none !important; visibility: hidden !important; }
+/* Glass card button override */
+button.splash-card-btn {
+    all: unset;
+}
+div[data-testid="stButton"] > button {
+    background: rgba(24, 26, 24, 0.45) !important;
+    backdrop-filter: blur(32px) !important;
+    -webkit-backdrop-filter: blur(32px) !important;
+    border: 1px solid rgba(71, 72, 70, 0.18) !important;
+    border-radius: 0.75rem !important;
+    color: #faf9f6 !important;
+    font-family: 'Manrope', sans-serif !important;
+    font-size: 1.5rem !important;
+    font-weight: 800 !important;
+    width: 100% !important;
+    min-height: 220px !important;
+    padding: 2.5rem 2rem !important;
+    text-align: left !important;
+    line-height: 1.3 !important;
+    transition: background 0.3s, box-shadow 0.3s !important;
+    cursor: pointer !important;
+}
+div[data-testid="stButton"] > button:hover {
+    background: rgba(180, 252, 194, 0.08) !important;
+    box-shadow: 0 0 60px rgba(180, 252, 194, 0.08) !important;
+    border-color: rgba(180, 252, 194, 0.25) !important;
+}
+</style>
+""", unsafe_allow_html=True)
+
+    # ── Branding anchor ──
+    st.markdown("""
+<div style="text-align:center;margin-bottom:3.5rem;padding-top:1rem">
+  <div style="display:inline-flex;align-items:center;gap:12px;margin-bottom:1rem">
+    <div style="width:48px;height:48px;background:rgba(24,26,24,0.45);backdrop-filter:blur(32px);
+         border:1px solid rgba(71,72,70,0.18);border-radius:0.75rem;display:flex;
+         align-items:center;justify-content:center">
+      <span class="material-symbols-outlined" style="color:#b4fcc2;font-variation-settings:'FILL' 1">psychology</span>
+    </div>
+  </div>
+  <h1 style="font-family:Manrope,sans-serif;font-size:clamp(2.5rem,7vw,4rem);font-weight:800;
+      letter-spacing:-0.025em;color:#faf9f6;margin:0 0 0.5rem;line-height:1">
+    AgroSynapse AI
+  </h1>
+  <p style="font-family:'Plus Jakarta Sans',sans-serif;font-size:0.75rem;font-weight:600;
+      text-transform:uppercase;letter-spacing:0.3em;color:#ababa8;margin:0">
+    Atmospheric Intelligence
+  </p>
+</div>
+""", unsafe_allow_html=True)
+
+    # ── Navigation cards ──
+    _sc1, _sc2 = st.columns(2, gap="large")
+
+    with _sc1:
+        st.markdown("""
+<p style="font-family:'Plus Jakarta Sans',sans-serif;font-size:0.65rem;font-weight:700;
+    text-transform:uppercase;letter-spacing:0.2em;color:#b4fcc2;margin:0 0 0.4rem">
+  Agricultural Core
+</p>
+<p style="color:#ababa8;font-family:Manrope,sans-serif;font-size:0.9rem;
+    margin:0 0 1rem;font-weight:400">
+  Multimodal Soil-to-Crop Fusion
+</p>
+""", unsafe_allow_html=True)
+        if st.button(
+            "Predictive Cultivation\n→",
+            key="goto_crop",
+            use_container_width=True,
+        ):
+            st.session_state.page = "crop"
+            st.rerun()
+
+    with _sc2:
+        st.markdown("""
+<p style="font-family:'Plus Jakarta Sans',sans-serif;font-size:0.65rem;font-weight:700;
+    text-transform:uppercase;letter-spacing:0.2em;color:#b4fcc2;margin:0 0 0.4rem">
+  Neural Vision
+</p>
+<p style="color:#ababa8;font-family:Manrope,sans-serif;font-size:0.9rem;
+    margin:0 0 1rem;font-weight:400">
+  Leaf-to-Cure Vision
+</p>
+""", unsafe_allow_html=True)
+        if st.button(
+            "Phyto-Diagnostic Suite\n→",
+            key="goto_leaf",
+            use_container_width=True,
+        ):
+            st.session_state.page = "leaf"
+            st.rerun()
+
+    # ── Technical readout footer ──
+    st.markdown("""
+<div style="margin-top:4rem;display:flex;justify-content:space-between;align-items:end;
+     padding:0 0.5rem;flex-wrap:wrap;gap:1rem">
+  <div style="display:flex;gap:2.5rem;flex-wrap:wrap">
+    <div>
+      <p style="font-family:'Plus Jakarta Sans',sans-serif;font-size:0.6rem;font-weight:700;
+          text-transform:uppercase;letter-spacing:0.12em;color:#ababa8;margin:0 0 3px">Station Status</p>
+      <p style="font-family:Manrope,sans-serif;font-size:0.7rem;font-weight:700;
+          color:#b4fcc2;display:flex;align-items:center;gap:6px;margin:0">
+        <span style="width:6px;height:6px;background:#b4fcc2;border-radius:50%;
+              display:inline-block;animation:pulse 2s infinite"></span>
+        SYNAPSE-ALPHA ACTIVE
+      </p>
+    </div>
+    <div>
+      <p style="font-family:'Plus Jakarta Sans',sans-serif;font-size:0.6rem;font-weight:700;
+          text-transform:uppercase;letter-spacing:0.12em;color:#ababa8;margin:0 0 3px">Model Accuracy</p>
+      <p style="font-family:Manrope,sans-serif;font-size:0.7rem;font-weight:700;color:#faf9f6;margin:0">98.67%</p>
+    </div>
+  </div>
+  <div style="text-align:right">
+    <p style="font-family:'Plus Jakarta Sans',sans-serif;font-size:0.6rem;font-weight:700;
+        text-transform:uppercase;letter-spacing:0.2em;color:#ababa8;margin:0 0 4px">Developed By</p>
+    <p style="font-family:Manrope,sans-serif;font-size:0.8rem;font-weight:800;
+        letter-spacing:0.1em;color:#faf9f6;margin:0">ETHOS AGRI-SYSTEMS</p>
+  </div>
+</div>
+<style>@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }</style>
+""", unsafe_allow_html=True)
+
+    st.stop()
+
+
 st.markdown(THEME_VARS, unsafe_allow_html=True)
 st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
 if st.session_state.theme == "dark":
@@ -1705,20 +1982,40 @@ with st.sidebar:
   <p style="font-size:10px;color:rgba(255,255,255,0.4);text-transform:uppercase;
       letter-spacing:0.2em;font-weight:600;margin:0">Agricultural Intelligence</p>
 </div>
-<nav style="display:flex;flex-direction:column;gap:2px;margin-bottom:1.25rem">
+""", unsafe_allow_html=True)
+
+    # Home button
+    if st.button(
+        "⌂  Home",
+        key="sidebar_home_btn",
+        help="Return to AgroSynapse home",
+        use_container_width=True,
+    ):
+        st.session_state.page = "splash"
+        st.session_state.last_result = None
+        st.session_state.leaf_result = None
+        st.rerun()
+
+    _crop_active  = "background:#acf3ba;color:#2f7144;" if st.session_state.page == "crop"  else "color:rgba(255,255,255,0.6);"
+    _leaf_active  = "background:#acf3ba;color:#2f7144;" if st.session_state.page == "leaf"  else "color:rgba(255,255,255,0.6);"
+    _crop_icon_c  = "#2f7144" if st.session_state.page == "crop" else "rgba(255,255,255,0.6)"
+    _leaf_icon_c  = "#2f7144" if st.session_state.page == "leaf" else "rgba(255,255,255,0.6)"
+
+    st.markdown(f"""
+<nav style="display:flex;flex-direction:column;gap:2px;margin-bottom:1.25rem;margin-top:0.5rem">
   <a style="display:flex;align-items:center;gap:10px;padding:10px 14px;
-      background:#acf3ba;color:#2f7144;border-radius:999px;
+      {_crop_active}border-radius:999px;
       font-family:Manrope,sans-serif;font-size:13px;font-weight:700;
-      letter-spacing:0.04em;text-decoration:none">
+      letter-spacing:0.04em;text-decoration:none;cursor:pointer">
     <span class="material-symbols-outlined"
-      style="font-variation-settings:'FILL' 1;color:#2f7144;font-size:18px">analytics</span>
-    Context
+      style="font-variation-settings:'FILL' 1;color:{_crop_icon_c};font-size:18px">analytics</span>
+    Predictive Cultivation
   </a>
   <a style="display:flex;align-items:center;gap:10px;padding:10px 14px;
-      color:rgba(255,255,255,0.6);border-radius:999px;
-      font-family:Manrope,sans-serif;font-size:13px;font-weight:700;text-decoration:none">
-    <span class="material-symbols-outlined" style="color:rgba(255,255,255,0.6);font-size:18px">input</span>
-    Inputs
+      {_leaf_active}border-radius:999px;
+      font-family:Manrope,sans-serif;font-size:13px;font-weight:700;text-decoration:none;cursor:pointer">
+    <span class="material-symbols-outlined" style="color:{_leaf_icon_c};font-size:18px">psychology</span>
+    Phyto-Diagnostic Suite
   </a>
   <a style="display:flex;align-items:center;gap:10px;padding:10px 14px;
       color:rgba(255,255,255,0.6);border-radius:999px;
@@ -1780,7 +2077,240 @@ with top_n:
     st.markdown('<div style="height:8px"></div>', unsafe_allow_html=True)
     st.button("🔔", key="notifications_icon", help="Notifications", type="tertiary")
 
+# ══════════════════════════════════════════════════════════════
+# PHYTO-DIAGNOSTIC SUITE — Leaf Disease Page
+# ══════════════════════════════════════════════════════════════
+if st.session_state.page == "leaf":
+    # ── Header ──
+    st.markdown("""
+<h1 style="font-family:Manrope,sans-serif;font-size:clamp(2rem,5vw,2.75rem);font-weight:900;
+    color:var(--primary);letter-spacing:-0.025em;line-height:1.08;margin:0 0 0.5rem">
+  Phyto-Diagnostic Suite
+</h1>
+<p style="color:var(--muted);font-size:1rem;font-weight:500;line-height:1.55;
+    max-width:520px;margin:0 0 2rem">
+  Upload a leaf photograph for neural pathogen detection and precision treatment recommendations.
+</p>
+""", unsafe_allow_html=True)
+
+    _lc_upload, _lc_results = st.columns([6, 5], gap="large")
+
+    with _lc_upload:
+        # ── Plant Specimen Analysis card ──
+        st.markdown("""
+<h3 style="font-family:Manrope,sans-serif;font-size:1.3rem;font-weight:900;
+    color:var(--primary);display:flex;align-items:center;gap:8px;margin:0 0 1.25rem">
+  <span class="material-symbols-outlined"
+        style="color:var(--primary);font-size:1.4rem;font-variation-settings:'FILL' 1">image</span>
+  Plant Specimen Analysis
+</h3>
+""", unsafe_allow_html=True)
+
+        leaf_upload = st.file_uploader(
+            "Upload Leaf Imagery",
+            type=["jpg", "jpeg", "png"],
+            key="leaf_file_uploader",
+            help="Upload a clear close-up photo of the leaf. JPG, JPEG, PNG up to 200 MB.",
+        )
+        if leaf_upload:
+            st.session_state.leaf_img_bytes = leaf_upload.getvalue()
+            st.session_state.leaf_result = None
+
+        if st.session_state.leaf_img_bytes:
+            st.image(io.BytesIO(st.session_state.leaf_img_bytes), use_container_width=True)
+
+        st.markdown(f"""
+<div style="background:rgba(195,232,209,0.3);border:1px solid rgba(195,232,209,0.5);
+     border-radius:0.5rem;padding:0.875rem 1rem;margin-top:0.75rem;display:flex;gap:8px;align-items:start">
+  <span class="material-symbols-outlined" style="color:var(--primary);font-size:18px;flex-shrink:0">lightbulb</span>
+  <p style="font-size:12px;font-weight:600;color:var(--primary);margin:0;line-height:1.5">
+    Tip: Upload a clear close-up photo of the leaf for best results. Avoid blurry images or
+    backgrounds with multiple plant species.
+  </p>
+</div>
+""", unsafe_allow_html=True)
+
+        st.markdown("<div style='height:1.25rem'></div>", unsafe_allow_html=True)
+        _run_diag = st.button(
+            "🔬  Run Neural Diagnosis",
+            key="run_leaf_btn",
+            type="primary",
+            use_container_width=True,
+        )
+
+        if _run_diag and not st.session_state.leaf_img_bytes:
+            st.error("Please upload a leaf image before running diagnosis.")
+
+        if _run_diag and st.session_state.leaf_img_bytes:
+            if _leaf_model is None:
+                st.error(
+                    "Leaf disease model not loaded. "
+                    "Ensure **agrofusion_universal_v2.pkl** is present in the project directory."
+                )
+            else:
+                with st.spinner("Running neural diagnosis…"):
+                    try:
+                        _pred_cls, _pred_conf, _top5 = run_leaf_inference(
+                            _leaf_model, _leaf_classes,
+                            st.session_state.leaf_img_bytes,
+                        )
+                        st.session_state.leaf_result = {
+                            "pred_class": _pred_cls,
+                            "confidence": _pred_conf,
+                            "top5": _top5,
+                        }
+                    except Exception as _le:
+                        st.error(f"Diagnosis failed: {_le}")
+
+    with _lc_results:
+        if st.session_state.leaf_result:
+            _lr       = st.session_state.leaf_result
+            _cls      = _lr["pred_class"]
+            _conf     = _lr["confidence"]
+            _top5     = _lr["top5"]
+            _treat    = _leaf_fert_map.get(_cls, {})
+            _cname    = _treat.get("common_name", _cls.replace("___", " — ").replace("_", " "))
+            _is_healthy = "healthy" in _cls.lower()
+            _badge_bg   = "rgba(195,232,209,0.45)" if _is_healthy else "rgba(255,209,180,0.45)"
+            _badge_col  = "#1E5C3A" if _is_healthy else "#7a3a00"
+            _badge_txt  = "Healthy" if _is_healthy else "Pathogen Detected"
+
+            # ── Detection Result ──
+            st.markdown(f"""
+<div style="background:var(--surface-container-low);border-radius:0.75rem;padding:1.5rem;
+     box-shadow:0 2px 8px rgba(0,0,0,0.05);margin-bottom:1.25rem">
+  <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:1.25rem">
+    <div style="display:flex;align-items:center;gap:8px">
+      <span class="material-symbols-outlined" style="color:var(--primary);font-size:1.4rem">biotech</span>
+      <h4 style="font-family:Manrope,sans-serif;font-size:1.05rem;font-weight:800;
+          color:var(--primary);margin:0">Detection Result</h4>
+    </div>
+    <div style="background:{_badge_bg};color:{_badge_col};padding:4px 12px;border-radius:999px;
+         font-size:0.6rem;font-weight:800;text-transform:uppercase;letter-spacing:0.07em">
+      {_badge_txt}
+    </div>
+  </div>
+  <h5 style="font-family:Manrope,sans-serif;font-size:1.6rem;font-weight:900;
+      color:var(--text);margin:0 0 1.25rem">{_cname}</h5>
+  <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+    <span style="font-size:0.65rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em">Confidence Level</span>
+    <span style="font-size:0.65rem;font-weight:800;color:var(--primary)">{_conf}%</span>
+  </div>
+  <div style="height:8px;width:100%;background:#e6e8e4;border-radius:999px;overflow:hidden">
+    <div style="height:100%;width:{_conf}%;background:var(--primary);border-radius:999px"></div>
+  </div>
+</div>
+""", unsafe_allow_html=True)
+
+            # ── Treatment Plan ──
+            _primary   = _treat.get("primary_treatment",   "No specific treatment data available.")
+            _fert_rec  = _treat.get("fertilizer",           "Maintain balanced NPK fertilization.")
+            _cultural  = _treat.get("cultural_practices",   "Practice good field hygiene and crop rotation.")
+
+            st.markdown(f"""
+<div style="background:var(--surface-container-low);border-radius:0.75rem;
+     box-shadow:0 2px 8px rgba(0,0,0,0.05)">
+  <div style="padding:1.25rem 1.5rem;border-bottom:1px solid rgba(0,0,0,0.05);
+       display:flex;align-items:center;gap:8px">
+    <span class="material-symbols-outlined" style="color:var(--primary);font-size:1.4rem">medical_services</span>
+    <h4 style="font-family:Manrope,sans-serif;font-size:1.05rem;font-weight:800;
+        color:var(--primary);margin:0">Treatment Plan</h4>
+  </div>
+  <div style="padding:1.25rem 1.5rem">
+
+    <div style="margin-bottom:1.5rem">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:0.5rem">
+        <span class="material-symbols-outlined" style="color:var(--primary);font-size:1rem">health_and_safety</span>
+        <span style="font-size:0.6rem;font-weight:800;color:var(--muted);
+            text-transform:uppercase;letter-spacing:0.15em">Primary Treatment</span>
+      </div>
+      <p style="font-size:0.83rem;font-weight:500;color:var(--muted);
+          line-height:1.6;margin:0">{_primary}</p>
+    </div>
+
+    <div style="margin-bottom:1.5rem">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:0.5rem">
+        <span class="material-symbols-outlined" style="color:var(--primary);font-size:1rem">science</span>
+        <span style="font-size:0.6rem;font-weight:800;color:var(--muted);
+            text-transform:uppercase;letter-spacing:0.15em">Fertilizer Recommendation</span>
+      </div>
+      <p style="font-size:0.83rem;font-weight:500;color:var(--muted);
+          line-height:1.6;margin:0">{_fert_rec}</p>
+    </div>
+
+    <div>
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:0.5rem">
+        <span class="material-symbols-outlined" style="color:var(--primary);font-size:1rem">agriculture</span>
+        <span style="font-size:0.6rem;font-weight:800;color:var(--muted);
+            text-transform:uppercase;letter-spacing:0.15em">Cultural Practices</span>
+      </div>
+      <p style="font-size:0.83rem;font-weight:500;color:var(--muted);
+          line-height:1.6;margin:0">{_cultural}</p>
+    </div>
+
+  </div>
+</div>
+""", unsafe_allow_html=True)
+
+            # ── Top-5 confidence breakdown ──
+            st.markdown("<div style='height:1rem'></div>", unsafe_allow_html=True)
+            st.markdown(
+                "<p style='font-size:11px;font-weight:800;text-transform:uppercase;"
+                "letter-spacing:0.1em;color:var(--muted);margin:0 0 0.5rem'>Top-5 Predictions</p>",
+                unsafe_allow_html=True,
+            )
+            for _tn, _tp in _top5:
+                _t_label = _tn.replace("___", " — ").replace("_", " ")
+                st.markdown(f"""
+<div style="display:flex;justify-content:space-between;align-items:center;
+     margin-bottom:6px;gap:8px">
+  <span style="font-size:12px;font-weight:600;color:var(--text);
+        white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px">{_t_label}</span>
+  <div style="flex:1;height:5px;background:#e6e8e4;border-radius:999px;overflow:hidden">
+    <div style="height:100%;width:{_tp}%;background:var(--primary);border-radius:999px"></div>
+  </div>
+  <span style="font-size:12px;font-weight:800;color:var(--primary);flex-shrink:0">{_tp}%</span>
+</div>
+""", unsafe_allow_html=True)
+
+        else:
+            # Empty state
+            st.markdown("""
+<div style="background:var(--surface-container-low);border-radius:0.75rem;padding:3rem 2rem;
+     text-align:center;color:var(--muted)">
+  <span class="material-symbols-outlined"
+    style="font-size:3rem;color:var(--outline);display:block;margin-bottom:1rem">biotech</span>
+  <p style="font-weight:600;margin:0">Upload a leaf image and click<br><strong>Run Neural Diagnosis</strong> to begin.</p>
+</div>
+""", unsafe_allow_html=True)
+
+    # ── Leaf page footer ──
+    st.markdown("""
+<footer style="margin-top:3rem;padding-top:1.5rem;border-top:1px solid rgba(0,0,0,0.05);
+     display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:1rem;
+     font-size:0.6rem;font-weight:700;text-transform:uppercase;
+     letter-spacing:0.12em;color:rgba(64,73,66,0.5)">
+  <div style="display:flex;align-items:center;gap:1.5rem">
+    <span>Engine: Synapse-V4.2</span>
+    <span style="width:6px;height:6px;background:rgba(30,92,58,0.2);border-radius:50%;display:inline-block"></span>
+    <span>PlantVillage 38-Class Model</span>
+  </div>
+  <span>AgroSynapse AI &copy; 2025</span>
+</footer>
+""", unsafe_allow_html=True)
+
+    st.stop()
+
+
 # ── HERO HEADER ───────────────────────────────────────────────────
+# ── Home button for Crop page ─────────────────────────────────────
+_home_col, _ = st.columns([1, 8])
+with _home_col:
+    if st.button("⌂ Home", key="crop_home_btn", help="Return to AgroSynapse home", type="secondary"):
+        st.session_state.page = "splash"
+        st.session_state.last_result = None
+        st.rerun()
+
 is_dark_theme = st.session_state.theme == "dark"
 guide_panel_bg = "rgba(59,130,246,0.12)" if is_dark_theme else "var(--surface-container-lowest)"
 guide_title_color = "#cfe3ff" if is_dark_theme else "#1e3a5f"

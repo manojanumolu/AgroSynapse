@@ -10,3 +10,5 @@ pillow>=10.0.0
 streamlit>=1.28.0
 requests
 plotly>=5.22.0
+# Leaf disease model dependencies (already satisfied by torch/torchvision above)
+# git-lfs must be installed system-wide for .pkl model tracking
