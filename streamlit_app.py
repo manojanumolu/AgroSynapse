@@ -6,12 +6,17 @@ import io, os, json, pickle, re
 from datetime import datetime
 import requests
 import numpy as np, pandas as pd
-import torch, torch.nn as nn
-import xgboost as xgb
 import streamlit as st
 import plotly.graph_objects as go
 from PIL import Image, ImageDraw, ImageFont
-from torchvision import models, transforms
+
+_IMPORT_ERROR = None
+try:
+    import torch, torch.nn as nn
+    import xgboost as xgb
+    from torchvision import models, transforms
+except Exception as _imp_err:
+    _IMPORT_ERROR = _imp_err
 
 # ── Page config ────────────────────────────────────────────────
 st.set_page_config(
@@ -20,6 +25,14 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded",
 )
+
+if _IMPORT_ERROR is not None:
+    st.error(
+        "**Dependency import failed.** This usually means a missing or incompatible "
+        "package version on Streamlit Cloud.\n\n"
+        f"Error: `{_IMPORT_ERROR}`"
+    )
+    st.stop()
 
 # ?? Session state ???????????????????????????????????????????
 if "img_bytes" not in st.session_state:
@@ -281,7 +294,10 @@ def load_all_models():
     fusion = FusionGRNModel(img_dim, xgb_dim, fused_dim, num_heads, num_cls)
 
     def _load_fp16_state(path):
-        state = torch.load(path, map_location="cpu", weights_only=True)
+        try:
+            state = torch.load(path, map_location="cpu", weights_only=True)
+        except TypeError:
+            state = torch.load(path, map_location="cpu")
         if isinstance(state, dict):
             out = {}
             for k, v in state.items():
