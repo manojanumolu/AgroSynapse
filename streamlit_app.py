@@ -763,7 +763,7 @@ def run_leaf_inference(model, class_labels, img_bytes):
     return pred_cls, conf, top5
 
 
-_leaf_model, _leaf_classes, _leaf_fert_map = load_leaf_model()
+# Leaf model loaded lazily — only when the leaf page is visited (saves RAM)
 
 
 # ══════════════════════════════════════════════════════════════
@@ -2149,6 +2149,7 @@ with top_n:
 # PHYTO-DIAGNOSTIC SUITE — Leaf Disease Page
 # ══════════════════════════════════════════════════════════════
 if st.session_state.page == "leaf":
+    _leaf_model, _leaf_classes, _leaf_fert_map = load_leaf_model()
     # ── Header ──
     st.markdown("""
 <h1 style="font-family:Manrope,sans-serif;font-size:clamp(2rem,5vw,2.75rem);font-weight:900;
