@@ -718,9 +718,34 @@ def load_leaf_model():
     Returns (keras_model, class_labels_list, fertilizer_dict) or (None, fallback, fallback).
     """
     pkl_path = mpath("agrofusion_universal_v2.pkl")
-    if not os.path.exists(pkl_path):
-        print("[WARN] agrofusion_universal_v2.pkl not found — leaf model unavailable.")
-        return None, LEAF_CLASS_NAMES, LEAF_TREATMENT_MAP
+    min_bytes = 2 * 1024 * 1024
+
+    def _download_leaf_model(dst_path):
+        url = "https://media.githubusercontent.com/media/manojanumolu/AgroSynapse/main/agrofusion_universal_v2.pkl"
+        try:
+            r = requests.get(url, stream=True, timeout=30)
+            r.raise_for_status()
+            tmp_path = dst_path + ".tmp"
+            with open(tmp_path, "wb") as fh:
+                for chunk in r.iter_content(chunk_size=1024 * 1024):
+                    if chunk:
+                        fh.write(chunk)
+            os.replace(tmp_path, dst_path)
+            return True
+        except Exception as _e:
+            print(f"[WARN] leaf model download failed: {_e}")
+            try:
+                if os.path.exists(dst_path + ".tmp"):
+                    os.remove(dst_path + ".tmp")
+            except Exception:
+                pass
+            return False
+
+    if not os.path.exists(pkl_path) or os.path.getsize(pkl_path) < min_bytes:
+        print("[WARN] agrofusion_universal_v2.pkl missing or too small — attempting download.")
+        if not _download_leaf_model(pkl_path):
+            print("[WARN] agrofusion_universal_v2.pkl not available — leaf model unavailable.")
+            return None, LEAF_CLASS_NAMES, LEAF_TREATMENT_MAP
     try:
         import tempfile
         # ── Load payload ──────────────────────────────────────
