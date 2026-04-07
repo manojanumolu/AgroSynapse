@@ -61,6 +61,8 @@ if "leaf_img_bytes" not in st.session_state:
     st.session_state.leaf_img_bytes = None
 if "leaf_result" not in st.session_state:
     st.session_state.leaf_result = None
+if "leaf_model_error" not in st.session_state:
+    st.session_state.leaf_model_error = None
 
 if st.session_state.theme == "dark":
     THEME_VARS = """<style>
@@ -745,6 +747,7 @@ def load_leaf_model():
         print("[WARN] agrofusion_universal_v2.pkl missing or too small — attempting download.")
         if not _download_leaf_model(pkl_path):
             print("[WARN] agrofusion_universal_v2.pkl not available — leaf model unavailable.")
+            st.session_state.leaf_model_error = "agrofusion_universal_v2.pkl is missing and download failed."
             return None, LEAF_CLASS_NAMES, LEAF_TREATMENT_MAP
     try:
         import tempfile
@@ -759,6 +762,7 @@ def load_leaf_model():
         # ── Load Keras model from bytes ────────────────────────
         model_bytes = payload.get("model_bytes")
         if model_bytes is None:
+            st.session_state.leaf_model_error = "agrofusion_universal_v2.pkl payload missing model_bytes."
             return None, cls_labels, fert_dict
 
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -774,10 +778,12 @@ def load_leaf_model():
 
         keras_model._leaf_img_size = img_size   # attach for use in inference
         print(f"[OK] Leaf model loaded — MobileNetV2 {img_size}×{img_size}, {len(cls_labels)} classes.")
+        st.session_state.leaf_model_error = None
         return keras_model, cls_labels, fert_dict
 
     except Exception as _e:
         print(f"[WARN] leaf model load error: {_e}")
+        st.session_state.leaf_model_error = str(_e)
         return None, LEAF_CLASS_NAMES, LEAF_TREATMENT_MAP
 
 
@@ -2253,10 +2259,14 @@ if st.session_state.page == "leaf":
 
         if _run_diag and st.session_state.leaf_img_bytes:
             if _leaf_model is None:
-                st.error(
+                _err = st.session_state.get("leaf_model_error")
+                msg = (
                     "Leaf disease model not loaded. "
                     "Ensure **agrofusion_universal_v2.pkl** is present in the project directory."
                 )
+                if _err:
+                    msg += f"\n\nDetails: `{_err}`"
+                st.error(msg)
             else:
                 with st.spinner("Running neural diagnosis…"):
                     try:
