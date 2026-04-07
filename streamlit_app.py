@@ -2,7 +2,7 @@
 # ResNet-50 + XGBoost + TSACA Fusion + GRN  |  Accuracy: 98.67%
 # Run: streamlit run streamlit_app.py
 
-import io, os, json, pickle, re
+import io, os, json, pickle, re, zipfile
 from datetime import datetime
 import requests
 import numpy as np, pandas as pd
@@ -765,10 +765,39 @@ def load_leaf_model():
             st.session_state.leaf_model_error = "agrofusion_universal_v2.pkl payload missing model_bytes."
             return None, cls_labels, fert_dict
 
+        def _strip_quantization_fields(obj):
+            if isinstance(obj, dict):
+                cleaned = {}
+                for k, v in obj.items():
+                    if k == "quantization_config":
+                        continue
+                    cleaned[k] = _strip_quantization_fields(v)
+                return cleaned
+            if isinstance(obj, list):
+                return [_strip_quantization_fields(v) for v in obj]
+            return obj
+
+        def _sanitize_keras_archive(raw_model_bytes):
+            src = io.BytesIO(raw_model_bytes)
+            dst = io.BytesIO()
+            with zipfile.ZipFile(src, "r") as zin, zipfile.ZipFile(dst, "w", compression=zipfile.ZIP_DEFLATED) as zout:
+                for name in zin.namelist():
+                    data = zin.read(name)
+                    if name == "config.json":
+                        try:
+                            cfg = json.loads(data.decode("utf-8"))
+                            cfg = _strip_quantization_fields(cfg)
+                            data = json.dumps(cfg, separators=(",", ":")).encode("utf-8")
+                        except Exception:
+                            pass
+                    zout.writestr(name, data)
+            return dst.getvalue()
+
         with tempfile.TemporaryDirectory() as tmpdir:
             model_path = os.path.join(tmpdir, "leaf_model.keras")
             with open(model_path, "wb") as f:
                 f.write(model_bytes)
+            keras_model = None
             try:
                 import keras
                 try:
@@ -779,10 +808,26 @@ def load_leaf_model():
                     model_path, safe_mode=False, compile=False
                 )
             except Exception:
-                import tensorflow as tf
-                keras_model = tf.keras.models.load_model(
-                    model_path, compile=False
-                )
+                pass
+
+            if keras_model is None:
+                sanitized_path = os.path.join(tmpdir, "leaf_model_sanitized.keras")
+                with open(sanitized_path, "wb") as f:
+                    f.write(_sanitize_keras_archive(model_bytes))
+                try:
+                    import keras
+                    try:
+                        keras.config.enable_unsafe_deserialization()
+                    except Exception:
+                        pass
+                    keras_model = keras.models.load_model(
+                        sanitized_path, safe_mode=False, compile=False
+                    )
+                except Exception:
+                    import tensorflow as tf
+                    keras_model = tf.keras.models.load_model(
+                        sanitized_path, compile=False
+                    )
 
         keras_model._leaf_img_size = img_size   # attach for use in inference
         print(f"[OK] Leaf model loaded — MobileNetV2 {img_size}×{img_size}, {len(cls_labels)} classes.")
