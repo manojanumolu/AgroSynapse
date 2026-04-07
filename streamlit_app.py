@@ -713,7 +713,26 @@ LEAF_TREATMENT_MAP = {
 }
 
 
-@st.cache_resource(show_spinner="Loading Leaf Disease Model…")
+def _build_leaf_classifier(keras, img_size, num_classes):
+    """Rebuild the leaf classifier without loading serialized Functional graph metadata."""
+    layers = keras.layers
+    base = keras.applications.MobileNetV2(
+        include_top=False,
+        weights=None,
+        input_shape=(img_size, img_size, 3),
+    )
+    x = base.output
+    x = layers.GlobalAveragePooling2D(name="global_average_pooling2d")(x)
+    x = layers.BatchNormalization(name="batch_normalization")(x)
+    x = layers.Dense(256, activation="relu", name="dense")(x)
+    x = layers.Dropout(0.3, name="dropout")(x)
+    x = layers.Dense(128, activation="relu", name="dense_1")(x)
+    x = layers.Dropout(0.2, name="dropout_1")(x)
+    out = layers.Dense(num_classes, activation="softmax", name="dense_2")(x)
+    return keras.Model(inputs=base.input, outputs=out, name="leaf_mobilenetv2_classifier")
+
+
+@st.cache_resource(show_spinner="Loading Leaf Disease Model...")
 def load_leaf_model():
     """Load the AgroFusion Universal v2 leaf disease model (Keras MobileNetV2, 128×128).
     pkl structure: model_bytes (Keras ZIP), class_labels, fertilizer_dict, img_size.
@@ -799,6 +818,7 @@ def load_leaf_model():
         with tempfile.TemporaryDirectory() as tmpdir:
             model_path = os.path.join(tmpdir, "leaf_model.keras")
             sanitized_path = os.path.join(tmpdir, "leaf_model_sanitized.keras")
+            weights_path = os.path.join(tmpdir, "leaf_model.weights.h5")
             with open(model_path, "wb") as f:
                 f.write(model_bytes)
             with open(sanitized_path, "wb") as f:
@@ -810,11 +830,26 @@ def load_leaf_model():
             except Exception:
                 pass
 
-            # Use standalone Keras 3 loader (the artifact references keras.src.* modules).
+            keras_model = None
+
+            # Prefer weight-only restore. The saved archive is valid, but its serialized
+            # Functional graph can be incompatible across Keras/TensorFlow versions.
             try:
-                keras_model = keras.models.load_model(model_path, safe_mode=False, compile=False)
-            except Exception:
-                keras_model = keras.models.load_model(sanitized_path, safe_mode=False, compile=False)
+                with zipfile.ZipFile(io.BytesIO(model_bytes), "r") as zin:
+                    if "model.weights.h5" in zin.namelist():
+                        with open(weights_path, "wb") as f:
+                            f.write(zin.read("model.weights.h5"))
+                        keras_model = _build_leaf_classifier(keras, img_size, len(cls_labels))
+                        keras_model.load_weights(weights_path)
+            except Exception as weight_err:
+                print(f"[WARN] leaf weight-only restore failed: {weight_err}")
+                keras_model = None
+
+            if keras_model is None:
+                try:
+                    keras_model = keras.models.load_model(model_path, safe_mode=False, compile=False)
+                except Exception:
+                    keras_model = keras.models.load_model(sanitized_path, safe_mode=False, compile=False)
 
         keras_model._leaf_img_size = img_size   # attach for use in inference
         print(f"[OK] Leaf model loaded — MobileNetV2 {img_size}×{img_size}, {len(cls_labels)} classes.")
@@ -823,7 +858,10 @@ def load_leaf_model():
 
     except Exception as _e:
         print(f"[WARN] leaf model load error: {_e}")
-        st.session_state.leaf_model_error = str(_e)
+        st.session_state.leaf_model_error = (
+            "Leaf model artifact is incompatible with runtime graph deserialization. "
+            f"Direct restore failed with: {_e}"
+        )
         return None, LEAF_CLASS_NAMES, LEAF_TREATMENT_MAP
 
 
