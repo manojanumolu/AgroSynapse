@@ -10,6 +10,10 @@ import streamlit as st
 import plotly.graph_objects as go
 from PIL import Image, ImageDraw, ImageFont
 
+# Force TensorFlow to use legacy Keras (tf_keras) for broad model-config compatibility.
+# This must be set before importing tensorflow anywhere in the process.
+os.environ.setdefault("TF_USE_LEGACY_KERAS", "1")
+
 _IMPORT_ERROR = None
 try:
     import torch, torch.nn as nn
@@ -793,41 +797,46 @@ def load_leaf_model():
                     zout.writestr(name, data)
             return dst.getvalue()
 
+        def _short_error_text(err_obj):
+            txt = str(err_obj).strip().replace("\n", " ")
+            if len(txt) > 220:
+                txt = txt[:220] + "..."
+            return txt
+
         with tempfile.TemporaryDirectory() as tmpdir:
             model_path = os.path.join(tmpdir, "leaf_model.keras")
+            sanitized_path = os.path.join(tmpdir, "leaf_model_sanitized.keras")
             with open(model_path, "wb") as f:
                 f.write(model_bytes)
+            with open(sanitized_path, "wb") as f:
+                f.write(_sanitize_keras_archive(model_bytes))
+
             keras_model = None
-            try:
-                import keras
+            load_errors = []
+
+            import tensorflow as tf
+
+            def _tf_load(path):
+                # Some TF/Keras combos accept safe_mode; some don't.
                 try:
-                    keras.config.enable_unsafe_deserialization()
-                except Exception:
-                    pass
-                keras_model = keras.models.load_model(
-                    model_path, safe_mode=False, compile=False
-                )
-            except Exception:
-                pass
+                    return tf.keras.models.load_model(path, compile=False, safe_mode=False)
+                except TypeError:
+                    return tf.keras.models.load_model(path, compile=False)
+
+            for candidate in (model_path, sanitized_path):
+                if keras_model is not None:
+                    break
+                try:
+                    keras_model = _tf_load(candidate)
+                except Exception as _load_err:
+                    load_errors.append(f"{os.path.basename(candidate)}: {_short_error_text(_load_err)}")
 
             if keras_model is None:
-                sanitized_path = os.path.join(tmpdir, "leaf_model_sanitized.keras")
-                with open(sanitized_path, "wb") as f:
-                    f.write(_sanitize_keras_archive(model_bytes))
-                try:
-                    import keras
-                    try:
-                        keras.config.enable_unsafe_deserialization()
-                    except Exception:
-                        pass
-                    keras_model = keras.models.load_model(
-                        sanitized_path, safe_mode=False, compile=False
-                    )
-                except Exception:
-                    import tensorflow as tf
-                    keras_model = tf.keras.models.load_model(
-                        sanitized_path, compile=False
-                    )
+                err_summary = " | ".join(load_errors) if load_errors else "Unknown deserialization error."
+                raise RuntimeError(
+                    "Failed to deserialize leaf model with TensorFlow legacy Keras. "
+                    f"Attempts: {err_summary}"
+                )
 
         keras_model._leaf_img_size = img_size   # attach for use in inference
         print(f"[OK] Leaf model loaded — MobileNetV2 {img_size}×{img_size}, {len(cls_labels)} classes.")
@@ -836,7 +845,10 @@ def load_leaf_model():
 
     except Exception as _e:
         print(f"[WARN] leaf model load error: {_e}")
-        st.session_state.leaf_model_error = str(_e)
+        st.session_state.leaf_model_error = (
+            "Leaf model load failed due to TensorFlow/Keras incompatibility. "
+            f"{str(_e).splitlines()[0]}"
+        )
         return None, LEAF_CLASS_NAMES, LEAF_TREATMENT_MAP
 
 
