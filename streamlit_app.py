@@ -10,10 +10,6 @@ import streamlit as st
 import plotly.graph_objects as go
 from PIL import Image, ImageDraw, ImageFont
 
-# Force TensorFlow to use legacy Keras (tf_keras) for broad model-config compatibility.
-# This must be set before importing tensorflow anywhere in the process.
-os.environ.setdefault("TF_USE_LEGACY_KERAS", "1")
-
 _IMPORT_ERROR = None
 try:
     import torch, torch.nn as nn
@@ -769,16 +765,19 @@ def load_leaf_model():
             st.session_state.leaf_model_error = "agrofusion_universal_v2.pkl payload missing model_bytes."
             return None, cls_labels, fert_dict
 
-        def _strip_quantization_fields(obj):
+        def _sanitize_model_config(obj):
             if isinstance(obj, dict):
                 cleaned = {}
                 for k, v in obj.items():
                     if k == "quantization_config":
                         continue
-                    cleaned[k] = _strip_quantization_fields(v)
+                    if k == "compile_config":
+                        # Inference-only app; compiled state is unnecessary and can break compatibility.
+                        continue
+                    cleaned[k] = _sanitize_model_config(v)
                 return cleaned
             if isinstance(obj, list):
-                return [_strip_quantization_fields(v) for v in obj]
+                return [_sanitize_model_config(v) for v in obj]
             return obj
 
         def _sanitize_keras_archive(raw_model_bytes):
@@ -790,18 +789,12 @@ def load_leaf_model():
                     if name == "config.json":
                         try:
                             cfg = json.loads(data.decode("utf-8"))
-                            cfg = _strip_quantization_fields(cfg)
+                            cfg = _sanitize_model_config(cfg)
                             data = json.dumps(cfg, separators=(",", ":")).encode("utf-8")
                         except Exception:
                             pass
                     zout.writestr(name, data)
             return dst.getvalue()
-
-        def _short_error_text(err_obj):
-            txt = str(err_obj).strip().replace("\n", " ")
-            if len(txt) > 220:
-                txt = txt[:220] + "..."
-            return txt
 
         with tempfile.TemporaryDirectory() as tmpdir:
             model_path = os.path.join(tmpdir, "leaf_model.keras")
@@ -811,32 +804,17 @@ def load_leaf_model():
             with open(sanitized_path, "wb") as f:
                 f.write(_sanitize_keras_archive(model_bytes))
 
-            keras_model = None
-            load_errors = []
+            import keras
+            try:
+                keras.config.enable_unsafe_deserialization()
+            except Exception:
+                pass
 
-            import tensorflow as tf
-
-            def _tf_load(path):
-                # Some TF/Keras combos accept safe_mode; some don't.
-                try:
-                    return tf.keras.models.load_model(path, compile=False, safe_mode=False)
-                except TypeError:
-                    return tf.keras.models.load_model(path, compile=False)
-
-            for candidate in (model_path, sanitized_path):
-                if keras_model is not None:
-                    break
-                try:
-                    keras_model = _tf_load(candidate)
-                except Exception as _load_err:
-                    load_errors.append(f"{os.path.basename(candidate)}: {_short_error_text(_load_err)}")
-
-            if keras_model is None:
-                err_summary = " | ".join(load_errors) if load_errors else "Unknown deserialization error."
-                raise RuntimeError(
-                    "Failed to deserialize leaf model with TensorFlow legacy Keras. "
-                    f"Attempts: {err_summary}"
-                )
+            # Use standalone Keras 3 loader (the artifact references keras.src.* modules).
+            try:
+                keras_model = keras.models.load_model(model_path, safe_mode=False, compile=False)
+            except Exception:
+                keras_model = keras.models.load_model(sanitized_path, safe_mode=False, compile=False)
 
         keras_model._leaf_img_size = img_size   # attach for use in inference
         print(f"[OK] Leaf model loaded — MobileNetV2 {img_size}×{img_size}, {len(cls_labels)} classes.")
@@ -845,10 +823,7 @@ def load_leaf_model():
 
     except Exception as _e:
         print(f"[WARN] leaf model load error: {_e}")
-        st.session_state.leaf_model_error = (
-            "Leaf model load failed due to TensorFlow/Keras incompatibility. "
-            f"{str(_e).splitlines()[0]}"
-        )
+        st.session_state.leaf_model_error = str(_e)
         return None, LEAF_CLASS_NAMES, LEAF_TREATMENT_MAP
 
 
