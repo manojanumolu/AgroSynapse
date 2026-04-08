@@ -20,8 +20,8 @@ except Exception as _imp_err:
 
 # ── Page config ────────────────────────────────────────────────
 st.set_page_config(
-    page_title="Multimodal Crop & Fertilizer Recommendation",
-    page_icon="🧪",
+    page_title="AgroSynapse AI",
+    page_icon="🌿",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -1996,7 +1996,7 @@ div[data-testid="stButton"] > button {{
     border-radius: 0.75rem !important;
     color: #faf9f6 !important;
     font-family: 'Manrope', sans-serif !important;
-    font-size: 1.72rem !important;
+    font-size: 1.9rem !important;
     font-weight: 900 !important;
     width: 100% !important;
     min-height: 200px !important;
@@ -2019,20 +2019,16 @@ div[data-testid="stButton"] > button:hover {{
     st.markdown("""
 <div style="text-align:center;margin-bottom:3.5rem;padding-top:1rem">
   <div style="display:inline-flex;align-items:center;gap:12px;margin-bottom:1rem">
-    <div style="width:48px;height:48px;background:rgba(24,26,24,0.45);backdrop-filter:blur(32px);
-         border:1px solid rgba(71,72,70,0.18);border-radius:0.75rem;display:flex;
+    <div style="width:62px;height:62px;background:rgba(24,26,24,0.45);backdrop-filter:blur(32px);
+         border:1px solid rgba(71,72,70,0.18);border-radius:0.95rem;display:flex;
          align-items:center;justify-content:center">
-      <span class="material-symbols-outlined" style="color:#b4fcc2;font-variation-settings:'FILL' 1">psychology</span>
+      <span class="material-symbols-outlined" style="color:#b4fcc2;font-size:2rem;font-variation-settings:'FILL' 1">eco</span>
     </div>
   </div>
-  <h1 style="font-family:Manrope,sans-serif;font-size:clamp(2.9rem,7.6vw,4.5rem);font-weight:900;
-      letter-spacing:-0.025em;color:#faf9f6;margin:0 0 0.5rem;line-height:1">
+  <h1 style="font-family:Manrope,sans-serif;font-size:clamp(3.2rem,8vw,5rem);font-weight:900;
+      letter-spacing:-0.03em;color:#faf9f6;margin:0;line-height:0.98">
     AgroSynapse AI
   </h1>
-  <p style="font-family:'Plus Jakarta Sans',sans-serif;font-size:0.9rem;font-weight:800;
-      text-transform:uppercase;letter-spacing:0.3em;color:#ababa8;margin:0">
-    Atmospheric Intelligence
-  </p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -2041,11 +2037,11 @@ div[data-testid="stButton"] > button:hover {{
 
     with _sc1:
         st.markdown("""
-<p style="font-family:'Plus Jakarta Sans',sans-serif;font-size:0.86rem;font-weight:900;
+<p style="font-family:'Plus Jakarta Sans',sans-serif;font-size:1.02rem;font-weight:900;
     text-transform:uppercase;letter-spacing:0.2em;color:#b4fcc2;margin:0 0 0.4rem">
   Agricultural Core
 </p>
-<p style="color:#d7ddd8;font-family:Manrope,sans-serif;font-size:1.12rem;
+<p style="color:#d7ddd8;font-family:Manrope,sans-serif;font-size:0.96rem;
     margin:0 0 1rem;font-weight:700">
   Multimodal Soil-to-Crop Fusion
 </p>
@@ -2060,11 +2056,11 @@ div[data-testid="stButton"] > button:hover {{
 
     with _sc2:
         st.markdown("""
-<p style="font-family:'Plus Jakarta Sans',sans-serif;font-size:0.86rem;font-weight:900;
+<p style="font-family:'Plus Jakarta Sans',sans-serif;font-size:1.02rem;font-weight:900;
     text-transform:uppercase;letter-spacing:0.2em;color:#b4fcc2;margin:0 0 0.4rem">
   Neural Vision
 </p>
-<p style="color:#d7ddd8;font-family:Manrope,sans-serif;font-size:1.12rem;
+<p style="color:#d7ddd8;font-family:Manrope,sans-serif;font-size:0.96rem;
     margin:0 0 1rem;font-weight:700">
   Leaf-to-Cure Vision
 </p>
