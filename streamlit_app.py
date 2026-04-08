@@ -1896,7 +1896,8 @@ div[data-testid="stHorizontalBlock"]:has(#topbar-inline-marker) > div[data-testi
         top: 0 !important;
         height: 100vh !important;
         z-index: 1100 !important;
-        transition: transform 180ms ease !important;
+        will-change: transform !important;
+        transition: transform 145ms cubic-bezier(0.22, 1, 0.36, 1) !important;
     }
     .mobile-sidebar-closed section[data-testid="stSidebar"] {
         transform: translateX(-105%) !important;
@@ -2078,6 +2079,42 @@ div[data-testid="stButton"] > button:hover {{
     box-shadow: 0 0 50px rgba(180, 252, 194, 0.10) !important;
     border-color: rgba(180, 252, 194, 0.35) !important;
 }}
+.splash-hero-icon {{
+    width: 62px;
+    height: 62px;
+    background: rgba(24,26,24,0.45);
+    backdrop-filter: blur(32px);
+    border: 1px solid rgba(71,72,70,0.18);
+    border-radius: 0.95rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}}
+.splash-hero-title {{
+    font-family: Manrope, sans-serif;
+    font-size: clamp(2.5rem, 6.4vw, 4.2rem);
+    font-weight: 900;
+    letter-spacing: -0.03em;
+    color: #faf9f6;
+    margin: 0;
+    line-height: 0.98;
+    white-space: nowrap;
+    word-break: keep-all;
+    overflow-wrap: normal;
+}}
+@media (max-width: 700px) {{
+    .splash-hero-icon {{
+        width: 56px;
+        height: 56px;
+        border-radius: 0.85rem;
+    }}
+    .splash-hero-title {{
+        font-size: clamp(2.15rem, 10.2vw, 3.25rem);
+        line-height: 1.02;
+        white-space: normal;
+        text-wrap: balance;
+    }}
+}}
 </style>
 """, unsafe_allow_html=True)
 
@@ -2085,14 +2122,11 @@ div[data-testid="stButton"] > button:hover {{
     st.markdown("""
 <div style="text-align:center;margin-bottom:3.5rem;padding-top:1rem">
   <div style="display:inline-flex;align-items:center;gap:12px;margin-bottom:1rem">
-    <div style="width:62px;height:62px;background:rgba(24,26,24,0.45);backdrop-filter:blur(32px);
-         border:1px solid rgba(71,72,70,0.18);border-radius:0.95rem;display:flex;
-         align-items:center;justify-content:center">
+    <div class="splash-hero-icon">
       <span class="material-symbols-outlined" style="color:#b4fcc2;font-size:2rem;font-variation-settings:'FILL' 1">eco</span>
     </div>
   </div>
-  <h1 style="font-family:Manrope,sans-serif;font-size:clamp(3.2rem,8vw,5rem);font-weight:900;
-      letter-spacing:-0.03em;color:#faf9f6;margin:0;line-height:0.98">
+  <h1 class="splash-hero-title">
     AgroSynapse AI
   </h1>
 </div>
