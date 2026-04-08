@@ -713,9 +713,28 @@ LEAF_TREATMENT_MAP = {
 }
 
 
-def _build_leaf_classifier(keras, img_size, num_classes):
-    """Rebuild the leaf classifier without loading serialized Functional graph metadata."""
+def _build_leaf_classifier(keras, img_size, num_classes, architecture="MobileNetV2"):
+    """Rebuild a known leaf classifier architecture without graph deserialization."""
     layers = keras.layers
+    arch = (architecture or "").lower()
+
+    if "efficientnetb0" in arch:
+        base = keras.applications.EfficientNetB0(
+            include_top=False,
+            weights=None,
+            input_shape=(img_size, img_size, 3),
+        )
+        x = base.output
+        x = layers.GlobalAveragePooling2D(name="global_average_pooling2d_4")(x)
+        x = layers.BatchNormalization(name="batch_normalization_4")(x)
+        x = layers.Dense(256, activation="relu", name="dense_12")(x)
+        x = layers.Dropout(0.3, name="dropout_8")(x)
+        x = layers.Dense(128, activation="relu", name="dense_13")(x)
+        x = layers.Dropout(0.2, name="dropout_9")(x)
+        out = layers.Dense(num_classes, activation="softmax", name="dense_14")(x)
+        model = keras.Model(inputs=base.input, outputs=out, name="leaf_efficientnetb0_classifier")
+        return model, "raw_255"
+
     base = keras.applications.MobileNetV2(
         include_top=False,
         weights=None,
@@ -729,7 +748,8 @@ def _build_leaf_classifier(keras, img_size, num_classes):
     x = layers.Dense(128, activation="relu", name="dense_1")(x)
     x = layers.Dropout(0.2, name="dropout_1")(x)
     out = layers.Dense(num_classes, activation="softmax", name="dense_2")(x)
-    return keras.Model(inputs=base.input, outputs=out, name="leaf_mobilenetv2_classifier")
+    model = keras.Model(inputs=base.input, outputs=out, name="leaf_mobilenetv2_classifier")
+    return model, "minus_one_to_one"
 
 
 @st.cache_resource(show_spinner="Loading Leaf Disease Model...")
@@ -777,6 +797,8 @@ def load_leaf_model():
         cls_labels = payload.get("class_labels", LEAF_CLASS_NAMES)
         fert_dict  = payload.get("fertilizer_dict", LEAF_TREATMENT_MAP)
         img_size   = int(payload.get("img_size", 128))
+        metadata   = payload.get("metadata", {}) or {}
+        architecture = metadata.get("architecture", "MobileNetV2")
 
         # ── Load Keras model from bytes ────────────────────────
         model_bytes = payload.get("model_bytes")
@@ -831,6 +853,7 @@ def load_leaf_model():
                 pass
 
             keras_model = None
+            preprocess_mode = "raw_255" if "efficientnetb0" in architecture.lower() else "minus_one_to_one"
 
             # Prefer weight-only restore. The saved archive is valid, but its serialized
             # Functional graph can be incompatible across Keras/TensorFlow versions.
@@ -839,7 +862,9 @@ def load_leaf_model():
                     if "model.weights.h5" in zin.namelist():
                         with open(weights_path, "wb") as f:
                             f.write(zin.read("model.weights.h5"))
-                        keras_model = _build_leaf_classifier(keras, img_size, len(cls_labels))
+                        keras_model, preprocess_mode = _build_leaf_classifier(
+                            keras, img_size, len(cls_labels), architecture
+                        )
                         keras_model.load_weights(weights_path)
             except Exception as weight_err:
                 print(f"[WARN] leaf weight-only restore failed: {weight_err}")
@@ -850,9 +875,12 @@ def load_leaf_model():
                     keras_model = keras.models.load_model(model_path, safe_mode=False, compile=False)
                 except Exception:
                     keras_model = keras.models.load_model(sanitized_path, safe_mode=False, compile=False)
+                preprocess_mode = "raw_255" if "efficientnetb0" in architecture.lower() else "minus_one_to_one"
 
         keras_model._leaf_img_size = img_size   # attach for use in inference
-        print(f"[OK] Leaf model loaded — MobileNetV2 {img_size}×{img_size}, {len(cls_labels)} classes.")
+        keras_model._leaf_preprocess = preprocess_mode
+        keras_model._leaf_architecture = architecture
+        print(f"[OK] Leaf model loaded - {architecture} {img_size}x{img_size}, {len(cls_labels)} classes.")
         st.session_state.leaf_model_error = None
         return keras_model, cls_labels, fert_dict
 
@@ -868,14 +896,16 @@ def load_leaf_model():
 def run_leaf_inference(model, class_labels, img_bytes):
     """Run leaf disease classification. Returns (pred_class, confidence_pct, top5_list)."""
     img_size = getattr(model, "_leaf_img_size", 128)
+    preprocess_mode = getattr(model, "_leaf_preprocess", "minus_one_to_one")
 
-    # ── Preprocess: MobileNetV2 expects float32 in [-1, 1] ────
+    # Match preprocessing to the saved model family.
     pil_img = Image.open(io.BytesIO(img_bytes)).convert("RGB").resize(
         (img_size, img_size), Image.LANCZOS
     )
-    arr = np.array(pil_img, dtype=np.float32)   # (H, W, 3) uint8 → float32
-    arr = (arr / 127.5) - 1.0                    # scale to [-1, 1]
-    arr = np.expand_dims(arr, 0)                 # (1, H, W, 3)
+    arr = np.array(pil_img, dtype=np.float32)
+    if preprocess_mode == "minus_one_to_one":
+        arr = (arr / 127.5) - 1.0
+    arr = np.expand_dims(arr, 0)
 
     probs    = model.predict(arr, verbose=0)[0]  # shape (num_classes,)
     pred_idx = int(np.argmax(probs))
