@@ -738,11 +738,11 @@ def load_leaf_model():
     pkl structure: model_bytes (Keras ZIP), class_labels, fertilizer_dict, img_size.
     Returns (keras_model, class_labels_list, fertilizer_dict) or (None, fallback, fallback).
     """
-    pkl_path = mpath("agrofusion_universal_v2.pkl")
+    pkl_path = mpath("agrofusion_universal_v5.pkl")
     min_bytes = 2 * 1024 * 1024
 
     def _download_leaf_model(dst_path):
-        url = "https://media.githubusercontent.com/media/manojanumolu/AgroSynapse/main/agrofusion_universal_v2.pkl"
+        url = "https://media.githubusercontent.com/media/manojanumolu/AgroSynapse/main/agrofusion_universal_v5.pkl"
         try:
             r = requests.get(url, stream=True, timeout=30)
             r.raise_for_status()
@@ -763,10 +763,10 @@ def load_leaf_model():
             return False
 
     if not os.path.exists(pkl_path) or os.path.getsize(pkl_path) < min_bytes:
-        print("[WARN] agrofusion_universal_v2.pkl missing or too small — attempting download.")
+        print("[WARN] agrofusion_universal_v5.pkl missing or too small — attempting download.")
         if not _download_leaf_model(pkl_path):
-            print("[WARN] agrofusion_universal_v2.pkl not available — leaf model unavailable.")
-            st.session_state.leaf_model_error = "agrofusion_universal_v2.pkl is missing and download failed."
+            print("[WARN] agrofusion_universal_v5.pkl not available — leaf model unavailable.")
+            st.session_state.leaf_model_error = "agrofusion_universal_v5.pkl is missing and download failed."
             return None, LEAF_CLASS_NAMES, LEAF_TREATMENT_MAP
     try:
         import tempfile
@@ -781,7 +781,7 @@ def load_leaf_model():
         # ── Load Keras model from bytes ────────────────────────
         model_bytes = payload.get("model_bytes")
         if model_bytes is None:
-            st.session_state.leaf_model_error = "agrofusion_universal_v2.pkl payload missing model_bytes."
+            st.session_state.leaf_model_error = "agrofusion_universal_v5.pkl payload missing model_bytes."
             return None, cls_labels, fert_dict
 
         def _sanitize_model_config(obj):
@@ -2340,7 +2340,7 @@ if st.session_state.page == "leaf":
                 _err = st.session_state.get("leaf_model_error")
                 msg = (
                     "Leaf disease model not loaded. "
-                    "Ensure **agrofusion_universal_v2.pkl** is present in the project directory."
+                    "Ensure **agrofusion_universal_v5.pkl** is present in the project directory."
                 )
                 if _err:
                     msg += f"\n\nDetails: `{_err}`"
