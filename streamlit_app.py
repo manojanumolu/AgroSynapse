@@ -2186,45 +2186,53 @@ button[data-testid="baseButton-secondary"] { text-align:left!important; }
     _nav_base = """
 <style>
 .nav-btn-crop button, .nav-btn-leaf button {
-    background: transparent !important;
-    color: rgba(255,255,255,0.65) !important;
-    border: none !important;
-    border-radius: 999px !important;
+    background: rgba(126, 176, 140, 0.18) !important;
+    color: #eef7ef !important;
+    border: 1px solid rgba(180, 252, 194, 0.18) !important;
+    border-radius: 14px !important;
     font-family: Manrope, sans-serif !important;
-    font-size: 13px !important;
-    font-weight: 700 !important;
+    font-size: 14px !important;
+    font-weight: 800 !important;
     text-align: left !important;
-    padding: 10px 14px !important;
+    padding: 12px 15px !important;
     width: 100% !important;
-    transition: background 0.2s, color 0.2s !important;
+    box-shadow: 0 8px 18px rgba(4, 16, 9, 0.14) !important;
+    transform: translateX(0) scale(1) !important;
+    transition: background 0.22s ease, color 0.22s ease, border-color 0.22s ease,
+                transform 0.22s ease, box-shadow 0.22s ease !important;
 }
 .nav-btn-crop button:hover, .nav-btn-leaf button:hover {
-    background: rgba(172,243,186,0.15) !important;
-    color: #acf3ba !important;
+    background: rgba(172,243,186,0.24) !important;
+    color: #ffffff !important;
+    border-color: rgba(180, 252, 194, 0.42) !important;
+    box-shadow: 0 14px 26px rgba(4, 16, 9, 0.22) !important;
+    transform: translateX(4px) scale(1.015) !important;
 }
 .nav-btn-crop-active button {
-    background: #acf3ba !important;
-    color: #2f7144 !important;
-    border: none !important;
-    border-radius: 999px !important;
+    background: rgba(172,243,186,0.28) !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(180, 252, 194, 0.42) !important;
+    border-radius: 14px !important;
     font-family: Manrope, sans-serif !important;
-    font-size: 13px !important;
-    font-weight: 700 !important;
+    font-size: 14px !important;
+    font-weight: 800 !important;
     text-align: left !important;
-    padding: 10px 14px !important;
+    padding: 12px 15px !important;
     width: 100% !important;
+    box-shadow: 0 14px 28px rgba(4, 16, 9, 0.22) !important;
 }
 .nav-btn-leaf-active button {
-    background: #acf3ba !important;
-    color: #2f7144 !important;
-    border: none !important;
-    border-radius: 999px !important;
+    background: rgba(172,243,186,0.28) !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(180, 252, 194, 0.42) !important;
+    border-radius: 14px !important;
     font-family: Manrope, sans-serif !important;
-    font-size: 13px !important;
-    font-weight: 700 !important;
+    font-size: 14px !important;
+    font-weight: 800 !important;
     text-align: left !important;
-    padding: 10px 14px !important;
+    padding: 12px 15px !important;
     width: 100% !important;
+    box-shadow: 0 14px 28px rgba(4, 16, 9, 0.22) !important;
 }
 </style>
 """
