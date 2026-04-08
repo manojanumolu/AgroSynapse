@@ -1790,18 +1790,23 @@ section[data-testid="stSidebar"] div[data-testid="stButton"] > button[data-testi
 }
 section[data-testid="stSidebar"] button[kind="secondary"],
 section[data-testid="stSidebar"] button[data-testid^="baseButton"] {
+    display: flex !important;
+    justify-content: flex-start !important;
+    align-items: center !important;
+    gap: 12px !important;
     background: rgba(126, 176, 140, 0.18) !important;
     background-image: none !important;
     color: #eef7ef !important;
     border: 1px solid rgba(180, 252, 194, 0.18) !important;
     border-radius: 14px !important;
     font-family: 'Manrope', sans-serif !important;
-    font-size: 14px !important;
+    font-size: 15px !important;
     font-weight: 800 !important;
     text-align: left !important;
     padding: 12px 15px !important;
     min-height: 52px !important;
     width: 100% !important;
+    line-height: 1.35 !important;
     box-shadow: 0 8px 18px rgba(4, 16, 9, 0.14) !important;
     transform: translateX(0) scale(1) !important;
     transition: background 0.22s ease, color 0.22s ease, border-color 0.22s ease,
@@ -2095,7 +2100,8 @@ div[data-testid="stButton"] > button:hover {{
     font-size: clamp(2.5rem, 6.4vw, 4.2rem);
     font-weight: 900;
     letter-spacing: -0.03em;
-    color: #faf9f6;
+    color: #faf9f6 !important;
+    text-shadow: 0 6px 24px rgba(7, 15, 8, 0.32);
     margin: 0;
     line-height: 0.98;
     white-space: nowrap;
@@ -2255,14 +2261,14 @@ with st.sidebar:
 <div style="padding:0 0.25rem 1.75rem">
   <h1 style="font-family:Manrope,sans-serif;font-size:1.125rem;font-weight:800;
       color:white;letter-spacing:-0.02em;margin:0 0 3px">Scientific Sanctuary</h1>
-  <p style="font-size:10px;color:rgba(255,255,255,0.4);text-transform:uppercase;
-      letter-spacing:0.2em;font-weight:600;margin:0">Agricultural Intelligence</p>
+  <p style="font-size:11px;color:rgba(232,244,236,0.72);text-transform:uppercase;
+      letter-spacing:0.18em;font-weight:700;line-height:1.55;margin:0">Agricultural Intelligence</p>
 </div>
 """, unsafe_allow_html=True)
 
     # Home button
     if st.button(
-        "⌂  Home",
+        "🏠  Home",
         key="sidebar_home_btn",
         help="Return to AgroSynapse home",
         use_container_width=True,
@@ -2342,7 +2348,7 @@ button[data-testid="baseButton-secondary"] { text-align:left!important; }
     _leaf_cls = "nav-btn-leaf-active" if _leaf_active else "nav-btn-leaf"
 
     st.markdown(f'<div class="{_crop_cls}">', unsafe_allow_html=True)
-    if st.button("📊  Predictive Cultivation", key="nav_crop_btn", use_container_width=True):
+    if st.button("🌱  Predictive Cultivation", key="nav_crop_btn", use_container_width=True):
         st.session_state.page = "crop"
         st.rerun()
     st.markdown('</div>', unsafe_allow_html=True)
