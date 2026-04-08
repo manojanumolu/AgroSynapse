@@ -95,16 +95,16 @@ if st.session_state.theme == "dark":
 else:
     THEME_VARS = """<style>
 :root {
-    --bg: #F5F4F0;
-  --surface: #ffffff;
-    --surface-2: #F9F9F7;
-    --surface-3: #F9F9F7;
-    --surface-container-low: #F9F9F7;
-  --surface-container-lowest: #ffffff;
-    --surface-container: #F9F9F7;
-    --surface-container-high: #ffffff;
-    --surface-container-highest: #F9F9F7;
-    --outline: #E0E3DF;
+    --bg: #F2EEE7;
+  --surface: #DCDCDC;
+    --surface-2: #E3E3E3;
+    --surface-3: #E1E1E1;
+    --surface-container-low: #E0E0E0;
+  --surface-container-lowest: #DCDCDC;
+    --surface-container: #DEDEDE;
+    --surface-container-high: #DCDCDC;
+    --surface-container-highest: #D7D7D7;
+    --outline: #C7CCC7;
     --text: #404942;
     --muted: #707971;
     --primary: #1E5C3A;
@@ -114,7 +114,7 @@ else:
   --on-secondary-fixed-variant: #224a6b;
   --tertiary: #713638;
   --danger: #ff4d4f;
-  --card: #ffffff;
+  --card: #DCDCDC;
   --border: #eaeaea;
   --pill: #e6f7ed;
   --sidebar: #f7f8fa;
@@ -1917,8 +1917,8 @@ div[data-testid="stColumn"]:has(#mrk-hist),
 div[data-testid="stColumn"]:has(#mrk-det) {
     background: var(--surface-container-high) !important;
     border-radius: 0.75rem !important;
-    border: 1px solid rgba(192,201,191,0.3) !important;
-    box-shadow: 0 2px 8px rgba(27,28,26,0.06) !important;
+    border: 1px solid rgba(157,165,157,0.5) !important;
+    box-shadow: 0 10px 26px rgba(27,28,26,0.10) !important;
     overflow: visible !important;
 }
 /* Inner block padding */
@@ -1996,13 +1996,13 @@ div[data-testid="stButton"] > button {{
     border-radius: 0.75rem !important;
     color: #faf9f6 !important;
     font-family: 'Manrope', sans-serif !important;
-    font-size: 1.4rem !important;
-    font-weight: 800 !important;
+    font-size: 1.72rem !important;
+    font-weight: 900 !important;
     width: 100% !important;
     min-height: 200px !important;
     padding: 2.25rem 2rem !important;
     text-align: left !important;
-    line-height: 1.35 !important;
+    line-height: 1.3 !important;
     transition: background 0.3s, box-shadow 0.3s, border-color 0.3s !important;
     cursor: pointer !important;
     white-space: pre-line !important;
@@ -2025,11 +2025,11 @@ div[data-testid="stButton"] > button:hover {{
       <span class="material-symbols-outlined" style="color:#b4fcc2;font-variation-settings:'FILL' 1">psychology</span>
     </div>
   </div>
-  <h1 style="font-family:Manrope,sans-serif;font-size:clamp(2.5rem,7vw,4rem);font-weight:800;
+  <h1 style="font-family:Manrope,sans-serif;font-size:clamp(2.9rem,7.6vw,4.5rem);font-weight:900;
       letter-spacing:-0.025em;color:#faf9f6;margin:0 0 0.5rem;line-height:1">
     AgroSynapse AI
   </h1>
-  <p style="font-family:'Plus Jakarta Sans',sans-serif;font-size:0.75rem;font-weight:600;
+  <p style="font-family:'Plus Jakarta Sans',sans-serif;font-size:0.9rem;font-weight:800;
       text-transform:uppercase;letter-spacing:0.3em;color:#ababa8;margin:0">
     Atmospheric Intelligence
   </p>
@@ -2041,12 +2041,12 @@ div[data-testid="stButton"] > button:hover {{
 
     with _sc1:
         st.markdown("""
-<p style="font-family:'Plus Jakarta Sans',sans-serif;font-size:0.65rem;font-weight:700;
+<p style="font-family:'Plus Jakarta Sans',sans-serif;font-size:0.86rem;font-weight:900;
     text-transform:uppercase;letter-spacing:0.2em;color:#b4fcc2;margin:0 0 0.4rem">
   Agricultural Core
 </p>
-<p style="color:#ababa8;font-family:Manrope,sans-serif;font-size:0.9rem;
-    margin:0 0 1rem;font-weight:400">
+<p style="color:#d7ddd8;font-family:Manrope,sans-serif;font-size:1.12rem;
+    margin:0 0 1rem;font-weight:700">
   Multimodal Soil-to-Crop Fusion
 </p>
 """, unsafe_allow_html=True)
@@ -2060,12 +2060,12 @@ div[data-testid="stButton"] > button:hover {{
 
     with _sc2:
         st.markdown("""
-<p style="font-family:'Plus Jakarta Sans',sans-serif;font-size:0.65rem;font-weight:700;
+<p style="font-family:'Plus Jakarta Sans',sans-serif;font-size:0.86rem;font-weight:900;
     text-transform:uppercase;letter-spacing:0.2em;color:#b4fcc2;margin:0 0 0.4rem">
   Neural Vision
 </p>
-<p style="color:#ababa8;font-family:Manrope,sans-serif;font-size:0.9rem;
-    margin:0 0 1rem;font-weight:400">
+<p style="color:#d7ddd8;font-family:Manrope,sans-serif;font-size:1.12rem;
+    margin:0 0 1rem;font-weight:700">
   Leaf-to-Cure Vision
 </p>
 """, unsafe_allow_html=True)
@@ -2311,7 +2311,7 @@ if st.session_state.page == "leaf":
     color:var(--primary);letter-spacing:-0.025em;line-height:1.08;margin:0 0 0.5rem">
   Phyto-Diagnostic Suite
 </h1>
-<p style="color:var(--muted);font-size:1rem;font-weight:500;line-height:1.55;
+<p style="color:var(--muted);font-size:1.1rem;font-weight:600;line-height:1.6;
     max-width:520px;margin:0 0 2rem">
   Upload a leaf photograph for neural pathogen detection and precision treatment recommendations.
 </p>
@@ -2322,7 +2322,7 @@ if st.session_state.page == "leaf":
     with _lc_upload:
         # ── Plant Specimen Analysis card ──
         st.markdown("""
-<h3 style="font-family:Manrope,sans-serif;font-size:1.3rem;font-weight:900;
+<h3 style="font-family:Manrope,sans-serif;font-size:1.55rem;font-weight:900;
     color:var(--primary);display:flex;align-items:center;gap:8px;margin:0 0 1.25rem">
   <span class="material-symbols-outlined"
         style="color:var(--primary);font-size:1.4rem;font-variation-settings:'FILL' 1">image</span>
@@ -2344,10 +2344,10 @@ if st.session_state.page == "leaf":
             st.image(io.BytesIO(st.session_state.leaf_img_bytes), use_container_width=True)
 
         st.markdown(f"""
-<div style="background:rgba(195,232,209,0.3);border:1px solid rgba(195,232,209,0.5);
+<div style="background:#DCDCDC;border:1px solid rgba(157,165,157,0.5);
      border-radius:0.5rem;padding:0.875rem 1rem;margin-top:0.75rem;display:flex;gap:8px;align-items:start">
   <span class="material-symbols-outlined" style="color:var(--primary);font-size:18px;flex-shrink:0">lightbulb</span>
-  <p style="font-size:12px;font-weight:600;color:var(--primary);margin:0;line-height:1.5">
+  <p style="font-size:14px;font-weight:700;color:var(--primary);margin:0;line-height:1.6">
     Tip: Upload a clear close-up photo of the leaf for best results. Avoid blurry images or
     backgrounds with multiple plant species.
   </p>
@@ -2425,29 +2425,29 @@ if st.session_state.page == "leaf":
             _conf_bar_w = min(int(_conf), 100)
             try:
                 st.html(f"""
-<div style="background:#f9f9f7;border-radius:12px;padding:1.5rem;
-     box-shadow:0 2px 8px rgba(0,0,0,0.05);margin-bottom:1.25rem;
-     border:1px solid rgba(0,0,0,0.05)">
+<div style="background:#DCDCDC;border-radius:14px;padding:1.6rem;
+     box-shadow:0 12px 30px rgba(0,0,0,0.08);margin-bottom:1.25rem;
+     border:1px solid rgba(157,165,157,0.5)">
   <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:1.25rem">
     <div style="display:flex;align-items:center;gap:8px">
       <span style="font-family:'Material Symbols Outlined';color:{_primary_c};
             font-size:1.4rem;font-variation-settings:'FILL' 0,'wght' 400">biotech</span>
-      <h4 style="font-family:Manrope,sans-serif;font-size:1.05rem;font-weight:800;
+      <h4 style="font-family:Manrope,sans-serif;font-size:1.22rem;font-weight:900;
           color:{_primary_c};margin:0">Detection Result</h4>
     </div>
     <div style="background:{_badge_bg};color:{_badge_col};padding:4px 12px;border-radius:999px;
-         font-size:0.6rem;font-weight:800;text-transform:uppercase;letter-spacing:0.07em;
+         font-size:0.66rem;font-weight:900;text-transform:uppercase;letter-spacing:0.07em;
          font-family:'Plus Jakarta Sans',sans-serif">
       {_badge_txt}
     </div>
   </div>
-  <h5 style="font-family:Manrope,sans-serif;font-size:1.5rem;font-weight:900;
+  <h5 style="font-family:Manrope,sans-serif;font-size:1.9rem;font-weight:900;
       color:#1a1c1a;margin:0 0 1.25rem">{_cname}</h5>
   <div style="display:flex;justify-content:space-between;margin-bottom:5px">
-    <span style="font-size:0.65rem;font-weight:800;color:{_muted_c};
+    <span style="font-size:0.72rem;font-weight:900;color:{_muted_c};
         text-transform:uppercase;letter-spacing:0.1em;font-family:'Plus Jakarta Sans',sans-serif">
       Confidence Level</span>
-    <span style="font-size:0.65rem;font-weight:800;color:{_primary_c}">{_conf}%</span>
+    <span style="font-size:0.76rem;font-weight:900;color:{_primary_c}">{_conf}%</span>
   </div>
   <div style="height:8px;width:100%;background:#e6e8e4;border-radius:999px;overflow:hidden">
     <div style="height:100%;width:{_conf_bar_w}%;background:{_primary_c};
@@ -2467,23 +2467,23 @@ if st.session_state.page == "leaf":
   <div style="display:flex;align-items:center;gap:6px;margin-bottom:0.625rem">
     <span style="font-family:'Material Symbols Outlined';color:{_primary_c};font-size:1rem;
           font-variation-settings:'FILL' 0,'wght' 300">{icon}</span>
-    <span style="font-size:0.6rem;font-weight:800;color:{_muted_c};
+    <span style="font-size:0.72rem;font-weight:900;color:{_muted_c};
         text-transform:uppercase;letter-spacing:0.15em;
         font-family:'Plus Jakarta Sans',sans-serif">{label}</span>
   </div>
-  <p style="font-size:0.84rem;font-weight:500;color:{_muted_c};line-height:1.65;margin:0">
+  <p style="font-size:1rem;font-weight:600;color:{_muted_c};line-height:1.72;margin:0">
     {safe_text}
   </p>
 </div>"""
 
             _plan_html = f"""
-<div style="background:#f9f9f7;border-radius:12px;border:1px solid rgba(0,0,0,0.05);
-     box-shadow:0 2px 8px rgba(0,0,0,0.05)">
-  <div style="padding:1.25rem 1.5rem;border-bottom:1px solid rgba(0,0,0,0.06);
+<div style="background:#DCDCDC;border-radius:14px;border:1px solid rgba(157,165,157,0.5);
+     box-shadow:0 12px 30px rgba(0,0,0,0.08)">
+  <div style="padding:1.25rem 1.5rem;border-bottom:1px solid rgba(157,165,157,0.35);
        display:flex;align-items:center;gap:8px">
     <span style="font-family:'Material Symbols Outlined';color:{_primary_c};font-size:1.4rem;
           font-variation-settings:'FILL' 0,'wght' 400">medical_services</span>
-    <h4 style="font-family:Manrope,sans-serif;font-size:1.05rem;font-weight:800;
+    <h4 style="font-family:Manrope,sans-serif;font-size:1.22rem;font-weight:900;
         color:{_primary_c};margin:0">Treatment Plan</h4>
   </div>
   <div style="padding:1.5rem 1.5rem 0.5rem">
@@ -2499,26 +2499,29 @@ if st.session_state.page == "leaf":
 
             # ── Top-5 confidence breakdown ───────────────────────────
             st.markdown("<div style='height:0.75rem'></div>", unsafe_allow_html=True)
-            st.markdown(
-                "<p style='font-size:11px;font-weight:800;text-transform:uppercase;"
-                "letter-spacing:0.1em;color:#444744;margin:0 0 0.5rem'>"
-                "Top-5 Predictions</p>",
-                unsafe_allow_html=True,
-            )
+            _top5_rows = []
             for _tn, _tp in _top5:
                 _t_label  = _tn.replace("___", " — ").replace("_", " ")
                 _bar_pct  = min(int(_tp), 100)
-                st.markdown(
-                    f"<div style='display:flex;align-items:center;gap:8px;margin-bottom:6px'>"
-                    f"<span style='font-size:12px;font-weight:600;color:#1a1c1a;"
-                    f"white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:1 1 140px;max-width:180px'>"
+                _top5_rows.append(
+                    f"<div style='display:flex;align-items:center;gap:10px;margin-bottom:12px'>"
+                    f"<span style='font-size:13px;font-weight:700;color:#1a1c1a;"
+                    f"white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:1 1 170px;max-width:210px'>"
                     f"{_t_label}</span>"
-                    f"<div style='flex:2;height:5px;background:#e6e8e4;border-radius:999px;overflow:hidden'>"
+                    f"<div style='flex:2;height:7px;background:#ecebe8;border-radius:999px;overflow:hidden'>"
                     f"<div style='height:100%;width:{_bar_pct}%;background:#1E5C3A;border-radius:999px'></div></div>"
-                    f"<span style='font-size:12px;font-weight:800;color:#1E5C3A;flex-shrink:0'>{_tp}%</span>"
-                    f"</div>",
-                    unsafe_allow_html=True,
+                    f"<span style='font-size:13px;font-weight:900;color:#1E5C3A;flex-shrink:0'>{_tp}%</span>"
+                    f"</div>"
                 )
+            st.markdown(
+                "<div style='background:#DCDCDC;border:1px solid rgba(157,165,157,0.5);"
+                "border-radius:14px;padding:1.15rem 1.2rem 0.5rem;box-shadow:0 12px 30px rgba(0,0,0,0.08)'>"
+                "<p style='font-size:12px;font-weight:900;text-transform:uppercase;"
+                "letter-spacing:0.12em;color:#444744;margin:0 0 1rem'>Top-5 Predictions</p>"
+                + "".join(_top5_rows) +
+                "</div>",
+                unsafe_allow_html=True,
+            )
 
         else:
             # Empty state
@@ -2587,11 +2590,11 @@ with hero_l:
 with hero_r:
         st.markdown(f"""
 <div style="background:{guide_panel_bg};padding:1rem 1.125rem;border-radius:0.75rem;
-     border:1px solid rgba(192,201,191,0.2);box-shadow:0 1px 3px rgba(0,0,0,0.05)">
+     border:1px solid rgba(157,165,157,0.35);box-shadow:0 10px 24px rgba(0,0,0,0.08)">
   <div style="display:flex;align-items:center;gap:7px;margin-bottom:0.625rem">
     <span class="material-symbols-outlined"
       style="color:#1d4ed8;font-size:17px;font-variation-settings:'FILL' 1">info</span>
-        <h3 style="font-family:Manrope,sans-serif;font-weight:900;font-size:12px;
+        <h3 style="font-family:Manrope,sans-serif;font-weight:900;font-size:13px;
                 text-transform:uppercase;letter-spacing:0.1em;color:{guide_title_color};margin:0">Farmer Unit Guide</h3>
   </div>
     <div style="font-size:13px">
@@ -2621,7 +2624,7 @@ col_img, col_chem = st.columns(2, gap="large")
 with col_img:
     st.markdown('<span id="mrk-soil-img"></span>', unsafe_allow_html=True)
     st.markdown("""
-<h3 style="font-family:Manrope,sans-serif;font-size:2rem;font-weight:900;
+<h3 style="font-family:Manrope,sans-serif;font-size:2.15rem;font-weight:900;
     color:var(--primary);display:flex;align-items:center;gap:8px;margin:0 0 1rem">
   <span class="material-symbols-outlined"
         style="color:var(--primary);font-size:1.6rem;font-variation-settings:'FILL' 1, 'wght' 600">image</span>
@@ -2638,7 +2641,7 @@ with col_img:
     st.markdown(f"""
 <div style="background:{tip_bg};padding:0.75rem 0.875rem;border-radius:0.5rem;
      margin-top:0.625rem">
-    <p style="font-size:13px;color:{tip_text};line-height:1.6;margin:0;font-weight:700">
+    <p style="font-size:14px;color:{tip_text};line-height:1.65;margin:0;font-weight:700">
     <strong>&#x1f4a1; Tip:</strong> Upload a clear close-up photo of soil for best results.
     Avoid photos with people, plants, or bright objects.
   </p>
@@ -2669,7 +2672,7 @@ def _npk_bar(val, lo, hi, vmax):
 with col_chem:
     st.markdown('<span id="mrk-chem"></span>', unsafe_allow_html=True)
     st.markdown("""
-<h3 style="font-family:Manrope,sans-serif;font-size:2rem;font-weight:800;
+<h3 style="font-family:Manrope,sans-serif;font-size:2.15rem;font-weight:900;
     color:#1E5C3A;display:flex;align-items:center;gap:8px;margin:0 0 1rem">
   <span class="material-symbols-outlined"
         style="color:#004425;font-size:1.6rem;font-variation-settings:'FILL' 1, 'wght' 600">biotech</span>
