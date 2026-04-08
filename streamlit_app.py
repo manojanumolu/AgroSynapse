@@ -1788,6 +1788,42 @@ section[data-testid="stSidebar"] div[data-testid="stButton"] > button[data-testi
     font-weight: 800 !important; font-family: 'Manrope',sans-serif !important;
     font-size: 0.95rem !important; height: 3.25rem !important;
 }
+section[data-testid="stSidebar"] button[kind="secondary"],
+section[data-testid="stSidebar"] button[data-testid^="baseButton"] {
+    background: rgba(126, 176, 140, 0.18) !important;
+    background-image: none !important;
+    color: #eef7ef !important;
+    border: 1px solid rgba(180, 252, 194, 0.18) !important;
+    border-radius: 14px !important;
+    font-family: 'Manrope', sans-serif !important;
+    font-size: 14px !important;
+    font-weight: 800 !important;
+    text-align: left !important;
+    padding: 12px 15px !important;
+    min-height: 52px !important;
+    width: 100% !important;
+    box-shadow: 0 8px 18px rgba(4, 16, 9, 0.14) !important;
+    transform: translateX(0) scale(1) !important;
+    transition: background 0.22s ease, color 0.22s ease, border-color 0.22s ease,
+                transform 0.22s ease, box-shadow 0.22s ease !important;
+}
+section[data-testid="stSidebar"] button[kind="secondary"]:hover,
+section[data-testid="stSidebar"] button[data-testid^="baseButton"]:hover {
+    background: rgba(172, 243, 186, 0.24) !important;
+    background-image: none !important;
+    color: #ffffff !important;
+    border-color: rgba(180, 252, 194, 0.42) !important;
+    box-shadow: 0 14px 26px rgba(4, 16, 9, 0.22) !important;
+    transform: translateX(4px) scale(1.015) !important;
+}
+section[data-testid="stSidebar"] button[kind="secondary"]:focus,
+section[data-testid="stSidebar"] button[kind="secondary"]:focus-visible,
+section[data-testid="stSidebar"] button[data-testid^="baseButton"]:focus,
+section[data-testid="stSidebar"] button[data-testid^="baseButton"]:focus-visible {
+    outline: none !important;
+    border-color: rgba(180, 252, 194, 0.48) !important;
+    box-shadow: 0 0 0 2px rgba(172, 243, 186, 0.12), 0 14px 26px rgba(4, 16, 9, 0.22) !important;
+}
 
 /* Theme toggle uses tertiary button type for isolated styling */
 .main button[data-testid="baseButton-tertiary"],
