@@ -1729,6 +1729,36 @@ section[data-testid="stSidebar"] > div {
 }
 [data-testid="stSidebarNav"] { display: none !important; }
 button[data-testid="collapsedControl"] { background: #214130 !important; color: white !important; }
+section[data-testid="stSidebar"] div[data-testid="stButton"] > button[data-testid="baseButton-secondary"] {
+    background: rgba(126, 176, 140, 0.18) !important;
+    color: #eef7ef !important;
+    border: 1px solid rgba(180, 252, 194, 0.18) !important;
+    border-radius: 14px !important;
+    font-family: 'Manrope', sans-serif !important;
+    font-size: 14px !important;
+    font-weight: 800 !important;
+    text-align: left !important;
+    padding: 12px 15px !important;
+    min-height: 52px !important;
+    width: 100% !important;
+    box-shadow: 0 8px 18px rgba(4, 16, 9, 0.14) !important;
+    transform: translateX(0) scale(1) !important;
+    transition: background 0.22s ease, color 0.22s ease, border-color 0.22s ease,
+                transform 0.22s ease, box-shadow 0.22s ease !important;
+}
+section[data-testid="stSidebar"] div[data-testid="stButton"] > button[data-testid="baseButton-secondary"]:hover {
+    background: rgba(172, 243, 186, 0.24) !important;
+    color: #ffffff !important;
+    border-color: rgba(180, 252, 194, 0.42) !important;
+    box-shadow: 0 14px 26px rgba(4, 16, 9, 0.22) !important;
+    transform: translateX(4px) scale(1.015) !important;
+}
+section[data-testid="stSidebar"] div[data-testid="stButton"] > button[data-testid="baseButton-secondary"]:focus,
+section[data-testid="stSidebar"] div[data-testid="stButton"] > button[data-testid="baseButton-secondary"]:focus-visible {
+    outline: none !important;
+    border-color: rgba(180, 252, 194, 0.48) !important;
+    box-shadow: 0 0 0 2px rgba(172, 243, 186, 0.12), 0 14px 26px rgba(4, 16, 9, 0.22) !important;
+}
 
 /* ── Primary / Secondary buttons (main area) ── */
 .main button[data-testid="baseButton-primary"],
