@@ -63,6 +63,8 @@ if "leaf_result" not in st.session_state:
     st.session_state.leaf_result = None
 if "leaf_model_error" not in st.session_state:
     st.session_state.leaf_model_error = None
+if "leaf_valid" not in st.session_state:
+    st.session_state.leaf_valid = None   # None=not checked, True=valid, False=invalid
 
 if st.session_state.theme == "dark":
     THEME_VARS = """<style>
@@ -2512,9 +2514,31 @@ if st.session_state.page == "leaf":
         if leaf_upload:
             st.session_state.leaf_img_bytes = leaf_upload.getvalue()
             st.session_state.leaf_result = None
+            # Validate immediately on upload
+            _pil_check_upload = Image.open(io.BytesIO(st.session_state.leaf_img_bytes)).convert("RGB")
+            st.session_state.leaf_valid = is_leaf_image(_pil_check_upload)
 
         if st.session_state.leaf_img_bytes:
             st.image(io.BytesIO(st.session_state.leaf_img_bytes), use_container_width=True)
+            # Show validation status badge right below the image
+            if st.session_state.leaf_valid is True:
+                st.markdown("""
+<div style="display:flex;align-items:center;gap:8px;background:#e6f4ec;border:1.5px solid #4caf7d;
+     border-radius:0.5rem;padding:0.6rem 1rem;margin-top:0.5rem">
+  <span class="material-symbols-outlined" style="color:#2d7a4f;font-size:20px;font-variation-settings:'FILL' 1">check_circle</span>
+  <span style="font-family:Manrope,sans-serif;font-weight:700;color:#2d7a4f;font-size:0.9rem">
+    Valid leaf image detected — ready for diagnosis
+  </span>
+</div>""", unsafe_allow_html=True)
+            elif st.session_state.leaf_valid is False:
+                st.markdown("""
+<div style="display:flex;align-items:center;gap:8px;background:#fdecea;border:1.5px solid #e57373;
+     border-radius:0.5rem;padding:0.6rem 1rem;margin-top:0.5rem">
+  <span class="material-symbols-outlined" style="color:#c62828;font-size:20px;font-variation-settings:'FILL' 1">cancel</span>
+  <span style="font-family:Manrope,sans-serif;font-weight:700;color:#c62828;font-size:0.9rem">
+    No plant leaf detected — please upload a clear leaf photo
+  </span>
+</div>""", unsafe_allow_html=True)
 
         st.markdown(f"""
 <div style="background:#DCDCDC;border:1px solid rgba(157,165,157,0.5);
@@ -2539,9 +2563,8 @@ if st.session_state.page == "leaf":
             st.error("Please upload a leaf image before running diagnosis.")
 
         if _run_diag and st.session_state.leaf_img_bytes:
-            _pil_leaf_check = Image.open(io.BytesIO(st.session_state.leaf_img_bytes)).convert("RGB")
-            if not is_leaf_image(_pil_leaf_check):
-                st.error("No plant leaf detected in the image. Please upload a clear close-up photo of a leaf.")
+            if not st.session_state.leaf_valid:
+                st.error("No plant leaf detected. Please upload a clear close-up photo of a leaf.")
             elif _leaf_model is None:
                 _err = st.session_state.get("leaf_model_error")
                 msg = (
