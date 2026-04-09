@@ -647,6 +647,33 @@ def is_soil_image(pil_img):
 
 
 # ══════════════════════════════════════════════════════════════
+# LEAF IMAGE VALIDATOR
+# ══════════════════════════════════════════════════════════════
+
+def is_leaf_image(pil_img):
+    """Return True if the image likely contains a plant leaf.
+
+    Uses two complementary heuristics:
+    1. Green-dominance pixel ratio — leaves are predominantly green.
+    2. Green-channel excess — green channel noticeably stronger than red & blue.
+    Either heuristic passing is enough to accept the image.
+    """
+    import numpy as np
+    arr = np.array(pil_img.resize((224, 224)).convert("RGB"), dtype=np.float32)
+    r, g, b = arr[:, :, 0], arr[:, :, 1], arr[:, :, 2]
+
+    # Heuristic 1: pixels where green is the dominant channel AND
+    # the green channel has a meaningful absolute value (not near-black).
+    green_dom = (g > r) & (g > b) & (g > 40)
+    green_ratio = green_dom.mean()
+
+    # Heuristic 2: average green excess over the other two channels.
+    green_excess = float((g - (r + b) / 2).mean())
+
+    return (green_ratio > 0.12) or (green_excess > 15)
+
+
+# ══════════════════════════════════════════════════════════════
 # LEAF DISEASE MODEL — Universal PlantVillage ResNet-50
 # ══════════════════════════════════════════════════════════════
 
@@ -2476,7 +2503,10 @@ if st.session_state.page == "leaf":
             st.error("Please upload a leaf image before running diagnosis.")
 
         if _run_diag and st.session_state.leaf_img_bytes:
-            if _leaf_model is None:
+            _pil_leaf_check = Image.open(io.BytesIO(st.session_state.leaf_img_bytes)).convert("RGB")
+            if not is_leaf_image(_pil_leaf_check):
+                st.error("No plant leaf detected in the image. Please upload a clear close-up photo of a leaf.")
+            elif _leaf_model is None:
                 _err = st.session_state.get("leaf_model_error")
                 msg = (
                     "Leaf disease model not loaded. "
