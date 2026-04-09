@@ -690,7 +690,7 @@ def is_leaf_image(pil_img):
         with torch.no_grad():
             out  = validator(img_t)
             prob = torch.softmax(out, dim=-1)[0]
-        return prob[1].item() > 0.55
+        return prob[0].item() > 0.55  # leaf=0 (alphabetically leaf < not_leaf)
 
     # ── Fallback: HSV hue-based green detection ──────────────────────────
     arr = np.array(pil_img.resize((224, 224)).convert("RGB"), dtype=np.float32) / 255.0
