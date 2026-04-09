@@ -653,24 +653,37 @@ def is_soil_image(pil_img):
 def is_leaf_image(pil_img):
     """Return True if the image likely contains a plant leaf.
 
-    Uses two complementary heuristics:
-    1. Green-dominance pixel ratio — leaves are predominantly green.
-    2. Green-channel excess — green channel noticeably stronger than red & blue.
-    Either heuristic passing is enough to accept the image.
+    Uses HSV hue-based green detection — far more accurate than raw RGB
+    comparisons. Leaves fall in the 60–165° hue range (yellow-green to
+    cyan-green). Red landscapes, skin tones, cars, and faces all fall
+    outside this range and will be rejected.
     """
     import numpy as np
-    arr = np.array(pil_img.resize((224, 224)).convert("RGB"), dtype=np.float32)
+
+    arr = np.array(pil_img.resize((224, 224)).convert("RGB"), dtype=np.float32) / 255.0
     r, g, b = arr[:, :, 0], arr[:, :, 1], arr[:, :, 2]
 
-    # Heuristic 1: pixels where green is the dominant channel AND
-    # the green channel has a meaningful absolute value (not near-black).
-    green_dom = (g > r) & (g > b) & (g > 40)
-    green_ratio = green_dom.mean()
+    cmax = np.maximum(np.maximum(r, g), b)
+    cmin = np.minimum(np.minimum(r, g), b)
+    delta = cmax - cmin
 
-    # Heuristic 2: average green excess over the other two channels.
-    green_excess = float((g - (r + b) / 2).mean())
+    # Compute hue (0–360°)
+    hue = np.zeros_like(r)
+    m = delta > 0
+    mr = m & (cmax == r)
+    mg = m & (cmax == g)
+    mb = m & (cmax == b)
+    hue[mr] = (60 * ((g[mr] - b[mr]) / delta[mr])) % 360
+    hue[mg] = (60 * ((b[mg] - r[mg]) / delta[mg]) + 120) % 360
+    hue[mb] = (60 * ((r[mb] - g[mb]) / delta[mb]) + 240) % 360
 
-    return (green_ratio > 0.12) or (green_excess > 15)
+    saturation = np.where(cmax == 0, 0.0, delta / cmax)
+
+    # Plant-green hue band: 60–165°, must have real saturation & brightness
+    green_mask = (hue >= 60) & (hue <= 165) & (saturation > 0.18) & (cmax > 0.12)
+    green_ratio = float(green_mask.mean())
+
+    return green_ratio > 0.10
 
 
 # ══════════════════════════════════════════════════════════════
