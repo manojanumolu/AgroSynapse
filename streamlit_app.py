@@ -650,40 +650,63 @@ def is_soil_image(pil_img):
 # LEAF IMAGE VALIDATOR
 # ══════════════════════════════════════════════════════════════
 
+@st.cache_resource
+def load_leaf_validator():
+    """Load leaf_validator.pt if present. Returns model or None."""
+    if not os.path.exists("leaf_validator.pt"):
+        return None
+    try:
+        from torchvision.models import mobilenet_v3_small
+        import torch.nn as nn
+        m = mobilenet_v3_small(weights=None)
+        m.classifier[3] = nn.Linear(1024, 2)
+        m.load_state_dict(torch.load("leaf_validator.pt", map_location="cpu"))
+        m.eval()
+        return m
+    except Exception as _e:
+        print(f"[WARN] leaf_validator.pt load failed: {_e}")
+        return None
+
+
 def is_leaf_image(pil_img):
     """Return True if the image likely contains a plant leaf.
 
-    Uses HSV hue-based green detection — far more accurate than raw RGB
-    comparisons. Leaves fall in the 60–165° hue range (yellow-green to
-    cyan-green). Red landscapes, skin tones, cars, and faces all fall
-    outside this range and will be rejected.
+    Uses leaf_validator.pt (trained binary classifier) when available —
+    same approach as soil_validator.pt which handles random objects,
+    colored balls, faces, cars, etc. reliably.
+    Falls back to HSV heuristic only if the model file is missing.
     """
     import numpy as np
+    validator = load_leaf_validator()
 
+    if validator is not None:
+        from torchvision import transforms as _T
+        tf = _T.Compose([
+            _T.Resize((224, 224)),
+            _T.ToTensor(),
+            _T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
+        ])
+        img_t = tf(pil_img).unsqueeze(0)
+        with torch.no_grad():
+            out  = validator(img_t)
+            prob = torch.softmax(out, dim=-1)[0]
+        return prob[1].item() > 0.55
+
+    # ── Fallback: HSV hue-based green detection ──────────────────────────
     arr = np.array(pil_img.resize((224, 224)).convert("RGB"), dtype=np.float32) / 255.0
     r, g, b = arr[:, :, 0], arr[:, :, 1], arr[:, :, 2]
-
-    cmax = np.maximum(np.maximum(r, g), b)
-    cmin = np.minimum(np.minimum(r, g), b)
+    cmax  = np.maximum(np.maximum(r, g), b)
+    cmin  = np.minimum(np.minimum(r, g), b)
     delta = cmax - cmin
-
-    # Compute hue (0–360°)
-    hue = np.zeros_like(r)
+    hue   = np.zeros_like(r)
     m = delta > 0
-    mr = m & (cmax == r)
-    mg = m & (cmax == g)
-    mb = m & (cmax == b)
+    mr, mg, mb = m & (cmax == r), m & (cmax == g), m & (cmax == b)
     hue[mr] = (60 * ((g[mr] - b[mr]) / delta[mr])) % 360
     hue[mg] = (60 * ((b[mg] - r[mg]) / delta[mg]) + 120) % 360
     hue[mb] = (60 * ((r[mb] - g[mb]) / delta[mb]) + 240) % 360
-
     saturation = np.where(cmax == 0, 0.0, delta / cmax)
-
-    # Plant-green hue band: 60–165°, must have real saturation & brightness
     green_mask = (hue >= 60) & (hue <= 165) & (saturation > 0.18) & (cmax > 0.12)
-    green_ratio = float(green_mask.mean())
-
-    return green_ratio > 0.10
+    return float(green_mask.mean()) > 0.10
 
 
 # ══════════════════════════════════════════════════════════════
