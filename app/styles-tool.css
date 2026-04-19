@@ -57,6 +57,7 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 24px;
+  align-items: start;
 }
 
 .tool-block {
@@ -67,6 +68,7 @@
   box-shadow: var(--shadow-sm);
 }
 .tool-block.wide { grid-column: span 2; }
+.tool-block.tight { padding-bottom: 22px; }
 .tool-block-head {
   display: flex; align-items: center; justify-content: space-between;
   margin-bottom: 8px;
@@ -81,6 +83,17 @@
 
 /* Upload */
 .upload-area { margin-top: 4px; }
+.upload-live-image {
+  width: 100%;
+  max-height: 360px;
+  object-fit: contain;
+  display: block;
+  background: #f2ede2;
+}
+.upload-live-image.leaf {
+  max-height: 300px;
+  background: #eef2e8;
+}
 .upload-drop {
   border: 1.5px dashed var(--line);
   border-radius: 14px;
@@ -103,6 +116,7 @@
   background: #2a1608;
 }
 .upload-preview-img svg { width: 100%; height: 100%; display: block; }
+.upload-preview-img img { width: 100%; height: 100%; display: block; object-fit: contain; }
 .upload-preview-img.leaf { background: #14240f; }
 .upload-preview-chip {
   position: absolute; bottom: 12px; left: 12px;
@@ -178,6 +192,31 @@
 
 /* Numeric field */
 .numeric-field { display: flex; flex-direction: column; gap: 10px; }
+.field-range {
+  margin: 10px 0 18px;
+}
+.field-range-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 5px;
+}
+.field-range-name,
+.field-range-status {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.field-range-name { color: #8a8a78; }
+.field-range-status.ok { color: var(--sage); }
+.field-range-status.warn { color: var(--earth-2); }
+.field-range-note {
+  margin-top: 4px;
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--ink-4);
+}
 .numeric-field-head { display: flex; justify-content: space-between; align-items: center; }
 .numeric-hint { font-size: 11px; letter-spacing: 0.04em; }
 .numeric-hint .ok { color: var(--sage); }
@@ -192,12 +231,17 @@
 /* Climate */
 .climate-row {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr auto;
+  grid-template-columns: 1fr 1fr 1fr;
   gap: 16px;
   align-items: end;
-  margin-bottom: 28px;
+  margin-bottom: 20px;
 }
-.climate-row .btn { height: 42px; padding: 0 18px; font-size: 13px; }
+.climate-action-row {
+  display: flex;
+  justify-content: flex-start;
+  margin-bottom: 24px;
+}
+.climate-action-row .btn { height: 48px; padding: 0 20px; font-size: 13px; }
 
 .climate-tiles {
   display: grid;
@@ -230,6 +274,13 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 20px;
+}
+.tool-grid-lower {
+  grid-column: span 2;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  align-items: start;
 }
 
 /* Analyze footer */
@@ -277,6 +328,7 @@
   display: grid;
   grid-template-columns: 1.5fr 1fr;
   gap: 24px;
+  align-items: start;
 }
 .diag-right { display: flex; flex-direction: column; gap: 16px; }
 
@@ -503,7 +555,7 @@
 .insight-v { font-size: 13px; line-height: 1.5; color: var(--ink-2); }
 
 @media (max-width: 900px) {
-  .tool-grid, .diag-grid, .dash-grid, .chem-grid, .farm-grid, .climate-tiles, .insights-grid { grid-template-columns: 1fr; }
+  .tool-grid, .diag-grid, .dash-grid, .chem-grid, .farm-grid, .climate-tiles, .insights-grid, .tool-grid-lower { grid-template-columns: 1fr; }
   .tool-block.wide { grid-column: span 1; }
   .rec-crop { grid-template-columns: 1fr; }
   .rec-crop-img { min-height: 200px; }
