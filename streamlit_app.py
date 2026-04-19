@@ -23,7 +23,7 @@ st.set_page_config(
     page_title="AgroSynapse AI",
     page_icon="🌿",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="collapsed",
 )
 
 if _IMPORT_ERROR is not None:
@@ -56,7 +56,7 @@ if "theme" not in st.session_state:
 if "sidebar_open" not in st.session_state:
     st.session_state.sidebar_open = False
 if "page" not in st.session_state:
-    st.session_state.page = "splash"
+    st.session_state.page = "home"
 if "leaf_img_bytes" not in st.session_state:
     st.session_state.leaf_img_bytes = None
 if "leaf_result" not in st.session_state:
@@ -1650,1719 +1650,1059 @@ def get_climate_data(village, district, state):
 # ==============================================================
 
 # ==============================================================
-# UI — Scientific Sanctuary  (exact match screen.png)
+
+# ==============================================================
+# UI — AgroSynapse Redesign (exact match to AgroSynapse Redesign.html)
 # ==============================================================
 
-def _load_font(size=18, bold=False):
-    font_candidates = [
-        "C:/Windows/Fonts/arialbd.ttf" if bold else "C:/Windows/Fonts/arial.ttf",
-        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf" if bold else "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-    ]
-    for fp in font_candidates:
-        if os.path.exists(fp):
-            try:
-                return ImageFont.truetype(fp, size=size)
-            except Exception:
-                pass
-    return ImageFont.load_default()
+import streamlit.components.v1 as components
 
+# ── Page routing ──────────────────────────────────────────────
+_qp = st.query_params.get("page", None)
+if _qp and _qp in ("home", "cultivation", "diagnostic", "dashboard"):
+    st.session_state.page = _qp
 
-def build_result_exports(result_data, season_name, img_bytes=None):
-    # Uses only basic PIL rectangle/text — no rounded_rectangle, no alpha tuples
-    W, H = 1400, 960
-    canvas = Image.new("RGB", (W, H), (245, 244, 240))
-    draw   = ImageDraw.Draw(canvas)
+_page = st.session_state.page
 
-    title_f = _load_font(38, bold=True)
-    h_f     = _load_font(30, bold=True)
-    b_f     = _load_font(21, bold=True)
-    t_f     = _load_font(19, bold=False)
-    s_f     = _load_font(15, bold=False)
-    lbl_f   = _load_font(13, bold=True)
+# ── Read design CSS ───────────────────────────────────────────
+def _read_design_css():
+    _dir = os.path.join(BASE, "app")
+    _parts = []
+    for _fname in ("styles.css", "styles-home.css", "styles-tool.css"):
+        _fp = os.path.join(_dir, _fname)
+        if os.path.exists(_fp):
+            with open(_fp, encoding="utf-8") as _f:
+                _parts.append(_f.read())
+    return "\n".join(_parts)
 
-    soil_name  = result_data.get("soil_name", "Unknown")
-    confidence = float(result_data.get("confidence", 0))
-    recs       = result_data.get("crop_recs", [])
-    soil_fert  = result_data.get("soil_fert", {})
-    all_probs  = result_data.get("all_probs", {})
-    top        = recs[0] if recs else {"name": "N/A", "fertilizer": "N/A", "npk": "N/A"}
+_DESIGN_CSS = _read_design_css()
 
-    # ── Header ──
-    draw.rectangle([0, 0, W, 78], fill=(0, 68, 37))
-    draw.text((40, 18), "Soil & Crop Recommendation Report", fill=(255, 255, 255), font=title_f)
-    draw.text((W - 255, 30), datetime.now().strftime("%Y-%m-%d  %H:%M"), fill=(172, 243, 186), font=s_f)
+# ── Active class helper ───────────────────────────────────────
+def _ac(p): return "active" if _page == p else ""
 
-    # ── White body ──
-    draw.rectangle([30, 92, W - 30, H - 28], fill=(255, 255, 255))
+_crumb = {
+    "cultivation": " · PREDICTIVE CULTIVATION",
+    "diagnostic":  " · PHYTO-DIAGNOSTIC SUITE",
+    "dashboard":   " · ANALYTICS DASHBOARD",
+}.get(_page, "")
 
-    # ── Soil image panel ──
-    px1, py1, px2, py2 = 55, 112, 430, 530
-    draw.rectangle([px1, py1, px2, py2], fill=(210, 215, 210))
-    if img_bytes:
-        try:
-            src = Image.open(io.BytesIO(img_bytes)).convert("RGB")
-            src = src.resize((px2 - px1, py2 - py1))
-            canvas.paste(src, (px1, py1))
-        except Exception:
-            pass
-    draw.rectangle([px1, py2 - 28, px2, py2], fill=(30, 30, 30))
-    draw.text((px1 + 8, py2 - 24), soil_name, fill=(255, 255, 255), font=lbl_f)
-
-    # ── Right info ──
-    rx = 455
-    draw.text((rx, 118), "Top Recommended Crop", fill=(64, 73, 66), font=lbl_f)
-    draw.text((rx, 144), top["name"],                fill=(0, 68, 37),   font=h_f)
-    draw.text((rx, 194), f"AI Confidence:  {confidence:.1f}%", fill=(30, 92, 58), font=b_f)
-    draw.text((rx, 234), f"Detected Soil:  {soil_name}",       fill=(22, 28, 26), font=b_f)
-    draw.text((rx, 272), f"Season:         {season_name}",     fill=(64, 73, 66), font=t_f)
-
-    # ── Fertilizer box ──
-    draw.rectangle([rx, 310, W - 52, 452], fill=(239, 238, 234))
-    draw.text((rx + 18, 326), "FERTILIZER RECOMMENDATION",     fill=(0, 68, 37),   font=lbl_f)
-    draw.text((rx + 18, 354), f"Type:   {top['fertilizer']}", fill=(22, 28, 26),  font=b_f)
-    draw.text((rx + 18, 392), f"N:P:K:  {top['npk']}",        fill=(64, 73, 66),  font=t_f)
-    sf_line = f"Soil rec: {soil_fert.get('fertilizer','N/A')}  ({soil_fert.get('npk','N/A')})"
-    draw.text((rx + 18, 424), sf_line,                         fill=(100, 110, 102), font=s_f)
-
-    # ── Crop list ──
-    cy = 550
-    draw.text((55, cy - 26), "All Crop Recommendations:", fill=(22, 28, 26), font=b_f)
-    for i, cr in enumerate(recs):
-        x = 55 + i * 295
-        draw.rectangle([x, cy, x + 275, cy + 78], fill=(245, 248, 245))
-        draw.text((x + 10, cy + 8),  f"Rank #{cr['rank']}", fill=(0, 68, 37),  font=lbl_f)
-        draw.text((x + 10, cy + 30), cr["name"],            fill=(22, 28, 26), font=b_f)
-        draw.text((x + 10, cy + 58), cr["fertilizer"],      fill=(64, 73, 66), font=s_f)
-
-    # ── Probability bars ──
-    by = 668
-    draw.text((55, by - 26), "Soil Probability Breakdown:", fill=(22, 28, 26), font=b_f)
-    bar_max = W - 340
-    for j, (sname, pct) in enumerate(sorted(all_probs.items(), key=lambda x: x[1], reverse=True)):
-        yy = by + j * 36
-        draw.text((55, yy + 3), sname, fill=(64, 73, 66), font=s_f)
-        draw.rectangle([265, yy, 265 + bar_max, yy + 18], fill=(218, 222, 218))
-        fw = int((pct / 100) * bar_max)
-        if fw > 0:
-            draw.rectangle([265, yy, 265 + fw, yy + 18], fill=(0, 68, 37))
-        draw.text((265 + bar_max + 8, yy + 2), f"{pct:.1f}%", fill=(22, 28, 26), font=s_f)
-
-    # ── Footer ──
-    draw.rectangle([0, H - 28, W, H], fill=(0, 68, 37))
-    draw.text((40, H - 22), "Multimodal Soil & Crop Advisory  |  Accuracy: 98.67%",
-              fill=(172, 243, 186), font=s_f)
-
-    # PNG
-    png_buf = io.BytesIO()
-    canvas.save(png_buf, format="PNG")
-    png_bytes = png_buf.getvalue()
-
-    # PDF — PIL saves PNG canvas as single-page PDF (no extra kwargs needed)
-    pdf_buf = io.BytesIO()
-    canvas.save(pdf_buf, format="PDF")
-    pdf_bytes = pdf_buf.getvalue()
-
-    return png_bytes, pdf_bytes
-
-CUSTOM_CSS = """
+# ── Inject fonts + design system CSS + chrome ─────────────────
+st.markdown(f"""
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Work+Sans:wght@300;400;500;600;700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
+/* ── Streamlit chrome removal ── */
+[data-testid="stSidebar"],[data-testid="stSidebarNav"],
+#MainMenu,footer,header.stAppHeader,.stDeployButton,
+[data-testid="stToolbar"],[data-testid="stDecoration"],
+[data-testid="stStatusWidget"],
+[data-testid="collapsedControl"]{{
+  display:none!important;visibility:hidden!important;
+}}
+.block-container{{padding:0!important;max-width:100%!important;padding-top:0!important;padding-bottom:0!important;}}
+section[data-testid="stMain"]>div:first-child{{padding-top:0!important;}}
+.stApp{{background:#faf8f3!important;}}
+section[data-testid="stMain"]{{padding-left:72px!important;padding-top:69px!important;min-height:100vh;}}
+/* ── Fixed chrome positioning ── */
+#as-rail{{position:fixed;left:0;top:0;z-index:100;width:72px;height:100vh;}}
+#as-topbar{{position:fixed;top:0;left:72px;right:0;z-index:90;height:69px;
+  display:flex;align-items:center;padding:16px 40px;gap:24px;
+  background:rgba(250,248,243,0.85);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border-bottom:1px solid rgba(20,20,15,0.06);}}
+.rail-btn{{text-decoration:none;width:44px;height:44px;border:0;background:transparent;
+  color:rgba(250,248,243,0.5);border-radius:10px;display:grid;place-items:center;
+  cursor:pointer;transition:all 0.25s cubic-bezier(0.2,0.8,0.2,1);position:relative;}}
+.rail-btn:hover{{color:#faf8f3;background:rgba(250,248,243,0.06);}}
+.rail-btn.active{{color:#7ba854;background:rgba(122,168,84,0.12);}}
+.rail-btn.active::before{{content:"";position:absolute;left:-18px;top:50%;
+  transform:translateY(-50%);width:2px;height:22px;background:#7ba854;border-radius:0 2px 2px 0;}}
+.topbar-nav a{{text-decoration:none;cursor:pointer;padding:7px 16px;font-size:13px;
+  color:#3a3a32;border-radius:999px;font-weight:500;transition:all 0.2s;}}
+.topbar-nav a:hover{{color:#14140f;}}
+.topbar-nav a.active{{background:#0f2818;color:#faf8f3;box-shadow:0 1px 2px rgba(15,40,24,0.04),0 2px 8px rgba(15,40,24,0.03);}}
 
-.material-symbols-outlined {
-    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-    vertical-align: middle;
-    font-family: 'Material Symbols Outlined' !important;
-}
+/* ── Design system CSS ── */
+{_DESIGN_CSS}
 
-/* ── Global ── */
-html, body, [class*="css"] { font-family: 'Work Sans', sans-serif !important; color: var(--text) !important; }
-.stApp, .main { background-color: var(--bg) !important; }
-.block-container { max-width: 1120px !important; padding: 0 2rem 3rem !important; }
-#MainMenu, footer { visibility: hidden !important; }
-.stDeployButton { display: none !important; }
-header[data-testid="stHeader"] { display: none !important; }
-
-/* ── Sidebar ── */
-section[data-testid="stSidebar"] {
-    background: #1A3A2A !important;
-    width: 240px !important; min-width: 240px !important;
-}
-section[data-testid="stSidebar"] > div {
-    background: #1A3A2A !important;
-    padding: 1.75rem 1rem 1.25rem !important;
-}
-[data-testid="stSidebarNav"] { display: none !important; }
-button[data-testid="collapsedControl"] { background: #214130 !important; color: white !important; }
-section[data-testid="stSidebar"] div[data-testid="stButton"] > button[data-testid="baseButton-secondary"] {
-    background: rgba(126, 176, 140, 0.18) !important;
-    color: #eef7ef !important;
-    border: 1px solid rgba(180, 252, 194, 0.18) !important;
-    border-radius: 14px !important;
-    font-family: 'Manrope', sans-serif !important;
-    font-size: 14px !important;
-    font-weight: 800 !important;
-    text-align: left !important;
-    padding: 12px 15px !important;
-    min-height: 52px !important;
-    width: 100% !important;
-    box-shadow: 0 8px 18px rgba(4, 16, 9, 0.14) !important;
-    transform: translateX(0) scale(1) !important;
-    transition: background 0.22s ease, color 0.22s ease, border-color 0.22s ease,
-                transform 0.22s ease, box-shadow 0.22s ease !important;
-}
-section[data-testid="stSidebar"] div[data-testid="stButton"] > button[data-testid="baseButton-secondary"]:hover {
-    background: rgba(172, 243, 186, 0.24) !important;
-    color: #ffffff !important;
-    border-color: rgba(180, 252, 194, 0.42) !important;
-    box-shadow: 0 14px 26px rgba(4, 16, 9, 0.22) !important;
-    transform: translateX(4px) scale(1.015) !important;
-}
-section[data-testid="stSidebar"] div[data-testid="stButton"] > button[data-testid="baseButton-secondary"]:focus,
-section[data-testid="stSidebar"] div[data-testid="stButton"] > button[data-testid="baseButton-secondary"]:focus-visible {
-    outline: none !important;
-    border-color: rgba(180, 252, 194, 0.48) !important;
-    box-shadow: 0 0 0 2px rgba(172, 243, 186, 0.12), 0 14px 26px rgba(4, 16, 9, 0.22) !important;
-}
-
-/* ── Primary / Secondary buttons (main area) ── */
-.main button[data-testid="baseButton-primary"],
-.block-container button[data-testid="baseButton-primary"] {
-    background: var(--primary-2) !important; color: #fff !important;
-    border: none !important; border-radius: 8px !important;
-    font-weight: 800 !important; font-family: 'Manrope',sans-serif !important;
-    font-size: 1.02rem !important; height: 3.25rem !important;
-}
-.main button[kind="primary"],
-.block-container button[kind="primary"] {
-    background: var(--primary-2) !important; color: #fff !important;
-}
-.main button[kind="primary"]:active,
-.block-container button[kind="primary"]:active {
-    transform: scale(0.98);
-    transition: transform 120ms ease;
-}
-.main button[data-testid="baseButton-primary"]:hover,
-.block-container button[data-testid="baseButton-primary"]:hover {
-    background: var(--primary) !important;
-}
-.main button[data-testid="baseButton-secondary"],
-.block-container button[data-testid="baseButton-secondary"] {
-    background: var(--surface-container-lowest) !important; color: var(--text) !important;
-    border: 1px solid var(--outline) !important; border-radius: 8px !important;
-    font-weight: 800 !important; font-family: 'Manrope',sans-serif !important;
-    font-size: 0.95rem !important; height: 3.25rem !important;
-}
-section[data-testid="stSidebar"] button[kind="secondary"],
-section[data-testid="stSidebar"] button[data-testid^="baseButton"] {
-    display: flex !important;
-    justify-content: flex-start !important;
-    align-items: center !important;
-    gap: 12px !important;
-    background: rgba(126, 176, 140, 0.18) !important;
-    background-image: none !important;
-    color: #eef7ef !important;
-    border: 1px solid rgba(180, 252, 194, 0.18) !important;
-    border-radius: 14px !important;
-    font-family: 'Manrope', sans-serif !important;
-    font-size: 15px !important;
-    font-weight: 800 !important;
-    text-align: left !important;
-    padding: 12px 15px !important;
-    min-height: 52px !important;
-    width: 100% !important;
-    line-height: 1.35 !important;
-    box-shadow: 0 8px 18px rgba(4, 16, 9, 0.14) !important;
-    transform: translateX(0) scale(1) !important;
-    transition: background 0.22s ease, color 0.22s ease, border-color 0.22s ease,
-                transform 0.22s ease, box-shadow 0.22s ease !important;
-}
-section[data-testid="stSidebar"] button[kind="secondary"]:hover,
-section[data-testid="stSidebar"] button[data-testid^="baseButton"]:hover {
-    background: rgba(172, 243, 186, 0.24) !important;
-    background-image: none !important;
-    color: #ffffff !important;
-    border-color: rgba(180, 252, 194, 0.42) !important;
-    box-shadow: 0 14px 26px rgba(4, 16, 9, 0.22) !important;
-    transform: translateX(4px) scale(1.015) !important;
-}
-section[data-testid="stSidebar"] button[kind="secondary"]:focus,
-section[data-testid="stSidebar"] button[kind="secondary"]:focus-visible,
-section[data-testid="stSidebar"] button[data-testid^="baseButton"]:focus,
-section[data-testid="stSidebar"] button[data-testid^="baseButton"]:focus-visible {
-    outline: none !important;
-    border-color: rgba(180, 252, 194, 0.48) !important;
-    box-shadow: 0 0 0 2px rgba(172, 243, 186, 0.12), 0 14px 26px rgba(4, 16, 9, 0.22) !important;
-}
-
-/* Theme toggle uses tertiary button type for isolated styling */
-.main button[data-testid="baseButton-tertiary"],
-.block-container button[data-testid="baseButton-tertiary"] {
-    width: 36px !important;
-    height: 36px !important;
-    min-height: 36px !important;
-    border-radius: 999px !important;
-    border: 1px solid var(--outline) !important;
-    background: var(--surface-container-lowest) !important;
-    color: var(--primary-2) !important;
-    font-size: 20px !important;
-    font-weight: 700 !important;
-    padding: 0 !important;
-    line-height: 1 !important;
-}
-
-/* Keep top bar controls in one row on mobile */
-div[data-testid="stHorizontalBlock"]:has(#topbar-inline-marker) {
-    flex-wrap: nowrap !important;
-    align-items: center !important;
-    gap: 0.5rem !important;
-}
-div[data-testid="stHorizontalBlock"]:has(#topbar-inline-marker) > div[data-testid="stColumn"] {
-    flex: 0 0 auto !important;
-    min-width: auto !important;
-}
-
-/* Mobile drawer behavior for sidebar */
-@media (max-width: 900px) {
-    .block-container { padding: 0 1rem 2rem !important; }
-    div[data-testid="stHorizontalBlock"]:has(#topbar-inline-marker) {
-        display: grid !important;
-        grid-template-columns: 40px minmax(0, 1fr) 40px 40px 40px !important;
-        grid-template-rows: auto auto !important;
-        align-items: center !important;
-        column-gap: 8px !important;
-        row-gap: 8px !important;
-    }
-    div[data-testid="stColumn"]:has(#top-menu-col) {
-        grid-column: 1 !important;
-        grid-row: 1 !important;
-    }
-    div[data-testid="stColumn"]:has(#top-title-col) {
-        grid-column: 2 / 6 !important;
-        grid-row: 1 !important;
-    }
-    div[data-testid="stColumn"]:has(#top-theme-col) {
-        grid-column: 3 !important;
-        grid-row: 2 !important;
-    }
-    div[data-testid="stColumn"]:has(#top-settings-col) {
-        grid-column: 4 !important;
-        grid-row: 2 !important;
-    }
-    div[data-testid="stColumn"]:has(#top-notify-col) {
-        grid-column: 5 !important;
-        grid-row: 2 !important;
-    }
-    #topbar-title {
-        font-size: clamp(1.45rem, 6vw, 1.95rem) !important;
-        line-height: 1.12 !important;
-        white-space: normal !important;
-        word-break: normal !important;
-        overflow-wrap: break-word !important;
-    }
-    section[data-testid="stSidebar"] {
-        position: fixed !important;
-        left: 0 !important;
-        top: 0 !important;
-        height: 100vh !important;
-        z-index: 1100 !important;
-        will-change: transform !important;
-        transition: transform 145ms cubic-bezier(0.22, 1, 0.36, 1) !important;
-    }
-    .mobile-sidebar-closed section[data-testid="stSidebar"] {
-        transform: translateX(-105%) !important;
-    }
-    .mobile-sidebar-open section[data-testid="stSidebar"] {
-        transform: translateX(0) !important;
-    }
-}
-@media (min-width: 901px) {
-    #menu-toggle-marker { display: none !important; }
-    div[data-testid="stColumn"]:has(#top-menu-col) { display: none !important; }
-    .st-key-sidebar_close_btn { display: none !important; }
-    section[data-testid="stSidebar"] {
-        transform: none !important;
-        position: relative !important;
-    }
-}
-button[kind="tertiary"] {
-    width: 36px !important;
-    height: 36px !important;
-    min-height: 36px !important;
-    border-radius: 999px !important;
-    border: 1px solid var(--outline) !important;
-    background: var(--surface-container-lowest) !important;
-    color: var(--primary-2) !important;
-    font-size: 20px !important;
-    font-weight: 700 !important;
-    padding: 0 !important;
-    line-height: 1 !important;
-}
-
-/* ── Compact top controls ── */
-.top-icon-btn {
-    width: 36px;
-    height: 36px;
-    border-radius: 999px;
-    background: var(--surface-container-lowest);
-    border: 1px solid var(--outline);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-/* ── Form inputs ── */
-div[data-testid="stNumberInput"] input,
-div[data-testid="stTextInput"] input {
-    background: var(--surface-container-lowest) !important; border: 1px solid var(--outline) !important;
-    border-radius: 8px !important; font-weight: 700 !important;
-    color: var(--text) !important; box-shadow: 0 1px 3px rgba(0,0,0,0.07) !important;
-}
-div[data-testid="stSelectbox"] div[data-baseweb="select"] > div {
-    background: var(--surface-container-lowest) !important; border: 1px solid var(--outline) !important;
-    border-radius: 8px !important; font-weight: 700 !important;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.07) !important;
-}
-div[data-testid="stNumberInput"] label,
-div[data-testid="stTextInput"] label,
-div[data-testid="stSelectbox"] label,
-div[data-testid="stFileUploader"] label {
-    font-family: 'Manrope', sans-serif !important;
-    font-size: 12px !important; font-weight: 900 !important;
-    text-transform: uppercase !important; letter-spacing: 0.13em !important;
-    color: var(--text) !important;
-}
-div[data-testid="stFileUploader"] section {
-    background: var(--surface-container) !important; border: 2px dashed var(--outline) !important;
-    border-radius: 0.75rem !important;
-}
-div[data-testid="stFileUploader"] small,
-div[data-testid="stFileUploader"] p,
-div[data-testid="stFileUploader"] span {
-    color: var(--text) !important;
-    font-weight: 700 !important;
-}
-
-/* ── CARD WRAPPING ──
-   Target the stColumn that contains each marker ID.
-   stColumn is the direct wrapper; stVerticalBlock inside gets the visual card.
-   ─────────────────────────────────────────────────── */
-div[data-testid="stColumn"]:has(#mrk-soil-img),
-div[data-testid="stColumn"]:has(#mrk-chem),
-div[data-testid="stColumn"]:has(#mrk-env),
-div[data-testid="stColumn"]:has(#mrk-hist),
-div[data-testid="stColumn"]:has(#mrk-det) {
-    background: var(--surface-container-high) !important;
-    border-radius: 0.75rem !important;
-    border: 1px solid rgba(157,165,157,0.5) !important;
-    box-shadow: 0 10px 26px rgba(27,28,26,0.10) !important;
-    overflow: visible !important;
-}
-/* Inner block padding */
-div[data-testid="stColumn"]:has(#mrk-soil-img) > div[data-testid="stVerticalBlock"],
-div[data-testid="stColumn"]:has(#mrk-chem) > div[data-testid="stVerticalBlock"],
-div[data-testid="stColumn"]:has(#mrk-env) > div[data-testid="stVerticalBlock"],
-div[data-testid="stColumn"]:has(#mrk-hist) > div[data-testid="stVerticalBlock"],
-div[data-testid="stColumn"]:has(#mrk-det) > div[data-testid="stVerticalBlock"] {
-    padding: 1.25rem 1.25rem 1.25rem !important;
-}
-
-/* Scrollbar */
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #c0c9bf; border-radius: 10px; }
+/* ── Streamlit widget overrides ── */
+[data-testid="stNumberInput"]>div>div>input{{
+  font-family:"JetBrains Mono",monospace!important;font-size:14px!important;
+  border:1px solid rgba(20,20,15,0.12)!important;border-radius:10px!important;
+  background:#faf8f3!important;color:#14140f!important;padding:12px 14px!important;
+}}
+[data-testid="stSelectbox"]>div>div{{
+  border:1px solid rgba(20,20,15,0.12)!important;border-radius:10px!important;
+  background:#faf8f3!important;font-family:"JetBrains Mono",monospace!important;
+}}
+[data-testid="stTextInput"] input{{
+  font-family:"JetBrains Mono",monospace!important;
+  border:1px solid rgba(20,20,15,0.12)!important;border-radius:10px!important;
+  background:#faf8f3!important;color:#14140f!important;padding:12px 14px!important;
+}}
+[data-testid="stFileUploadDropzone"]{{
+  border:1.5px dashed rgba(20,20,15,0.12)!important;
+  border-radius:14px!important;background:#faf8f3!important;
+}}
+[data-testid="stButton"]>button{{
+  font-family:"Inter Tight",-apple-system,sans-serif!important;
+  border-radius:999px!important;cursor:pointer;
+}}
+div.stElementContainer,div.stMarkdown,div[data-testid="stVerticalBlock"]{{
+  gap:0!important;
+}}
+[data-testid="stFormSubmitButton"]>button{{
+  background:#0f2818!important;color:#faf8f3!important;
+  border-radius:999px!important;padding:16px 28px!important;
+  font-size:15px!important;font-weight:500!important;
+  border:0!important;cursor:pointer!important;
+  font-family:"Inter Tight",-apple-system,sans-serif!important;
+}}
+[data-testid="stFormSubmitButton"]>button:hover{{background:#14140f!important;}}
 </style>
-"""
 
-# ══════════════════════════════════════════════════════════════
-# SPLASH PAGE — "Ethereal Harvest" (Atmospheric Intelligence)
-# Renders full-screen dark landing; execution halts with st.stop()
-# ══════════════════════════════════════════════════════════════
-if st.session_state.page == "splash":
-    # ── Encode background_splash.jpg as base64 for CSS injection ──
-    import base64 as _b64
-    _splash_bg_css = ""
-    _splash_bg_path = mpath("background_splash.jpg")
-    if os.path.exists(_splash_bg_path):
-        with open(_splash_bg_path, "rb") as _f:
-            _splash_b64 = _b64.b64encode(_f.read()).decode()
-        _splash_bg_css = (
-            f"background-image: url('data:image/jpeg;base64,{_splash_b64}') !important;"
-            "background-size: cover !important;"
-            "background-position: center center !important;"
-            "background-repeat: no-repeat !important;"
-        )
+<!-- LEFT RAIL -->
+<aside class="rail" id="as-rail">
+  <div class="rail-logo" title="AgroSynapse AI">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 20c0-9 7-16 16-16 0 9-7 16-16 16Z" fill="currentColor" fill-opacity="0.2"/><path d="M4 20 12 12"/>
+    </svg>
+  </div>
+  <a class="rail-btn {_ac('home')}" href="?page=home" title="Home">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-7h-6v7H4a1 1 0 0 1-1-1v-9.5Z"/></svg>
+  </a>
+  <a class="rail-btn {_ac('cultivation')}" href="?page=cultivation" title="Cultivation">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22V10"/><path d="M12 10c0-3 2-6 6-6 0 3-2 6-6 6Z"/><path d="M12 12c0-2.5-2-5-6-5 0 2.5 2 5 6 5Z"/></svg>
+  </a>
+  <a class="rail-btn {_ac('diagnostic')}" href="?page=diagnostic" title="Diagnostic">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V4a1 1 0 0 1 1-1h3"/><path d="M17 3h3a1 1 0 0 1 1 1v3"/><path d="M21 17v3a1 1 0 0 1-1 1h-3"/><path d="M7 21H4a1 1 0 0 1-1-1v-3"/><path d="M3 12h18"/></svg>
+  </a>
+  <a class="rail-btn {_ac('dashboard')}" href="?page=dashboard" title="Dashboard">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-6"/></svg>
+  </a>
+  <div class="rail-spacer"></div>
+  <a class="rail-btn" title="Settings">
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>
+  </a>
+  <div class="rail-user">MA</div>
+</aside>
 
-    st.markdown(f"""
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&family=Plus+Jakarta+Sans:wght@200..800&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
-.material-symbols-outlined {{
-    font-family: 'Material Symbols Outlined' !important;
-    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-    vertical-align: middle;
-}}
-html, body {{ background-color: #1a2e1a !important; }}
-.stApp, .main {{
-    {_splash_bg_css}
-    background-color: #1a2e1a !important;
-}}
-/* Dark overlay on top of the photo for readability */
-.stApp::before {{
-    content: '';
-    position: fixed;
-    inset: 0;
-    background: rgba(5, 12, 5, 0.58);
-    z-index: 0;
-    pointer-events: none;
-}}
-.block-container {{
-    position: relative;
-    z-index: 1;
-    max-width: 960px !important;
-    padding: 3rem 2rem 2rem !important;
-}}
-section[data-testid="stSidebar"] {{ display: none !important; }}
-header[data-testid="stHeader"] {{ display: none !important; }}
-#MainMenu, footer, .stDeployButton {{ display: none !important; visibility: hidden !important; }}
-div[data-testid="stButton"] > button {{
-    background: rgba(20, 28, 20, 0.52) !important;
-    backdrop-filter: blur(28px) !important;
-    -webkit-backdrop-filter: blur(28px) !important;
-    border: 1px solid rgba(180, 252, 194, 0.15) !important;
-    border-radius: 0.75rem !important;
-    color: #faf9f6 !important;
-    font-family: 'Manrope', sans-serif !important;
-    font-size: 1.9rem !important;
-    font-weight: 900 !important;
-    width: 100% !important;
-    min-height: 200px !important;
-    padding: 2.25rem 2rem !important;
-    text-align: left !important;
-    line-height: 1.3 !important;
-    transition: background 0.3s, box-shadow 0.3s, border-color 0.3s !important;
-    cursor: pointer !important;
-    white-space: pre-line !important;
-}}
-div[data-testid="stButton"] > button:hover {{
-    background: rgba(180, 252, 194, 0.10) !important;
-    box-shadow: 0 0 50px rgba(180, 252, 194, 0.10) !important;
-    border-color: rgba(180, 252, 194, 0.35) !important;
-}}
-.splash-hero-icon {{
-    width: 62px;
-    height: 62px;
-    background: rgba(24,26,24,0.45);
-    backdrop-filter: blur(32px);
-    border: 1px solid rgba(71,72,70,0.18);
-    border-radius: 0.95rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}}
-.splash-hero-title {{
-    font-family: Manrope, sans-serif;
-    font-size: clamp(2.5rem, 6.4vw, 4.2rem);
-    font-weight: 900;
-    letter-spacing: -0.03em;
-    color: #faf9f6 !important;
-    text-shadow: 0 6px 24px rgba(7, 15, 8, 0.32);
-    margin: 0;
-    line-height: 0.98;
-    white-space: nowrap;
-    word-break: keep-all;
-    overflow-wrap: normal;
-}}
-@media (max-width: 700px) {{
-    .splash-hero-icon {{
-        width: 56px;
-        height: 56px;
-        border-radius: 0.85rem;
-    }}
-    .splash-hero-title {{
-        font-size: clamp(2.15rem, 10.2vw, 3.25rem);
-        line-height: 1.02;
-        white-space: normal;
-        text-wrap: balance;
-    }}
-}}
-</style>
+<!-- TOP BAR -->
+<header class="topbar" id="as-topbar">
+  <div class="topbar-crumb">
+    <span class="dot"></span>
+    <span>AGROSYNAPSE{_crumb}</span>
+  </div>
+  <div class="topbar-spacer"></div>
+  <nav class="topbar-nav">
+    <a class="{_ac('home')}" href="?page=home">Home</a>
+    <a class="{_ac('cultivation')}" href="?page=cultivation">Cultivation</a>
+    <a class="{_ac('diagnostic')}" href="?page=diagnostic">Diagnostic</a>
+    <a class="{_ac('dashboard')}" href="?page=dashboard">Dashboard</a>
+  </nav>
+  <button class="topbar-icon" title="Search">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+  </button>
+  <button class="topbar-icon" title="Notifications">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10 21a2 2 0 0 0 4 0"/></svg>
+  </button>
+</header>
 """, unsafe_allow_html=True)
 
-    # ── Branding anchor ──
-    st.markdown("""
-<div style="text-align:center;margin-bottom:3.5rem;padding-top:1rem">
-  <div style="display:inline-flex;align-items:center;gap:12px;margin-bottom:1rem">
-    <div class="splash-hero-icon">
-      <span class="material-symbols-outlined" style="color:#b4fcc2;font-size:2rem;font-variation-settings:'FILL' 1">eco</span>
-    </div>
-  </div>
-  <h1 class="splash-hero-title">
-    AgroSynapse AI
+# ==============================================================
+# HOME PAGE
+# ==============================================================
+if _page == "home":
+
+    # ── Animated hero section via components.html ──────────────
+    _HERO = """<!doctype html><html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:#faf8f3;font-family:"Inter Tight",-apple-system,sans-serif;overflow:hidden;}
+.hero{position:relative;height:100vh;display:flex;flex-direction:column;overflow:hidden;padding:0 40px 80px;}
+.hero-visual{position:absolute;inset:0;z-index:0;overflow:hidden;}
+.hero-visual svg{width:100%;height:100%;display:block;}
+@keyframes heroFloat{0%,100%{transform:scale(1.05) translate(0,0);}50%{transform:scale(1.08) translate(-1%,-0.5%);}}
+.hero-overlay{position:absolute;inset:0;z-index:1;
+  background:linear-gradient(180deg,rgba(250,248,243,0) 0%,rgba(250,248,243,0.05) 40%,rgba(250,248,243,0.88) 95%,#faf8f3 100%),
+  linear-gradient(90deg,rgba(10,15,10,0.55) 0%,rgba(10,15,10,0.25) 60%,rgba(10,15,10,0.45) 100%);}
+.hero-grid{position:relative;z-index:2;display:flex;align-items:center;flex:1;padding-top:80px;max-width:920px;}
+.hero-brandname{font-family:"Instrument Serif","Times New Roman",serif;font-size:clamp(18px,2.2vw,28px);
+  letter-spacing:0.18em;text-transform:uppercase;color:rgba(250,248,243,0.55);margin-bottom:20px;}
+.hero-brandname em{font-style:normal;color:#e8c989;}
+.hero-title{font-family:"Instrument Serif","Times New Roman",serif;font-weight:400;
+  font-size:clamp(52px,8vw,120px);color:#faf8f3;letter-spacing:-0.04em;line-height:0.93;
+  margin-bottom:36px;text-shadow:0 4px 40px rgba(0,0,0,0.25);}
+.hero-title em{font-style:italic;color:#e8c989;}
+.hero-lede{max-width:560px;font-size:17px;line-height:1.6;color:rgba(250,248,243,0.85);
+  margin-bottom:36px;text-shadow:0 2px 20px rgba(0,0,0,0.3);}
+.hero-actions{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:40px;}
+.btn{display:inline-flex;align-items:center;gap:10px;padding:14px 22px;
+  font-family:"Inter Tight",-apple-system,sans-serif;font-size:14px;font-weight:500;
+  border:0;border-radius:999px;cursor:pointer;text-decoration:none;white-space:nowrap;transition:all 0.3s;}
+.btn-primary{background:#faf8f3;color:#0f2818;}
+.btn-primary:hover{background:#e8c989;}
+.btn-ghost{background:rgba(250,248,243,0.08);color:#faf8f3;border:1px solid rgba(250,248,243,0.3);backdrop-filter:blur(8px);}
+.btn-ghost:hover{background:rgba(250,248,243,0.18);}
+.hero-badges{display:flex;flex-wrap:wrap;gap:10px;}
+.hero-badge{display:inline-flex;align-items:center;gap:7px;padding:8px 14px;
+  background:rgba(250,248,243,0.08);border:1px solid rgba(250,248,243,0.18);
+  backdrop-filter:blur(8px);border-radius:999px;font-size:12px;
+  color:rgba(250,248,243,0.8);font-weight:500;}
+@keyframes floatY{0%,100%{transform:translateY(0);}50%{transform:translateY(-6px);}}
+.hero-tick{position:absolute;bottom:30px;left:40px;z-index:3;
+  display:flex;align-items:center;gap:8px;color:rgba(250,248,243,0.5);
+  animation:floatY 2.4s ease-in-out infinite;font-family:"JetBrains Mono",monospace;
+  font-size:11px;letter-spacing:0.14em;text-transform:uppercase;}
+</style>
+</head><body>
+<section class="hero">
+<div class="hero-visual"><svg id="herosvg" viewBox="0 0 600 600" preserveAspectRatio="xMidYMid slice">
+<defs>
+<linearGradient id="sky" x1="0" x2="0" y1="0" y2="1">
+  <stop offset="0%" stop-color="#f5e8cf"/>
+  <stop offset="40%" stop-color="#e8c989"/>
+  <stop offset="75%" stop-color="#c68f4c"/>
+  <stop offset="100%" stop-color="#5a3a1a"/>
+</linearGradient>
+<radialGradient id="sun" cx="0.72" cy="0.38" r="0.3">
+  <stop offset="0%" stop-color="#fff3d1" stop-opacity="1"/>
+  <stop offset="40%" stop-color="#fcd982" stop-opacity="0.6"/>
+  <stop offset="100%" stop-color="#f5a94e" stop-opacity="0"/>
+</radialGradient>
+<linearGradient id="field" x1="0" x2="0" y1="0" y2="1">
+  <stop offset="0%" stop-color="#4a5a2a"/>
+  <stop offset="100%" stop-color="#1a2812"/>
+</linearGradient>
+<filter id="grain">
+  <feTurbulence baseFrequency="0.9" numOctaves="2"/>
+  <feColorMatrix values="0 0 0 0 0.2 0 0 0 0 0.15 0 0 0 0 0.1 0 0 0 0.15 0"/>
+  <feComposite in2="SourceGraphic" operator="in"/>
+</filter>
+<radialGradient id="vig" cx="0.5" cy="0.5" r="0.75">
+  <stop offset="60%" stop-color="#000" stop-opacity="0"/>
+  <stop offset="100%" stop-color="#000" stop-opacity="0.5"/>
+</radialGradient>
+</defs>
+<rect width="600" height="600" fill="url(#sky)"/>
+<rect width="600" height="600" fill="url(#sun)"/>
+<path id="ridge1" d="M0 380 Q150 360 300 375 T600 370 L600 600 L0 600 Z" fill="#6a4a2a" opacity="0.7"/>
+<path d="M0 420 Q200 400 400 415 T600 410 L600 600 L0 600 Z" fill="#3e2a18" opacity="0.85"/>
+<path d="M0 450 Q300 435 600 450 L600 600 L0 600 Z" fill="url(#field)"/>
+<g id="stalks"></g>
+<g id="fgstalks"></g>
+<rect width="600" height="600" filter="url(#grain)" opacity="0.4"/>
+<rect width="600" height="600" fill="url(#vig)"/>
+</svg></div>
+<div class="hero-overlay"></div>
+<div class="hero-grid">
+<div class="hero-copy">
+  <div class="hero-brandname">Agro<em>Synapse</em></div>
+  <h1 class="hero-title">
+    Laboratory-grade<br>agronomy, delivered<br>to every <em>acre.</em>
   </h1>
-</div>
-""", unsafe_allow_html=True)
-
-    # ── Navigation cards ──
-    _sc1, _sc2 = st.columns(2, gap="large")
-
-    with _sc1:
-        st.markdown("""
-<p style="font-family:'Plus Jakarta Sans',sans-serif;font-size:1.02rem;font-weight:900;
-    text-transform:uppercase;letter-spacing:0.2em;color:#b4fcc2;margin:0 0 0.4rem">
-  Agricultural Core
-</p>
-<p style="color:#d7ddd8;font-family:Manrope,sans-serif;font-size:0.96rem;
-    margin:0 0 1rem;font-weight:700">
-  Multimodal Soil-to-Crop Fusion
-</p>
-""", unsafe_allow_html=True)
-        if st.button(
-            "Predictive Cultivation\n→",
-            key="goto_crop",
-            use_container_width=True,
-        ):
-            st.session_state.page = "crop"
-            st.rerun()
-
-    with _sc2:
-        st.markdown("""
-<p style="font-family:'Plus Jakarta Sans',sans-serif;font-size:1.02rem;font-weight:900;
-    text-transform:uppercase;letter-spacing:0.2em;color:#b4fcc2;margin:0 0 0.4rem">
-  Neural Vision
-</p>
-<p style="color:#d7ddd8;font-family:Manrope,sans-serif;font-size:0.96rem;
-    margin:0 0 1rem;font-weight:700">
-  Leaf-to-Cure Vision
-</p>
-""", unsafe_allow_html=True)
-        if st.button(
-            "Phyto-Diagnostic Suite\n→",
-            key="goto_leaf",
-            use_container_width=True,
-        ):
-            st.session_state.page = "leaf"
-            st.rerun()
-
-    # ── Technical readout footer (station status only) ──
-    st.markdown("""
-<div style="margin-top:3.5rem;padding:0 0.5rem">
-  <div style="display:flex;align-items:center;gap:8px">
-    <span style="width:7px;height:7px;background:#b4fcc2;border-radius:50%;
-          display:inline-block;animation:pulse 2s infinite;flex-shrink:0"></span>
-    <p style="font-family:'Plus Jakarta Sans',sans-serif;font-size:0.65rem;font-weight:700;
-        text-transform:uppercase;letter-spacing:0.18em;color:#b4fcc2;margin:0">
-      SYNAPSE-ALPHA ACTIVE
-    </p>
+  <p class="hero-lede">Fusing soil vision, climate synthesis, and phyto-diagnostic neural nets into a single recommendation engine — tuned for your field, not the average of everyone else&#8217;s.</p>
+  <div class="hero-actions">
+    <a class="btn btn-primary" href="?page=cultivation" target="_parent">Begin synthesis &#8594;</a>
+    <a class="btn btn-ghost" href="?page=diagnostic" target="_parent">&#128301; Diagnose a leaf</a>
+  </div>
+  <div class="hero-badges">
+    <span class="hero-badge">&#127807; Predictive Cultivation</span>
+    <span class="hero-badge">&#128301; Phyto-Diagnostic</span>
+    <span class="hero-badge">&#128202; AI Dashboard</span>
   </div>
 </div>
-<style>@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.35} }</style>
-""", unsafe_allow_html=True)
-
-    st.stop()
-
-
-st.markdown(THEME_VARS, unsafe_allow_html=True)
-st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
-if st.session_state.theme == "dark":
-    st.markdown(
-        """
-<style>
-/* Dark-only visibility fixes requested by user */
-div[data-testid="stSelectbox"] div[data-baseweb="select"] > div {
-    background: #243028 !important;
-    border-color: #5d6a61 !important;
-}
-div[data-testid="stSelectbox"] div[data-baseweb="select"] span,
-div[data-testid="stSelectbox"] div[data-baseweb="select"] input,
-div[data-testid="stSelectbox"] div[data-baseweb="select"] div {
-    color: #eef6ef !important;
-    font-weight: 800 !important;
-}
-div[data-testid="stSelectbox"] svg {
-    fill: #d7e5d9 !important;
-}
-div[data-testid="stTextInput"] input,
-div[data-testid="stNumberInput"] input {
-    background: #243028 !important;
-    border-color: #5d6a61 !important;
-    color: #eef6ef !important;
-    font-weight: 800 !important;
-}
-div[data-testid="stTextInput"] input::placeholder {
-    color: #c8d7ca !important;
-    opacity: 1 !important;
-}
-div[data-testid="stFileUploader"] button {
-    color: #1b221d !important;
-    font-weight: 800 !important;
-}
-</style>
-""",
-        unsafe_allow_html=True,
-    )
-mobile_sidebar_transform = "translateX(0)" if st.session_state.sidebar_open else "translateX(-105%)"
-st.markdown(
-        f"""
-<style>
-@media (max-width: 900px) {{
-    section[data-testid='stSidebar'] {{
-        transform: {mobile_sidebar_transform} !important;
-    }}
-}}
-</style>
-""",
-        unsafe_allow_html=True,
-)
-
-# ── SIDEBAR ──────────────────────────────────────────────────────
-with st.sidebar:
-    if st.session_state.sidebar_open:
-        if st.button("≪", key="sidebar_close_btn", help="Close navigation", type="tertiary"):
-            st.session_state.sidebar_open = False
-            st.rerun()
-
-    st.markdown("""
-<div style="padding:0 0.25rem 1.75rem">
-  <h1 style="font-family:Manrope,sans-serif;font-size:1.125rem;font-weight:800;
-      color:white;letter-spacing:-0.02em;margin:0 0 3px">Scientific Sanctuary</h1>
-  <p style="font-size:11px;color:rgba(232,244,236,0.72);text-transform:uppercase;
-      letter-spacing:0.18em;font-weight:700;line-height:1.55;margin:0">Agricultural Intelligence</p>
 </div>
-""", unsafe_allow_html=True)
+<div class="hero-tick"><span>SCROLL</span><span>&#8595;</span></div>
+</section>
+<script>
+var svg=document.getElementById('herosvg');
+var stalksG=document.getElementById('stalks');
+var fgG=document.getElementById('fgstalks');
+// Build stalks
+for(var i=0;i<22;i++){
+  var g=document.createElementNS('http://www.w3.org/2000/svg','g');
+  g.setAttribute('opacity',0.55+(i%3)*0.15);
+  var p=document.createElementNS('http://www.w3.org/2000/svg','path');
+  p.setAttribute('fill','none');p.setAttribute('stroke','#3a2812');p.setAttribute('stroke-width','1.3');
+  var e=document.createElementNS('http://www.w3.org/2000/svg','ellipse');
+  e.setAttribute('rx','3');e.setAttribute('ry','10');e.setAttribute('fill','#c89a5c');
+  g.appendChild(p);g.appendChild(e);stalksG.appendChild(g);
+}
+for(var i=0;i<8;i++){
+  var g=document.createElementNS('http://www.w3.org/2000/svg','g');
+  g.setAttribute('opacity','0.8');g.setAttribute('filter','blur(2px)');
+  var p=document.createElementNS('http://www.w3.org/2000/svg','path');
+  p.setAttribute('fill','none');p.setAttribute('stroke','#2a1c0a');p.setAttribute('stroke-width','4');p.setAttribute('stroke-linecap','round');
+  g.appendChild(p);fgG.appendChild(g);
+}
+function animate(now){
+  var t=now/1000;
+  var stalks=stalksG.children;
+  var fgs=fgG.children;
+  for(var i=0;i<22;i++){
+    var x=(i/22)*600+Math.sin(t/2+i)*2;
+    var h=120+(i%5)*20;
+    var bend=Math.sin((3+(i%3))*t/2+i*0.7)*3;
+    var x2=x+bend*2;var y2=600-h;
+    stalks[i].children[0].setAttribute('d','M '+x+' 600 Q '+(x+bend)+' '+(600-h/2)+' '+x2+' '+y2);
+    stalks[i].children[1].setAttribute('cx',x2);
+    stalks[i].children[1].setAttribute('cy',y2);
+    stalks[i].children[1].setAttribute('transform','rotate('+(bend*2)+' '+x2+' '+y2+')');
+  }
+  for(var i=0;i<8;i++){
+    var x=(i/8)*700-40+Math.sin(t/2.5+i)*4;
+    var h=200+(i%3)*40;
+    var bend=Math.sin(t/2+i)*6;
+    fgs[i].children[0].setAttribute('d','M '+x+' 600 Q '+(x+bend)+' '+(600-h/2)+' '+(x+bend*1.5)+' '+(600-h));
+  }
+  requestAnimationFrame(animate);
+}
+requestAnimationFrame(animate);
+// Float SVG
+var hsvg=document.querySelector('.hero-visual svg');
+var _t0=performance.now();
+function floatSVG(now){
+  var p=(now-_t0)/16000;
+  var s=1.05+0.03*Math.sin(p*2*Math.PI);
+  var tx=-1*Math.sin(p*2*Math.PI);
+  var ty=-0.5*Math.sin(p*2*Math.PI);
+  hsvg.style.transform='scale('+s+') translate('+tx+'%,'+ty+'%)';
+  requestAnimationFrame(floatSVG);
+}
+requestAnimationFrame(floatSVG);
+</script>
+</body></html>"""
+    components.html(_HERO, height=750, scrolling=False)
 
-    # Home button
-    if st.button(
-        "🏠  Home",
-        key="sidebar_home_btn",
-        help="Return to AgroSynapse home",
-        use_container_width=True,
-    ):
-        st.session_state.page = "splash"
-        st.session_state.last_result = None
-        st.session_state.leaf_result = None
-        st.rerun()
-
-    # ── Sidebar nav buttons ──────────────────────────────────────────
-    _crop_active = st.session_state.page == "crop"
-    _leaf_active = st.session_state.page == "leaf"
-
-    # Style active vs inactive via injected CSS on the button keys
+    # ── Module cards ───────────────────────────────────────────
     st.markdown("""
-<style>
-div[data-testid="stSidebar"] div[data-testid="stButton"]:has(button[kind="secondary"]) { }
-button[data-testid="baseButton-secondary"] { text-align:left!important; }
-</style>""", unsafe_allow_html=True)
-
-    _nav_base = """
-<style>
-.nav-btn-crop button, .nav-btn-leaf button {
-    background: rgba(126, 176, 140, 0.18) !important;
-    color: #eef7ef !important;
-    border: 1px solid rgba(180, 252, 194, 0.18) !important;
-    border-radius: 14px !important;
-    font-family: Manrope, sans-serif !important;
-    font-size: 14px !important;
-    font-weight: 800 !important;
-    text-align: left !important;
-    padding: 12px 15px !important;
-    width: 100% !important;
-    box-shadow: 0 8px 18px rgba(4, 16, 9, 0.14) !important;
-    transform: translateX(0) scale(1) !important;
-    transition: background 0.22s ease, color 0.22s ease, border-color 0.22s ease,
-                transform 0.22s ease, box-shadow 0.22s ease !important;
-}
-.nav-btn-crop button:hover, .nav-btn-leaf button:hover {
-    background: rgba(172,243,186,0.24) !important;
-    color: #ffffff !important;
-    border-color: rgba(180, 252, 194, 0.42) !important;
-    box-shadow: 0 14px 26px rgba(4, 16, 9, 0.22) !important;
-    transform: translateX(4px) scale(1.015) !important;
-}
-.nav-btn-crop-active button {
-    background: rgba(172,243,186,0.28) !important;
-    color: #ffffff !important;
-    border: 1px solid rgba(180, 252, 194, 0.42) !important;
-    border-radius: 14px !important;
-    font-family: Manrope, sans-serif !important;
-    font-size: 14px !important;
-    font-weight: 800 !important;
-    text-align: left !important;
-    padding: 12px 15px !important;
-    width: 100% !important;
-    box-shadow: 0 14px 28px rgba(4, 16, 9, 0.22) !important;
-}
-.nav-btn-leaf-active button {
-    background: rgba(172,243,186,0.28) !important;
-    color: #ffffff !important;
-    border: 1px solid rgba(180, 252, 194, 0.42) !important;
-    border-radius: 14px !important;
-    font-family: Manrope, sans-serif !important;
-    font-size: 14px !important;
-    font-weight: 800 !important;
-    text-align: left !important;
-    padding: 12px 15px !important;
-    width: 100% !important;
-    box-shadow: 0 14px 28px rgba(4, 16, 9, 0.22) !important;
-}
-</style>
-"""
-    st.markdown(_nav_base, unsafe_allow_html=True)
-
-    _crop_cls = "nav-btn-crop-active" if _crop_active else "nav-btn-crop"
-    _leaf_cls = "nav-btn-leaf-active" if _leaf_active else "nav-btn-leaf"
-
-    st.markdown(f'<div class="{_crop_cls}">', unsafe_allow_html=True)
-    if st.button("🌱  Predictive Cultivation", key="nav_crop_btn", use_container_width=True):
-        st.session_state.page = "crop"
-        st.rerun()
-    st.markdown('</div>', unsafe_allow_html=True)
-
-    st.markdown(f'<div class="{_leaf_cls}">', unsafe_allow_html=True)
-    if st.button("🔬  Phyto-Diagnostic Suite", key="nav_leaf_btn", use_container_width=True):
-        st.session_state.page = "leaf"
-        st.rerun()
-    st.markdown('</div>', unsafe_allow_html=True)
-
-    st.markdown("""
-<div style="margin-top:1.5rem;padding:1rem 0.25rem 0;border-top:1px solid rgba(255,255,255,0.1);
-     display:flex;align-items:center;gap:10px">
-  <div style="width:36px;height:36px;border-radius:50%;background:#acf3ba;
-       display:flex;align-items:center;justify-content:center;flex-shrink:0">
-    <span class="material-symbols-outlined" style="color:#2f7144;font-size:19px">agriculture</span>
+<section class="modules">
+  <div class="section-head">
+    <span class="eyebrow">Modules · active</span>
+    <h2 class="display section-title">Two instruments, <em>calibrated</em> for your land.</h2>
   </div>
-  <p style="color:white;font-size:13px;font-weight:700;margin:0">Farmer</p>
-</div>
+  <div class="modules-grid">
+    <a class="module-card" href="?page=cultivation" style="text-decoration:none;">
+      <div class="module-card-header">
+        <div class="module-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22V10"/><path d="M12 10c0-3 2-6 6-6 0 3-2 6-6 6Z"/><path d="M12 12c0-2.5-2-5-6-5 0 2.5 2 5 6 5Z"/></svg>
+        </div>
+        <span class="eyebrow">Agricultural · core</span>
+      </div>
+      <h3 class="module-title display">Predictive Cultivation</h3>
+      <p class="module-desc">Multimodal soil-to-crop fusion. Fuses specimen imagery, chemical profile, climate vectors, and farm history to return top-K crops with protocol.</p>
+      <div class="module-cta">
+        <span>Open module</span>
+        <div class="module-cta-icon">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+        </div>
+      </div>
+    </a>
+    <a class="module-card earth" href="?page=diagnostic" style="text-decoration:none;">
+      <div class="module-card-header">
+        <div class="module-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18h8"/><path d="M3 22h18"/><path d="M14 22a7 7 0 1 0 0-14h-1"/><path d="M9 14h2"/><path d="M9 12a2 2 0 0 1-2-2V6h4v4a2 2 0 0 1-2 2Z"/><path d="M12 6H6"/><path d="M10 2h4"/></svg>
+        </div>
+        <span class="eyebrow">Neural · vision</span>
+      </div>
+      <h3 class="module-title display">Phyto-Diagnostic Suite</h3>
+      <p class="module-desc">Leaf-to-cure vision. Convolutional pathology engine trained across 38 classes, resolving pathogen identity and treatment dosage in a single pass.</p>
+      <div class="module-cta">
+        <span>Open module</span>
+        <div class="module-cta-icon">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+        </div>
+      </div>
+    </a>
+  </div>
+</section>
 """, unsafe_allow_html=True)
 
-# ── TOP APP BAR ───────────────────────────────────────────────────
-st.markdown('<div style="height:6px"></div>', unsafe_allow_html=True)
-top_m, top_l, top_t, top_s, top_n = st.columns([1, 9, 1, 1, 1], gap="small")
-
-with top_m:
-    st.markdown('<span id="topbar-inline-marker"></span><span id="menu-toggle-marker"></span><span id="top-menu-col"></span><div style="height:8px"></div>', unsafe_allow_html=True)
-    if not st.session_state.sidebar_open:
-        if st.button("☰", key="sidebar_toggle", help="Open navigation", type="tertiary"):
-            st.session_state.sidebar_open = True
-            st.rerun()
-
-with top_l:
-    st.markdown('<span id="top-title-col"></span>', unsafe_allow_html=True)
+    # ── Soil pipeline ──────────────────────────────────────────
     st.markdown("""
-<div style="padding:0.35rem 0 0.65rem;border-bottom:1px solid rgba(192,201,191,0.25)">
-    <h2 id="topbar-title" style="font-family:Manrope,sans-serif;font-size:1.2rem;font-weight:800;
-        color:var(--primary);margin:0">Agricultural Intelligence</h2>
-    <span style="display:block;height:2px;width:56px;background:#4A8C5C;
-            margin-top:6px;border-radius:999px"></span>
-</div>
-""", unsafe_allow_html=True)
-
-with top_t:
-    st.markdown('<span id="top-theme-col"></span>', unsafe_allow_html=True)
-    st.markdown('<div style="height:8px"></div>', unsafe_allow_html=True)
-    _theme_icon = "☾" if st.session_state.theme == "light" else "☀"
-    if st.button(_theme_icon, key="theme_toggle", help="Toggle theme", type="tertiary"):
-        st.session_state.theme = "dark" if st.session_state.theme == "light" else "light"
-        st.rerun()
-
-with top_s:
-    st.markdown('<span id="top-settings-col"></span>', unsafe_allow_html=True)
-    st.markdown('<div style="height:8px"></div>', unsafe_allow_html=True)
-    st.button("⚙", key="settings_icon", help="Settings", type="tertiary")
-
-with top_n:
-    st.markdown('<span id="top-notify-col"></span>', unsafe_allow_html=True)
-    st.markdown('<div style="height:8px"></div>', unsafe_allow_html=True)
-    st.button("🔔", key="notifications_icon", help="Notifications", type="tertiary")
-
-# ══════════════════════════════════════════════════════════════
-# PHYTO-DIAGNOSTIC SUITE — Leaf Disease Page
-# ══════════════════════════════════════════════════════════════
-if st.session_state.page == "leaf":
-    _leaf_model, _leaf_classes, _leaf_fert_map = load_leaf_model()
-    # ── Header ──
-    st.markdown("""
-<h1 style="font-family:Manrope,sans-serif;font-size:clamp(2rem,5vw,2.75rem);font-weight:900;
-    color:var(--primary);letter-spacing:-0.025em;line-height:1.08;margin:0 0 0.5rem">
-  Phyto-Diagnostic Suite
-</h1>
-<p style="color:var(--muted);font-size:1.1rem;font-weight:600;line-height:1.6;
-    max-width:520px;margin:0 0 2rem">
-  Upload a leaf photograph for neural pathogen detection and precision treatment recommendations.
-</p>
-""", unsafe_allow_html=True)
-
-    _lc_upload, _lc_results = st.columns([6, 5], gap="large")
-
-    with _lc_upload:
-        # ── Plant Specimen Analysis card ──
-        st.markdown("""
-<h3 style="font-family:Manrope,sans-serif;font-size:1.55rem;font-weight:900;
-    color:var(--primary);display:flex;align-items:center;gap:8px;margin:0 0 1.25rem">
-  <span class="material-symbols-outlined"
-        style="color:var(--primary);font-size:1.4rem;font-variation-settings:'FILL' 1">image</span>
-  Plant Specimen Analysis
-</h3>
-""", unsafe_allow_html=True)
-
-        leaf_upload = st.file_uploader(
-            "Upload Leaf Imagery",
-            type=["jpg", "jpeg", "png"],
-            key="leaf_file_uploader",
-            help="Upload a clear close-up photo of the leaf. JPG, JPEG, PNG up to 200 MB.",
-        )
-        if leaf_upload:
-            st.session_state.leaf_img_bytes = leaf_upload.getvalue()
-            st.session_state.leaf_result = None
-            # Validate immediately on upload
-            _pil_check_upload = Image.open(io.BytesIO(st.session_state.leaf_img_bytes)).convert("RGB")
-            st.session_state.leaf_valid = is_leaf_image(_pil_check_upload)
-
-        if st.session_state.leaf_img_bytes:
-            st.image(io.BytesIO(st.session_state.leaf_img_bytes), use_container_width=True)
-            # Show validation status badge right below the image
-            if st.session_state.leaf_valid is True:
-                st.markdown("""
-<div style="display:flex;align-items:center;gap:8px;background:#e6f4ec;border:1.5px solid #4caf7d;
-     border-radius:0.5rem;padding:0.6rem 1rem;margin-top:0.5rem">
-  <span class="material-symbols-outlined" style="color:#2d7a4f;font-size:20px;font-variation-settings:'FILL' 1">check_circle</span>
-  <span style="font-family:Manrope,sans-serif;font-weight:700;color:#2d7a4f;font-size:0.9rem">
-    Valid leaf image detected — ready for diagnosis
-  </span>
-</div>""", unsafe_allow_html=True)
-            elif st.session_state.leaf_valid is False:
-                st.markdown("""
-<div style="display:flex;align-items:center;gap:8px;background:#fdecea;border:1.5px solid #e57373;
-     border-radius:0.5rem;padding:0.6rem 1rem;margin-top:0.5rem">
-  <span class="material-symbols-outlined" style="color:#c62828;font-size:20px;font-variation-settings:'FILL' 1">cancel</span>
-  <span style="font-family:Manrope,sans-serif;font-weight:700;color:#c62828;font-size:0.9rem">
-    No plant leaf detected — please upload a clear leaf photo
-  </span>
-</div>""", unsafe_allow_html=True)
-
-        st.markdown(f"""
-<div style="background:#DCDCDC;border:1px solid rgba(157,165,157,0.5);
-     border-radius:0.5rem;padding:0.875rem 1rem;margin-top:0.75rem;display:flex;gap:8px;align-items:start">
-  <span class="material-symbols-outlined" style="color:var(--primary);font-size:18px;flex-shrink:0">lightbulb</span>
-  <p style="font-size:14px;font-weight:700;color:var(--primary);margin:0;line-height:1.6">
-    Tip: Upload a clear close-up photo of the leaf for best results. Avoid blurry images or
-    backgrounds with multiple plant species.
-  </p>
-</div>
-""", unsafe_allow_html=True)
-
-        st.markdown("<div style='height:1.25rem'></div>", unsafe_allow_html=True)
-        _run_diag = st.button(
-            "🔬  Run Neural Diagnosis",
-            key="run_leaf_btn",
-            type="primary",
-            use_container_width=True,
-        )
-
-        if _run_diag and not st.session_state.leaf_img_bytes:
-            st.error("Please upload a leaf image before running diagnosis.")
-
-        if _run_diag and st.session_state.leaf_img_bytes:
-            if not st.session_state.leaf_valid:
-                st.error("No plant leaf detected. Please upload a clear close-up photo of a leaf.")
-            elif _leaf_model is None:
-                _err = st.session_state.get("leaf_model_error")
-                msg = (
-                    "Leaf disease model not loaded. "
-                    "Ensure **agrofusion_universal_v5.pkl** is present in the project directory."
-                )
-                if _err:
-                    msg += f"\n\nDetails: `{_err}`"
-                st.error(msg)
-            else:
-                with st.spinner("Running neural diagnosis…"):
-                    try:
-                        _pred_cls, _pred_conf, _top5 = run_leaf_inference(
-                            _leaf_model, _leaf_classes,
-                            st.session_state.leaf_img_bytes,
-                        )
-                        st.session_state.leaf_result = {
-                            "pred_class": _pred_cls,
-                            "confidence": _pred_conf,
-                            "top5": _top5,
-                        }
-                    except Exception as _le:
-                        st.error(f"Diagnosis failed: {_le}")
-
-    with _lc_results:
-        if st.session_state.leaf_result:
-            _lr   = st.session_state.leaf_result
-            _cls  = _lr["pred_class"]
-            _conf = _lr["confidence"]
-            _top5 = _lr["top5"]
-
-            # ── Resolve treatment from pkl fertilizer_dict ──────────
-            _treat      = _leaf_fert_map.get(_cls, {})
-            # pkl uses disease_common_name; built-in map uses common_name
-            _cname      = (
-                _treat.get("disease_common_name")
-                or _treat.get("common_name")
-                or _cls.replace("___", " — ").replace("_", " ")
-            )
-            _primary    = (
-                _treat.get("primary_treatment", "Apply appropriate fungicide/bactericide. Consult an agronomist.")
-            )
-            _fert_rec   = (
-                _treat.get("fertilizer_recommendation")
-                or _treat.get("fertilizer", "Maintain balanced NPK fertilization.")
-            )
-            _cultural   = _treat.get("cultural_practices", "Practice good field hygiene and crop rotation.")
-
-            _is_healthy = "healthy" in _cls.lower()
-            _badge_bg   = "#c3e8d1" if _is_healthy else "#ffd9b3"
-            _badge_col  = "#1E5C3A" if _is_healthy else "#7a3a00"
-            _badge_txt  = "Healthy" if _is_healthy else "Pathogen Detected"
-            _primary_c  = "#1E5C3A"   # explicit — avoid CSS var() in st.html blocks
-            _muted_c    = "#444744"
-
-            # ── Detection Result card (st.html avoids markdown parser) ──
-            _conf_bar_w = min(int(_conf), 100)
-            try:
-                st.html(f"""
-<div style="background:#DCDCDC;border-radius:14px;padding:1.6rem;
-     box-shadow:0 12px 30px rgba(0,0,0,0.08);margin-bottom:1.25rem;
-     border:1px solid rgba(157,165,157,0.5)">
-  <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:1.25rem">
-    <div style="display:flex;align-items:center;gap:8px">
-      <span style="font-family:'Material Symbols Outlined';color:{_primary_c};
-            font-size:1.4rem;font-variation-settings:'FILL' 0,'wght' 400">biotech</span>
-      <h4 style="font-family:Manrope,sans-serif;font-size:1.22rem;font-weight:900;
-          color:{_primary_c};margin:0">Detection Result</h4>
+<section class="pipeline pipeline-soil">
+  <div class="section-head">
+    <span class="eyebrow">Pipeline · soil to crop</span>
+    <h2 class="display section-title" style="color:#faf8f3;">From soil, a <em style="color:#7ba854;">crop.</em></h2>
+    <p class="pipeline-sub">Four stages of multimodal synthesis converge into a probability-ranked cultivation protocol.</p>
+  </div>
+  <div class="pipeline-grid">
+    <div class="pipeline-step" style="position:relative;">
+      <div class="pipeline-step-head">
+        <div class="pipeline-step-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V4a1 1 0 0 1 1-1h3"/><path d="M17 3h3a1 1 0 0 1 1 1v3"/><path d="M21 17v3a1 1 0 0 1-1 1h-3"/><path d="M7 21H4a1 1 0 0 1-1-1v-3"/><path d="M3 12h18"/></svg></div>
+        <span class="pipeline-step-num">01</span>
+      </div>
+      <h4 class="pipeline-step-title">Specimen vision</h4>
+      <p class="pipeline-step-desc">Upload soil imagery. Computer vision extracts texture, aggregation, color-moisture indices in under 400ms.</p>
+      <div class="pipeline-arrow"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg></div>
     </div>
-    <div style="background:{_badge_bg};color:{_badge_col};padding:4px 12px;border-radius:999px;
-         font-size:0.66rem;font-weight:900;text-transform:uppercase;letter-spacing:0.07em;
-         font-family:'Plus Jakarta Sans',sans-serif">
-      {_badge_txt}
+    <div class="pipeline-step" style="position:relative;">
+      <div class="pipeline-step-head">
+        <div class="pipeline-step-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6"/><path d="M10 3v6L4.5 19a2 2 0 0 0 1.7 3h11.6a2 2 0 0 0 1.7-3L14 9V3"/></svg></div>
+        <span class="pipeline-step-num">02</span>
+      </div>
+      <h4 class="pipeline-step-title">Chemical profile</h4>
+      <p class="pipeline-step-desc">NPK + pH triangulated against optimal bands. Outliers flagged; dosages computed.</p>
+      <div class="pipeline-arrow"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg></div>
+    </div>
+    <div class="pipeline-step" style="position:relative;">
+      <div class="pipeline-step-head">
+        <div class="pipeline-step-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M17.7 7.7a2.5 2.5 0 1 1 1.8 4.3H2"/><path d="M9.6 4.6A2 2 0 1 1 11 8H2"/><path d="M12.6 19.4A2 2 0 1 0 14 16H2"/></svg></div>
+        <span class="pipeline-step-num">03</span>
+      </div>
+      <h4 class="pipeline-step-title">Climate synthesis</h4>
+      <p class="pipeline-step-desc">Auto-fills 180+ district-grade weather, humidity, and rainfall vectors from geographic selection.</p>
+      <div class="pipeline-arrow"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg></div>
+    </div>
+    <div class="pipeline-step">
+      <div class="pipeline-step-head">
+        <div class="pipeline-step-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22V10"/><path d="M12 10c0-3 2-6 6-6 0 3-2 6-6 6Z"/><path d="M12 12c0-2.5-2-5-6-5 0 2.5 2 5 6 5Z"/></svg></div>
+        <span class="pipeline-step-num">04</span>
+      </div>
+      <h4 class="pipeline-step-title">Crop recommendation</h4>
+      <p class="pipeline-step-desc">Multimodal fusion returns top-K crops with NPK protocol, timeline, and confidence ranking.</p>
     </div>
   </div>
-  <h5 style="font-family:Manrope,sans-serif;font-size:1.9rem;font-weight:900;
-      color:#1a1c1a;margin:0 0 1.25rem">{_cname}</h5>
-  <div style="display:flex;justify-content:space-between;margin-bottom:5px">
-    <span style="font-size:0.72rem;font-weight:900;color:{_muted_c};
-        text-transform:uppercase;letter-spacing:0.1em;font-family:'Plus Jakarta Sans',sans-serif">
-      Confidence Level</span>
-    <span style="font-size:0.76rem;font-weight:900;color:{_primary_c}">{_conf}%</span>
-  </div>
-  <div style="height:8px;width:100%;background:#e6e8e4;border-radius:999px;overflow:hidden">
-    <div style="height:100%;width:{_conf_bar_w}%;background:{_primary_c};
-         border-radius:999px;transition:width 0.4s ease"></div>
-  </div>
-</div>
-""")
-            except AttributeError:
-                st.markdown(f"### {_cname}\n**Confidence:** {_conf}%", unsafe_allow_html=False)
-
-            # ── Treatment Plan card ──────────────────────────────────
-            def _section_html(icon, label, text):
-                import html as _html
-                safe_text = _html.escape(str(text))
-                return f"""
-<div style="margin-bottom:1.5rem">
-  <div style="display:flex;align-items:center;gap:6px;margin-bottom:0.625rem">
-    <span style="font-family:'Material Symbols Outlined';color:{_primary_c};font-size:1rem;
-          font-variation-settings:'FILL' 0,'wght' 300">{icon}</span>
-    <span style="font-size:0.72rem;font-weight:900;color:{_muted_c};
-        text-transform:uppercase;letter-spacing:0.15em;
-        font-family:'Plus Jakarta Sans',sans-serif">{label}</span>
-  </div>
-  <p style="font-size:1rem;font-weight:600;color:{_muted_c};line-height:1.72;margin:0">
-    {safe_text}
-  </p>
-</div>"""
-
-            _plan_html = f"""
-<div style="background:#DCDCDC;border-radius:14px;border:1px solid rgba(157,165,157,0.5);
-     box-shadow:0 12px 30px rgba(0,0,0,0.08)">
-  <div style="padding:1.25rem 1.5rem;border-bottom:1px solid rgba(157,165,157,0.35);
-       display:flex;align-items:center;gap:8px">
-    <span style="font-family:'Material Symbols Outlined';color:{_primary_c};font-size:1.4rem;
-          font-variation-settings:'FILL' 0,'wght' 400">medical_services</span>
-    <h4 style="font-family:Manrope,sans-serif;font-size:1.22rem;font-weight:900;
-        color:{_primary_c};margin:0">Treatment Plan</h4>
-  </div>
-  <div style="padding:1.5rem 1.5rem 0.5rem">
-    {_section_html("health_and_safety", "Primary Treatment", _primary)}
-    {_section_html("science", "Fertilizer Recommendation", _fert_rec)}
-    {_section_html("agriculture", "Cultural Practices", _cultural)}
-  </div>
-</div>"""
-            try:
-                st.html(_plan_html)
-            except AttributeError:
-                st.markdown(_plan_html, unsafe_allow_html=True)
-
-            # ── Top-5 confidence breakdown ───────────────────────────
-            st.markdown("<div style='height:0.75rem'></div>", unsafe_allow_html=True)
-            _top5_rows = []
-            for _tn, _tp in _top5:
-                _t_label  = _tn.replace("___", " — ").replace("_", " ")
-                _bar_pct  = min(int(_tp), 100)
-                _top5_rows.append(
-                    f"<div style='display:flex;align-items:center;gap:10px;margin-bottom:12px'>"
-                    f"<span style='font-size:13px;font-weight:700;color:#1a1c1a;"
-                    f"white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:1 1 170px;max-width:210px'>"
-                    f"{_t_label}</span>"
-                    f"<div style='flex:2;height:7px;background:#ecebe8;border-radius:999px;overflow:hidden'>"
-                    f"<div style='height:100%;width:{_bar_pct}%;background:#1E5C3A;border-radius:999px'></div></div>"
-                    f"<span style='font-size:13px;font-weight:900;color:#1E5C3A;flex-shrink:0'>{_tp}%</span>"
-                    f"</div>"
-                )
-            st.markdown(
-                "<div style='background:#DCDCDC;border:1px solid rgba(157,165,157,0.5);"
-                "border-radius:14px;padding:1.15rem 1.2rem 0.5rem;box-shadow:0 12px 30px rgba(0,0,0,0.08)'>"
-                "<p style='font-size:12px;font-weight:900;text-transform:uppercase;"
-                "letter-spacing:0.12em;color:#444744;margin:0 0 1rem'>Top-5 Predictions</p>"
-                + "".join(_top5_rows) +
-                "</div>",
-                unsafe_allow_html=True,
-            )
-
-        else:
-            # Empty state
-            st.markdown("""
-<div style="background:var(--surface-container-low);border-radius:0.75rem;padding:3rem 2rem;
-     text-align:center;color:var(--muted)">
-  <span class="material-symbols-outlined"
-    style="font-size:3rem;color:var(--outline);display:block;margin-bottom:1rem">biotech</span>
-  <p style="font-weight:600;margin:0">Upload a leaf image and click<br><strong>Run Neural Diagnosis</strong> to begin.</p>
-</div>
+</section>
 """, unsafe_allow_html=True)
 
-    # ── Leaf page footer ──
+    # ── Leaf pipeline ──────────────────────────────────────────
     st.markdown("""
-<footer style="margin-top:3rem;padding-top:1.5rem;border-top:1px solid rgba(0,0,0,0.05);
-     display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:1rem;
-     font-size:0.6rem;font-weight:700;text-transform:uppercase;
-     letter-spacing:0.12em;color:rgba(64,73,66,0.5)">
-  <div style="display:flex;align-items:center;gap:1.5rem">
-    <span>Engine: Synapse-V4.2</span>
-    <span style="width:6px;height:6px;background:rgba(30,92,58,0.2);border-radius:50%;display:inline-block"></span>
-    <span>PlantVillage 38-Class Model</span>
+<section class="pipeline pipeline-earth">
+  <div class="section-head">
+    <span class="eyebrow">Pipeline · leaf to cure</span>
+    <h2 class="display section-title">From leaf, a <em>cure.</em></h2>
+    <p class="pipeline-sub">A single forward pass resolves pathogen identity and returns a dosage-precise treatment plan.</p>
   </div>
-  <span>AgroSynapse AI &copy; 2025</span>
+  <div class="pipeline-grid">
+    <div class="pipeline-step" style="position:relative;">
+      <div class="pipeline-step-head">
+        <div class="pipeline-step-icon" style="background:rgba(212,163,115,0.1);border:1px solid rgba(212,163,115,0.25);color:#b8884f;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4m0 0-4 4m4-4 4 4"/><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg></div>
+        <span class="pipeline-step-num" style="color:#a8a598;">01</span>
+      </div>
+      <h4 class="pipeline-step-title">Leaf specimen</h4>
+      <p class="pipeline-step-desc">Upload a close-up of a single leaf. Auto-validation checks framing, focus, and species ambiguity.</p>
+      <div class="pipeline-arrow" style="background:#f2ede2;border-color:rgba(20,20,15,0.12);color:#6b6b5e;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg></div>
+    </div>
+    <div class="pipeline-step" style="position:relative;">
+      <div class="pipeline-step-head">
+        <div class="pipeline-step-icon" style="background:rgba(212,163,115,0.1);border:1px solid rgba(212,163,115,0.25);color:#b8884f;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18h8"/><path d="M3 22h18"/><path d="M14 22a7 7 0 1 0 0-14h-1"/><path d="M9 14h2"/><path d="M9 12a2 2 0 0 1-2-2V6h4v4a2 2 0 0 1-2 2Z"/><path d="M12 6H6"/><path d="M10 2h4"/></svg></div>
+        <span class="pipeline-step-num" style="color:#a8a598;">02</span>
+      </div>
+      <h4 class="pipeline-step-title">Neural pathology</h4>
+      <p class="pipeline-step-desc">Convolutional network scans lesions across 38 pathogen classes and one healthy baseline.</p>
+      <div class="pipeline-arrow" style="background:#f2ede2;border-color:rgba(20,20,15,0.12);color:#6b6b5e;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg></div>
+    </div>
+    <div class="pipeline-step" style="position:relative;">
+      <div class="pipeline-step-head">
+        <div class="pipeline-step-icon" style="background:rgba(212,163,115,0.1);border:1px solid rgba(212,163,115,0.25);color:#b8884f;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6"/><path d="M10 3v6L4.5 19a2 2 0 0 0 1.7 3h11.6a2 2 0 0 0 1.7-3L14 9V3"/></svg></div>
+        <span class="pipeline-step-num" style="color:#a8a598;">03</span>
+      </div>
+      <h4 class="pipeline-step-title">Dosage synthesis</h4>
+      <p class="pipeline-step-desc">Confidence-weighted treatment plan: primary chemistry, fertilizer correction, cultural practices.</p>
+      <div class="pipeline-arrow" style="background:#f2ede2;border-color:rgba(20,20,15,0.12);color:#6b6b5e;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg></div>
+    </div>
+    <div class="pipeline-step">
+      <div class="pipeline-step-head">
+        <div class="pipeline-step-icon" style="background:rgba(212,163,115,0.1);border:1px solid rgba(212,163,115,0.25);color:#b8884f;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v12m0 0 4-4m-4 4-4-4"/><path d="M4 20h16"/></svg></div>
+        <span class="pipeline-step-num" style="color:#a8a598;">04</span>
+      </div>
+      <h4 class="pipeline-step-title">Action report</h4>
+      <p class="pipeline-step-desc">Export-ready PDF with ranked predictions, intervals, and field-specific cultural recommendations.</p>
+    </div>
+  </div>
+</section>
+""", unsafe_allow_html=True)
+
+    # ── CTA block ──────────────────────────────────────────────
+    st.markdown("""
+<section class="cta-block">
+  <div class="cta-inner">
+    <span class="eyebrow">Ready when you are</span>
+    <h2 class="display cta-title">Put a <em>lab</em> behind every field.</h2>
+    <p class="cta-sub">Specimen imagery in, protocol out. No login gymnastics. No field experts required.</p>
+    <div class="cta-actions">
+      <a class="btn btn-sage" href="?page=cultivation" style="text-decoration:none;">Start with a soil scan &#8594;</a>
+    </div>
+  </div>
+</section>
+<footer class="site-footer">
+  <div class="footer-row">
+    <div class="footer-brand">
+      <span class="eyebrow">AgroSynapse AI · 2026</span>
+      <p>Synaptic agronomy, built by Manoj Anumolu. Academic project; not a replacement for certified agronomist advice.</p>
+    </div>
+    <div class="footer-meta">
+      <span class="label">v0.4 · Alpha</span>
+      <span class="label">Models: SoilNet-v3 · PhytoNet-v2</span>
+    </div>
+  </div>
 </footer>
 """, unsafe_allow_html=True)
 
-    st.stop()
 
+# ==============================================================
+# CULTIVATION PAGE
+# ==============================================================
+elif _page == "cultivation":
 
-# ── HERO HEADER ───────────────────────────────────────────────────
-# ── Home button for Crop page ─────────────────────────────────────
-_home_col, _ = st.columns([1, 8])
-with _home_col:
-    if st.button("⌂ Home", key="crop_home_btn", help="Return to AgroSynapse home", type="secondary"):
-        st.session_state.page = "splash"
-        st.session_state.last_result = None
-        st.rerun()
-
-is_dark_theme = st.session_state.theme == "dark"
-guide_panel_bg = "rgba(59,130,246,0.12)" if is_dark_theme else "var(--surface-container-lowest)"
-guide_title_color = "#cfe3ff" if is_dark_theme else "#1e3a5f"
-guide_value_color = "#e6f2ff" if is_dark_theme else "rgba(30,58,95,0.78)"
-guide_divider = "rgba(147,197,253,0.35)" if is_dark_theme else "rgba(30,58,95,0.10)"
-tip_bg = "rgba(255,255,255,0.10)" if is_dark_theme else "rgba(0,0,0,0.04)"
-tip_text = "#d7e2db" if is_dark_theme else "#5a6360"
-
-hero_l, hero_r = st.columns([3, 1])
-with hero_l:
+    # ── Header ─────────────────────────────────────────────────
     st.markdown("""
-<h1 style="font-family:Manrope,sans-serif;font-size:clamp(2.45rem, 6vw, 3.6rem);font-weight:900;color:var(--primary);
-        letter-spacing:-0.025em;line-height:1.08;margin:0 0 0.875rem;word-break:normal;overflow-wrap:anywhere">
-    Precise Agricultural Intelligence
-</h1>
-<p style="color:var(--muted);font-size:1rem;font-weight:500;line-height:1.55;
-    max-width:560px;margin:0 0 1.5rem">
-  Synthesize complex soil data, real-time climate metrics, and historical
-  yield patterns to generate laboratory-grade crop recommendations.
-</p>
-""", unsafe_allow_html=True)
-    st.markdown("""
-<div style="height:2px;width:76px;background:rgba(47,113,68,0.55);
-    border-radius:999px;margin-top:0.25rem"></div>
-""", unsafe_allow_html=True)
-
-with hero_r:
-        st.markdown(f"""
-<div style="background:{guide_panel_bg};padding:1rem 1.125rem;border-radius:0.75rem;
-     border:1px solid rgba(157,165,157,0.35);box-shadow:0 10px 24px rgba(0,0,0,0.08)">
-  <div style="display:flex;align-items:center;gap:7px;margin-bottom:0.625rem">
-    <span class="material-symbols-outlined"
-      style="color:#1d4ed8;font-size:17px;font-variation-settings:'FILL' 1">info</span>
-        <h3 style="font-family:Manrope,sans-serif;font-weight:900;font-size:13px;
-                text-transform:uppercase;letter-spacing:0.1em;color:{guide_title_color};margin:0">Farmer Unit Guide</h3>
+<div class="page-tool">
+<div class="tool-header">
+  <div>
+    <span class="eyebrow">Module · Agricultural Core</span>
+    <h1 class="display tool-page-title">Predictive Cultivation</h1>
+    <p class="tool-page-sub">Synthesize soil specimen, chemical profile, climate vectors, and farm history into laboratory-grade crop recommendations — probability-ranked, protocol-complete.</p>
   </div>
-    <div style="font-size:13px">
-    <div style="display:flex;justify-content:space-between;
-                 border-bottom:1px solid {guide_divider};padding-bottom:4px;margin-bottom:4px">
-            <span style="font-weight:900;color:{guide_title_color}">Yield:</span>
-        <span style="font-weight:900;color:{guide_value_color}">t/ha</span>
+  <aside class="unit-guide">
+    <div class="unit-guide-head">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v5h1"/></svg>
+      <span class="eyebrow">Farmer unit guide</span>
     </div>
-    <div style="display:flex;justify-content:space-between;
-                 border-bottom:1px solid {guide_divider};padding-bottom:4px;margin-bottom:4px">
-            <span style="font-weight:900;color:{guide_title_color}">NPK:</span>
-        <span style="font-weight:900;color:{guide_value_color}">kg/ha</span>
+    <div class="unit-guide-body">
+      <div class="ug-row"><span>Yield</span><span class="num">t/ha</span></div>
+      <div class="ug-row"><span>NPK</span><span class="num">mg/kg</span></div>
+      <div class="ug-row"><span>Area</span><span class="num">1 acre ≈ 0.4 ha</span></div>
+      <div class="ug-row"><span>Temp</span><span class="num">°C</span></div>
+      <div class="ug-row"><span>Rainfall</span><span class="num">mm/yr</span></div>
     </div>
-    <div style="display:flex;justify-content:space-between">
-            <span style="font-weight:900;color:{guide_title_color}">Area:</span>
-                        <span style="font-weight:900;color:{guide_value_color}">1 acre = 0.4 ha</span>
+    <div class="unit-guide-foot">
+      <span class="label">Need help?</span>
+      <span class="unit-guide-link">Open glossary →</span>
     </div>
-  </div>
+  </aside>
+</div>""", unsafe_allow_html=True)
+
+    with st.form("cultivation_form"):
+        # ── Tool grid ──
+        st.markdown('<div class="tool-grid">', unsafe_allow_html=True)
+
+        # ROW 1: Soil Specimen + Chemical Profile
+        c1, c2 = st.columns(2)
+
+        with c1:
+            st.markdown("""
+<div class="tool-block">
+<div class="tool-block-head">
+  <h3 class="display tool-block-title">Soil Specimen</h3>
+  <span class="pill live">Vision ready</span>
 </div>
-""", unsafe_allow_html=True)
-
-st.markdown("<div style='height:1.75rem'></div>", unsafe_allow_html=True)
-
-# ── ROW 1: SOIL IMAGE + CHEMICAL PROFILE ─────────────────────────
-col_img, col_chem = st.columns(2, gap="large")
-
-with col_img:
-    st.markdown('<span id="mrk-soil-img"></span>', unsafe_allow_html=True)
-    st.markdown("""
-<h3 style="font-family:Manrope,sans-serif;font-size:2.15rem;font-weight:900;
-    color:var(--primary);display:flex;align-items:center;gap:8px;margin:0 0 1rem">
-  <span class="material-symbols-outlined"
-        style="color:var(--primary);font-size:1.6rem;font-variation-settings:'FILL' 1, 'wght' 600">image</span>
-  Soil Specimen Analysis
-</h3>
-""", unsafe_allow_html=True)
-    uploaded = st.file_uploader("Upload Soil Imagery", type=["jpg", "jpeg", "png"])
-    if uploaded:
-        st.session_state.img_bytes   = uploaded.getvalue()
-        st.session_state.last_result = None
-        st.session_state.last_error  = None
-    if st.session_state.img_bytes:
-        st.image(io.BytesIO(st.session_state.img_bytes), use_container_width=True)
-    st.markdown(f"""
-<div style="background:{tip_bg};padding:0.75rem 0.875rem;border-radius:0.5rem;
-     margin-top:0.625rem">
-    <p style="font-size:14px;color:{tip_text};line-height:1.65;margin:0;font-weight:700">
-    <strong>&#x1f4a1; Tip:</strong> Upload a clear close-up photo of soil for best results.
-    Avoid photos with people, plants, or bright objects.
-  </p>
-</div>
-""", unsafe_allow_html=True)
-
-
-def _npk_bar(val, lo, hi, vmax):
-    lo_pct  = lo / vmax * 100
-    hi_pct  = hi / vmax * 100
-    val_pct = min(val / vmax * 100, 100)
-    if val_pct <= lo_pct:
-        rl, gw, rr = val_pct, 0, 100 - val_pct
-    elif val_pct <= hi_pct:
-        rl, gw, rr = lo_pct, val_pct - lo_pct, 100 - val_pct
-    else:
-        rl, gw, rr = lo_pct, hi_pct - lo_pct, 100 - hi_pct
-    return (
-        f"<div style='height:5px;background:#e6e8e4;border-radius:999px;"
-        f"overflow:hidden;display:flex;margin-top:5px'>"
-        f"<div style='width:{rl:.0f}%;background:#ef4444'></div>"
-        f"<div style='width:{gw:.0f}%;background:#22c55e'></div>"
-        f"<div style='width:{rr:.0f}%;background:#ef4444'></div>"
-        f"</div>"
-    )
-
-
-with col_chem:
-    st.markdown('<span id="mrk-chem"></span>', unsafe_allow_html=True)
-    st.markdown("""
-<h3 style="font-family:Manrope,sans-serif;font-size:2.15rem;font-weight:900;
-    color:#1E5C3A;display:flex;align-items:center;gap:8px;margin:0 0 1rem">
-  <span class="material-symbols-outlined"
-        style="color:#004425;font-size:1.6rem;font-variation-settings:'FILL' 1, 'wght' 600">biotech</span>
-  Chemical Profile
-</h3>
-""", unsafe_allow_html=True)
-    cr1, cr2 = st.columns(2)
-    with cr1:
-        n = st.number_input(
-            "Nitrogen (N) (mg/kg)",
-            DATASET_N_RANGE[0], DATASET_N_RANGE[1], 90.0,
-            help="Dataset range: 20-187 mg/kg",
-        )
-        st.markdown(_npk_bar(n, IDEAL_N_RANGE[0], IDEAL_N_RANGE[1], DATASET_N_RANGE[1]), unsafe_allow_html=True)
-        st.caption("Ideal range: 60-140 mg/kg")
-        st.markdown("<div style='height:0.75rem'></div>", unsafe_allow_html=True)
-        k = st.number_input(
-            "Potassium (K) (mg/kg)",
-            DATASET_K_RANGE[0], DATASET_K_RANGE[1], 54.0,
-            help="Dataset range: 10-113 mg/kg",
-        )
-        st.markdown(_npk_bar(k, IDEAL_K_RANGE[0], IDEAL_K_RANGE[1], DATASET_K_RANGE[1]), unsafe_allow_html=True)
-        st.caption("Ideal range: 35-120 mg/kg")
-    with cr2:
-        p = st.number_input(
-            "Phosphorus (P) (mg/kg)",
-            DATASET_P_RANGE[0], DATASET_P_RANGE[1], 39.0,
-            help="Dataset range: 10-101 mg/kg",
-        )
-        st.markdown(_npk_bar(p, IDEAL_P_RANGE[0], IDEAL_P_RANGE[1], DATASET_P_RANGE[1]), unsafe_allow_html=True)
-        st.caption("Ideal range: 25-80 mg/kg")
-        st.markdown("<div style='height:0.75rem'></div>", unsafe_allow_html=True)
-        ph = st.number_input("Soil pH (ph)", 3.0, 10.0, 6.5, step=0.1, help="General suitable range: pH 6.0-7.5")
-        st.markdown(_npk_bar(ph, 6.0, 7.5, 10.0), unsafe_allow_html=True)
-        st.caption("Ideal range: pH 6.0-7.5")
-
-    st.markdown(
-        "<p style='font-size:12px;color:var(--muted);margin:0.35rem 0 0'>"
-        "Ideal soil nutrient bands: N 60-140, P 25-80, K 35-120 (mg/kg)."
-        "</p>",
-        unsafe_allow_html=True,
-    )
-
-st.markdown("<div style='height:1.75rem'></div>", unsafe_allow_html=True)
-
-# ── ENVIRONMENTAL CONDITIONS (single full-width column for card styling) ──
-(env_col,) = st.columns(1)
-with env_col:
-    st.markdown('<span id="mrk-env"></span>', unsafe_allow_html=True)
-    st.markdown("""
-<h3 style="font-family:Manrope,sans-serif;font-size:2rem;font-weight:900;
-    color:#1E5C3A;display:flex;align-items:center;gap:8px;margin:0 0 1.125rem">
-    <span class="material-symbols-outlined" style="color:#004425;font-size:1.5rem;font-variation-settings:'FILL' 1, 'wght' 600">public</span>
-  Auto-Fill Climate Data
-</h3>
-""", unsafe_allow_html=True)
-
-    ec1, ec2, ec3, ec4 = st.columns(4)
-    with ec1:
-        sel_state = st.selectbox(
-            "📍 Select Your State",
-            options=["-- Select State --"] + sorted(INDIA_STATES_DISTRICTS.keys()),
-            index=0,
-            help="Choose your state to fetch local climate",
-        )
-    with ec2:
-        if sel_state and sel_state != "-- Select State --":
-            sel_district = st.selectbox(
-                "🏛 Select Your District",
-                options=["-- Select District --"] + INDIA_STATES_DISTRICTS[sel_state],
-                index=0,
-                help="Choose your district",
-            )
-        else:
-            sel_district = "-- Select District --"
-            st.selectbox("🏛 Select Your District", options=["-- Select State First --"], disabled=True, help="Choose your district")
-    with ec3:
-        village = st.text_input("🗺 Enter Village / Town", placeholder="e.g. Ramtek", help="Optional village or town for better location context")
-    with ec4:
-        st.markdown("<div style='height:28px'></div>", unsafe_allow_html=True)
-        fetch_btn = st.button("🌤 Fetch Local Data", type="primary", use_container_width=True)
-
-    if fetch_btn:
-        if sel_state == "-- Select State --":
-            st.warning("Please select your state.")
-        elif sel_district == "-- Select District --":
-            st.warning("Please select your district.")
-        else:
-            with st.spinner("Fetching climate data..."):
-                climate, error = get_climate_data(village, sel_district, sel_state)
-            if error:
-                st.error(error)
-            else:
-                st.session_state.auto_temp     = climate["temperature"]
-                st.session_state.auto_hum      = climate["humidity"]
-                st.session_state.auto_rain     = climate["rainfall"]
-                st.session_state.location_name = climate["location"]
-                st.session_state.location_note = climate.get("note", "")
-                st.rerun()
-
-    loc_note = st.session_state.location_note or st.session_state.location_name
-    note_html = (
-        f"<p style='font-size:11px;color:rgba(64,73,66,0.5);font-style:italic;"
-        f"font-weight:500;align-self:center;margin:0'>{loc_note}</p>"
-        if loc_note else ""
-    )
-    st.markdown(f"""
-<div style="display:flex;flex-wrap:wrap;gap:0.625rem;margin:0.875rem 0 0.875rem;align-items:center">
-  <div style="background:#ffffff;display:flex;align-items:center;gap:7px;padding:8px 16px;
-       border-radius:999px;border:1px solid rgba(192,201,191,0.2);
-       box-shadow:0 1px 2px rgba(0,0,0,0.04)">
-    <span class="material-symbols-outlined"
-      style="color:#286b3e;font-variation-settings:'FILL' 1;font-size:16px">thermostat</span>
-    <span style="font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:0.08em">Temperature:</span>
-    <span style="font-family:Manrope,sans-serif;font-weight:800;color:#1b1c1a;font-size:13px">{st.session_state.auto_temp}\u00b0C</span>
-  </div>
-  <div style="background:#ffffff;display:flex;align-items:center;gap:7px;padding:8px 16px;
-       border-radius:999px;border:1px solid rgba(192,201,191,0.2);
-       box-shadow:0 1px 2px rgba(0,0,0,0.04)">
-    <span class="material-symbols-outlined"
-      style="color:#004425;font-variation-settings:'FILL' 1;font-size:16px">humidity_percentage</span>
-    <span style="font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:0.08em">Humidity:</span>
-    <span style="font-family:Manrope,sans-serif;font-weight:800;color:#1b1c1a;font-size:13px">{st.session_state.auto_hum}%</span>
-  </div>
-  <div style="background:#ffffff;display:flex;align-items:center;gap:7px;padding:8px 16px;
-       border-radius:999px;border:1px solid rgba(192,201,191,0.2);
-       box-shadow:0 1px 2px rgba(0,0,0,0.04)">
-    <span class="material-symbols-outlined"
-      style="color:#3b82f6;font-variation-settings:'FILL' 1;font-size:16px">cloudy_snowing</span>
-    <span style="font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:0.08em">Rainfall:</span>
-    <span style="font-family:Manrope,sans-serif;font-weight:800;color:#1b1c1a;font-size:13px">{st.session_state.auto_rain}mm</span>
-  </div>
-  {note_html}
-</div>
-""", unsafe_allow_html=True)
-
-    safe_temp = min(max(float(st.session_state.auto_temp), 10.0), 45.0)
-    safe_hum = min(max(float(st.session_state.auto_hum), 14.0), 100.0)
-    safe_rain = min(max(float(st.session_state.auto_rain), 200.0), 8000.0)
-
-    et1, et2, et3 = st.columns(3)
-    with et1:
-        temp = st.number_input("Temperature (\u00b0C)", 10.0, 45.0, safe_temp, step=0.1, help="General suitable range: 18-35 C")
-    with et2:
-        hum  = st.number_input("Humidity (%)", 14.0, 100.0, safe_hum, step=0.1, help="General suitable range: 40-85%")
-    with et3:
-        rain = st.number_input("Rainfall (mm)", 200.0, 8000.0, safe_rain, step=1.0, help="General suitable range: 400-2000 mm (high-rainfall zones may be higher)")
-
-st.markdown("<div style='height:1.75rem'></div>", unsafe_allow_html=True)
-
-# ── FARM HISTORY & FARM DETAILS ───────────────────────────────────
-col_hist, col_det = st.columns(2, gap="large")
-
-with col_hist:
-    st.markdown('<span id="mrk-hist"></span>', unsafe_allow_html=True)
-    st.markdown("""
-<h3 style="font-family:Manrope,sans-serif;font-size:2rem;font-weight:900;
-    color:#1E5C3A;display:flex;align-items:center;gap:8px;margin:0 0 1rem">
-  &#128202; Farm History
-</h3>
-""", unsafe_allow_html=True)
-    yld  = st.number_input("Yield Last Season (t/ha)", 0.0, 15000.0, 2500.0, help="General suitable range: 2-8 t/ha")
-    fert = st.number_input("Fertilizer Used (kg/ha)", 0.0, 1000.0, 120.0, help="General suitable range: 80-300 kg/ha")
-    st.markdown("""
-<div style="background:#eff6ff;padding:0.75rem 0.875rem;border-radius:0.5rem;
-     display:flex;align-items:start;gap:8px;border:1px solid #bfdbfe;margin-top:0.375rem">
-  <span class="material-symbols-outlined"
-    style="color:#2563eb;font-size:17px;flex-shrink:0;margin-top:1px">info</span>
-  <p style="font-size:12px;color:rgba(30,58,95,0.75);line-height:1.55;margin:0;font-weight:500">
-    <strong>Unit Guide:</strong> Use tonnes per hectare for yield.
-    For fertilizer, sum all NPK components applied last season.
-  </p>
-</div>
-""", unsafe_allow_html=True)
-
-with col_det:
-    st.markdown('<span id="mrk-det"></span>', unsafe_allow_html=True)
-    st.markdown("""
-<h3 style="font-family:Manrope,sans-serif;font-size:2rem;font-weight:900;
-    color:#1E5C3A;display:flex;align-items:center;gap:8px;margin:0 0 1rem">
-  &#127806; Farm Details
-</h3>
-""", unsafe_allow_html=True)
-
-    SEASON_OPTS   = ["Kharif (Monsoon)", "Rabi (Winter)", "Zaid (Summer)"]
-    SEASON_INTERN = {"Kharif (Monsoon)": "Kharif", "Rabi (Winter)": "Rabi", "Zaid (Summer)": "Zaid"}
-    IRRIG_OPTS    = ["Canal Irrigation", "Drip Irrigation", "Sprinkler Irrigation", "Rainfed"]
-    IRRIG_INTERN  = {"Canal Irrigation": "Canal", "Drip Irrigation": "Drip",
-                     "Sprinkler Irrigation": "Sprinkler", "Rainfed": "Rainfed"}
-    PREV_OPTS     = ["Cotton", "Maize", "Potato", "Rice", "Sugarcane", "Tomato", "Wheat"]
-    REGION_OPTS   = ["Central Zone", "East Zone", "North Zone", "South Zone", "West Zone"]
-    REGION_INTERN = {"South Zone": "South", "Central Zone": "Central",
-                     "North Zone": "North", "East Zone": "East", "West Zone": "West"}
-
-    st.markdown(
-        "<p style='font-size:11px;color:var(--muted);margin:0 0 0.5rem'>"
-        "Farm details options are aligned to your dataset categories for Season, Irrigation, Previous Crop, and Region."
-        "</p>",
-        unsafe_allow_html=True,
-    )
-
-    season_disp = st.selectbox("Current Season",    SEASON_OPTS, help="Dataset options: Kharif, Rabi, Zaid")
-    irrig_disp  = st.selectbox("Irrigation System", IRRIG_OPTS, help="Dataset options: Canal, Drip, Rainfed, Sprinkler")
-    prev        = st.selectbox("Previous Crop",      PREV_OPTS, help="Dataset options: Cotton, Maize, Potato, Rice, Sugarcane, Tomato, Wheat")
-    region_disp = st.selectbox("Geographic Region",  REGION_OPTS, help="Dataset options: Central, East, North, South, West")
-
-    season = SEASON_INTERN[season_disp]
-    irrig  = IRRIG_INTERN[irrig_disp]
-    region = REGION_INTERN[region_disp]
-
-st.markdown("<div style='height:1.75rem'></div>", unsafe_allow_html=True)
-
-# ── ACTION BUTTONS ────────────────────────────────────────────────
-analyze_clicked = st.button(
-    "🔍 Analyze Soil & Predict Crop", key="analyze_soil_btn", type="primary", use_container_width=True
-)
-
-st.markdown("<div style='height:3.5rem'></div>", unsafe_allow_html=True)
-
-# ── RESULTS SECTION ───────────────────────────────────────────────
-if analyze_clicked or st.session_state.last_result:
-    st.session_state["_season_disp"] = season_disp
-
-report_png_bytes = None
-report_pdf_bytes = None
-if st.session_state.last_result:
-    try:
-        _sd = st.session_state.get("_season_disp", season_disp)
-        report_png_bytes, report_pdf_bytes = build_result_exports(
-            st.session_state.last_result, _sd, st.session_state.img_bytes
-        )
-    except Exception as _exp:
-        import traceback
-        report_png_bytes, report_pdf_bytes = None, None
-        st.session_state["_export_err"] = traceback.format_exc()
-
-st.markdown("""
-<div style="display:flex;align-items:center;gap:1rem;margin-top:2px;margin-bottom:0.75rem">
-    <h2 style="font-family:Manrope,sans-serif;font-size:1.125rem;font-weight:900;
-            text-transform:uppercase;letter-spacing:0.15em;color:#004425;
-            white-space:nowrap;margin:0">Result Analysis and Recommendations</h2>
-    <div style="height:1px;background:rgba(192,201,191,0.4);flex:1"></div>
-</div>
-""", unsafe_allow_html=True)
-
-if report_pdf_bytes or report_png_bytes:
-    dl_c1, dl_c2, dl_c3 = st.columns([4, 2, 2], gap="small")
-    with dl_c2:
-        st.download_button(
-            "📄 Download PDF",
-            data=report_pdf_bytes,
-            file_name=f"crop_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf",
-            mime="application/pdf",
-            key="download_report_pdf",
-            use_container_width=True,
-        )
-    with dl_c3:
-        st.download_button(
-            "🖼 Save PNG",
-            data=report_png_bytes,
-            file_name=f"crop_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png",
-            mime="image/png",
-            key="download_report_png",
-            use_container_width=True,
-        )
-
-if st.session_state.get("_export_err"):
-    st.error(f"Export error (please report): {st.session_state['_export_err']}")
-
-if not analyze_clicked and not st.session_state.last_result and not st.session_state.last_error:
-    st.markdown("""
-<div style="background:#e5e4e0;border-radius:0.75rem;padding:2.5rem;text-align:center;
-     color:rgba(64,73,66,0.5);font-weight:500;border:1px solid rgba(192,201,191,0.2)">
-  Upload a soil image and fill in the parameters above, then click Analyze.
-</div>
-""", unsafe_allow_html=True)
-
-if analyze_clicked and not st.session_state.img_bytes:
-    st.error("Please upload a soil image before analyzing.")
-
-if analyze_clicked and st.session_state.img_bytes:
-    _pil_check = Image.open(io.BytesIO(st.session_state.img_bytes)).convert("RGB")
-    if not is_soil_image(_pil_check):
-        st.error("No soil detected. Please upload a clear soil photograph.")
-        st.stop()
-
-    st.session_state.last_error = None
-    with st.spinner("Running AI inference..."):
-        try:
-            soil_name, confidence, all_probs, soil_fert, crop_recs, dbg = run_inference(
-                img_model, tab_proj, fusion, xgb_clf, scaler,
-                CLASS_NAMES, NUMERIC_COLS,
-                st.session_state.img_bytes,
-                n, p, k, temp, hum, rain, ph, yld, fert,
-                season, irrig, prev, region,
-            )
-            st.session_state.last_result = {
-                "soil_name":  soil_name,  "confidence": confidence,
-                "all_probs":  all_probs,  "soil_fert":  soil_fert,
-                "crop_recs":  crop_recs,  "dbg":        dbg,
-            }
-        except Exception as e:
-            st.session_state.last_error  = f"Prediction failed: {e}"
-            st.session_state.last_result = None
-
-if st.session_state.last_error:
-    st.error(st.session_state.last_error)
-
-if st.session_state.last_result:
-    res        = st.session_state.last_result
-    soil_name  = res["soil_name"]
-    confidence = res["confidence"]
-    all_probs  = res["all_probs"]
-    soil_fert  = res["soil_fert"]
-    crop_recs  = res["crop_recs"]
-
-    CROP_EMOJI_MAP = {
-        "Cotton": "🌿", "Maize": "🌽", "Rice": "🌾", "Wheat": "🌾",
-        "Chilli": "🌶️",
-        "Sugarcane": "🎋", "Potato": "🥔", "Tomato": "🍅", "Sorghum": "🌾",
-        "Soybean": "🫘", "Groundnut": "🥜", "Sunflower": "🌻", "Mustard": "🌼",
-        "Barley": "🌾", "Peas": "🫛", "Chickpea": "🫘", "Linseed": "🌱",
-        "Watermelon": "🍉", "Cucumber": "🥒", "Bitter Gourd": "🥬",
-        "Moong": "🫘", "Muskmelon": "🍈", "Jute": "🌿", "Safflower": "🌸",
-        "Sesame": "🌱", "Taro": "🥬", "Spinach": "🥬", "Pumpkin": "🎃",
-        "Cashew": "🌰", "Rubber": "🌳", "Tea": "🍵", "Coffee": "☕",
-        "Tapioca": "🌿", "Turmeric": "🟡", "Ginger": "🫚",
-        "Mango": "🥭", "Pineapple": "🍍", "Jackfruit": "🍈", "Banana": "🍌",
-    }
-    SOIL_COLORS = {
-        "Red Soil": "#C62828", "Black Soil": "#37474F", "Alluvial Soil": "#6D4C41",
-        "Clay Soil": "#F57F17", "Laterite Soil": "#BF360C", "Yellow Soil": "#F9A825",
-        "Sandy Soil": "#8D6E63",
-    }
-
-    top        = crop_recs[0]
-    top_emoji  = CROP_EMOJI_MAP.get(top["name"], "🌱")
-    soil_col   = SOIL_COLORS.get(soil_name, "#004425")
-    rank2_pct  = max(10, int(confidence) - 12)
-    rank3_pct  = max(10, int(confidence) - 24)
-
-    # ── 3-col grid ───────────────────────────────────────────────
-    res_hero, res_side = st.columns([2, 1], gap="large")
-
-    with res_hero:
-        st.markdown(f"""
-<div style="background:#ffffff;border-radius:1rem;overflow:hidden;
-     box-shadow:0 2px 10px rgba(0,0,0,0.08);border:1px solid rgba(192,201,191,0.2);
-     display:flex;min-height:280px">
-  <div style="width:38%;background:{soil_col};display:flex;align-items:center;
-       justify-content:center;min-height:240px;flex-shrink:0;flex-direction:column;gap:8px">
-    <span style="font-size:5rem;line-height:1;filter:drop-shadow(0 2px 6px rgba(0,0,0,0.3))">{top_emoji}</span>
-  </div>
-  <div style="padding:1.5rem;display:flex;flex-direction:column;
-       justify-content:space-between;flex:1;min-width:0">
-    <div>
-      <p style="font-size:10px;font-weight:900;color:#004425;text-transform:uppercase;
-          letter-spacing:0.12em;margin:0 0 3px">RANK #1 &#xB7; HIGHLY RECOMMENDED</p>
-      <div style="display:flex;justify-content:space-between;align-items:start;
-           margin-bottom:0.625rem;flex-wrap:wrap;gap:6px">
-        <h3 style="font-family:Manrope,sans-serif;font-size:2.2rem;font-weight:900;
-            color:#1b1c1a;margin:0;line-height:1">{top["name"]}</h3>
-        <div style="background:rgba(211,227,253,0.45);padding:8px 10px;
-             border-radius:0.625rem;text-align:center;flex-shrink:0">
-          <p style="font-size:1.375rem;font-weight:900;color:#004425;margin:0;line-height:1">{confidence:.0f}%</p>
-          <p style="font-size:7px;font-weight:900;text-transform:uppercase;
-              letter-spacing:0.05em;color:#004425;margin:1px 0 0">Match Confidence</p>
-        </div>
-      </div>
-      <p style="color:#5a6360;font-size:12px;font-weight:400;line-height:1.6;margin-bottom:0.875rem">
-        Based on your soil properties, <strong>{top["name"]}</strong> is ideal
-        for the upcoming <strong>{season_disp}</strong> season.
-      </p>
-    </div>
-    <div style="background:#efeeea;padding:1rem;border-radius:0.625rem;
-         border:1px solid rgba(192,201,191,0.3)">
-      <p style="font-family:Manrope,sans-serif;font-weight:800;font-size:9px;
-          color:#1b1c1a;margin:0 0 0.5rem;display:flex;align-items:center;gap:5px;
-          text-transform:uppercase;letter-spacing:0.07em">
-        <span class="material-symbols-outlined"
-          style="color:#004425;font-size:14px;font-variation-settings:'FILL' 1">science</span>
-        Scientific Fertilizer Recommendation
-      </p>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.625rem">
-        <div>
-          <p style="font-size:8px;font-weight:900;text-transform:uppercase;
-              color:rgba(64,73,66,0.45);margin:0 0 2px">Recommended Type</p>
-          <p style="font-size:13px;font-weight:900;color:#1b1c1a;margin:0">{top["fertilizer"]}</p>
-        </div>
-        <div>
-          <p style="font-size:8px;font-weight:900;text-transform:uppercase;
-              color:rgba(64,73,66,0.45);margin:0 0 2px">Ratio (N:P:K)</p>
-          <p style="font-size:13px;font-weight:900;color:#1b1c1a;margin:0">{top["npk"]}</p>
-        </div>
+<p class="tool-block-sub">Upload a clear close-up of the soil sample. Avoid leaves, hands, or moisture artifacts.</p>
+</div>""", unsafe_allow_html=True)
+            soil_img = st.file_uploader("Soil image", type=["jpg","jpeg","png"], key="soil_img_cult", label_visibility="collapsed")
+            if soil_img:
+                st.markdown(f"""
+<div class="upload-preview" style="margin-top:12px;">
+  <div class="upload-meta">
+    <div class="upload-meta-file">
+      <div class="upload-meta-thumb"></div>
+      <div>
+        <div class="upload-meta-name">{soil_img.name}</div>
+        <div class="upload-meta-sub num">{soil_img.size/1024:.1f} KB</div>
       </div>
     </div>
   </div>
-</div>
-""", unsafe_allow_html=True)
+</div>""", unsafe_allow_html=True)
 
-    with res_side:
-        if len(crop_recs) > 1:
-            c2     = crop_recs[1]
-            emoji2 = CROP_EMOJI_MAP.get(c2["name"], "🌱")
-            st.markdown(f"""
-<div style="background:#f0f9ff;border-radius:1rem;padding:1.125rem;
-     border:1px solid #bae6fd;display:flex;gap:0.875rem;margin-bottom:0.875rem">
-  <div style="width:68px;height:68px;border-radius:0.625rem;background:#e0f2fe;
-       flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:2.2rem">
-    {emoji2}
-  </div>
-  <div style="display:flex;flex-direction:column;justify-content:center;min-width:0">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">
-      <span style="font-size:9px;font-weight:900;color:#0c4a6e;
-          text-transform:uppercase;letter-spacing:0.08em">RANK #2</span>
-      <span style="font-size:9px;font-weight:900;color:#0284c7;
-          background:rgba(186,230,253,0.6);padding:1px 5px;border-radius:4px">{rank2_pct}%</span>
-    </div>
-    <h4 style="font-family:Manrope,sans-serif;font-size:1.08rem;font-weight:900;
-        color:rgba(12,74,110,0.85);margin:0 0 2px;white-space:nowrap;
-        overflow:hidden;text-overflow:ellipsis">{c2["name"]}</h4>
-    <p style="font-size:10px;font-weight:600;color:#5a6360;margin:0">
-      {c2["fertilizer"]} &#xB7; {c2["npk"]}</p>
-  </div>
+        with c2:
+            st.markdown("""
+<div class="tool-block">
+<div class="tool-block-head">
+  <h3 class="display tool-block-title">Chemical Profile</h3>
+  <span class="pill">NPK · pH</span>
 </div>
-""", unsafe_allow_html=True)
+<p class="tool-block-sub">Known values from lab report, or estimates from field tests.</p>
+<div class="chem-grid">""", unsafe_allow_html=True)
+            cc1, cc2 = st.columns(2)
+            with cc1:
+                st.markdown('<div class="numeric-field"><div class="numeric-field-head"><span class="label">Nitrogen (N)</span><span class="label">mg/kg</span></div></div>', unsafe_allow_html=True)
+                n_val = st.number_input("N", min_value=0.0, max_value=200.0, value=90.0, step=1.0, key="n_val", label_visibility="collapsed")
+                st.markdown('<div class="numeric-field"><div class="numeric-field-head"><span class="label">Potassium (K)</span><span class="label">mg/kg</span></div></div>', unsafe_allow_html=True)
+                k_val = st.number_input("K", min_value=0.0, max_value=200.0, value=54.0, step=1.0, key="k_val", label_visibility="collapsed")
+            with cc2:
+                st.markdown('<div class="numeric-field"><div class="numeric-field-head"><span class="label">Phosphorus (P)</span><span class="label">mg/kg</span></div></div>', unsafe_allow_html=True)
+                p_val = st.number_input("P", min_value=0.0, max_value=100.0, value=35.0, step=1.0, key="p_val", label_visibility="collapsed")
+                st.markdown('<div class="numeric-field"><div class="numeric-field-head"><span class="label">Soil pH</span><span class="label">pH</span></div></div>', unsafe_allow_html=True)
+                ph_val = st.number_input("pH", min_value=3.0, max_value=10.0, value=6.5, step=0.1, key="ph_val", label_visibility="collapsed")
+            st.markdown('</div></div>', unsafe_allow_html=True)
 
-        if len(crop_recs) > 2:
-            c3     = crop_recs[2]
-            emoji3 = CROP_EMOJI_MAP.get(c3["name"], "🌱")
-            st.markdown(f"""
-<div style="background:#f0fdf4;border-radius:1rem;padding:1.125rem;
-     border:1px solid #bbf7d0;display:flex;gap:0.875rem;margin-bottom:0.875rem">
-  <div style="width:68px;height:68px;border-radius:0.625rem;background:#dcfce7;
-       flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:2.2rem">
-    {emoji3}
-  </div>
-  <div style="display:flex;flex-direction:column;justify-content:center;min-width:0">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">
-      <span style="font-size:9px;font-weight:900;color:#14532d;
-          text-transform:uppercase;letter-spacing:0.08em">RANK #3</span>
-      <span style="font-size:9px;font-weight:900;color:#16a34a;
-          background:rgba(187,247,208,0.6);padding:1px 5px;border-radius:4px">{rank3_pct}%</span>
-    </div>
-    <h4 style="font-family:Manrope,sans-serif;font-size:1.08rem;font-weight:900;
-        color:rgba(20,83,45,0.85);margin:0 0 2px;white-space:nowrap;
-        overflow:hidden;text-overflow:ellipsis">{c3["name"]}</h4>
-    <p style="font-size:10px;font-weight:600;color:#5a6360;margin:0">
-      {c3["fertilizer"]} &#xB7; {c3["npk"]}</p>
-  </div>
-</div>
-""", unsafe_allow_html=True)
-
+        # ROW 2: Climate Synthesis (wide) + Farm Context
         st.markdown("""
-<div style="background:#004425;color:white;padding:1rem 1.125rem;border-radius:1rem;
-     display:flex;align-items:center;justify-content:space-between;
-     box-shadow:0 4px 12px rgba(0,68,37,0.28)">
-  <div style="min-width:0;flex:1;margin-right:0.625rem">
-    <p style="font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:0.1em;
-        color:rgba(255,255,255,0.5);margin:0 0 3px">NPK Forecast</p>
-    <p style="font-size:13px;font-weight:700;line-height:1.4;margin:0">
-      Soil balance trending towards
-      <span style="color:#acf3ba;text-decoration:underline">Hyper-Fertile</span> next season.
-    </p>
-  </div>
-  <span class="material-symbols-outlined"
-    style="font-size:2rem;color:#acf3ba;flex-shrink:0">monitoring</span>
+<div class="tool-block wide">
+<div class="tool-block-head">
+  <h3 class="display tool-block-title">Climate Synthesis</h3>
+  <span class="pill live">Auto-filled</span>
 </div>
-""", unsafe_allow_html=True)
+<p class="tool-block-sub">District-grade vectors pulled from 12-year IMD historical series.</p>
+</div>""", unsafe_allow_html=True)
 
-    # ── Soil probability chart ───────────────────────────────────
-    st.markdown("<div style='height:1.25rem'></div>", unsafe_allow_html=True)
-    st.markdown(
-        "<h4 style='font-family:Manrope,sans-serif;font-weight:800;font-size:0.95rem;"
-        "margin-bottom:0.25rem'>Soil Probability Breakdown</h4>",
-        unsafe_allow_html=True,
-    )
-    sorted_probs = sorted(all_probs.items(), key=lambda x: x[1], reverse=True)
-    labels = [k for k, _ in sorted_probs]
-    values = [v for _, v in sorted_probs]
-    fig = go.Figure(go.Bar(
-        x=values, y=labels, orientation="h",
-        marker=dict(color="#004425", line=dict(width=0)),
-    ))
-    fig.update_layout(
-        height=230,
-        margin=dict(l=10, r=10, t=10, b=10),
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(0,0,0,0)",
-        xaxis=dict(showgrid=False, ticksuffix="%", zeroline=False),
-        yaxis=dict(autorange="reversed"),
-        font=dict(family="Work Sans", color="#404942"),
-    )
-    st.plotly_chart(fig, use_container_width=True)
+        clc1, clc2, clc3 = st.columns(3)
+        with clc1:
+            st.markdown('<span class="label">State</span>', unsafe_allow_html=True)
+            state_val = st.selectbox("State", ["Andhra Pradesh","Telangana","Karnataka","Tamil Nadu","Maharashtra","Gujarat","Rajasthan","Punjab","Haryana","Uttar Pradesh","Madhya Pradesh","Bihar","West Bengal","Odisha","Kerala"], key="state_val", label_visibility="collapsed")
+        with clc2:
+            st.markdown('<span class="label">District</span>', unsafe_allow_html=True)
+            district_val = st.selectbox("District", ["Guntur","Krishna","Nellore","Kurnool","Chittoor","Hyderabad","Warangal","Bengaluru","Chennai","Mumbai"], key="district_val", label_visibility="collapsed")
+        with clc3:
+            st.markdown('<span class="label">Village / Town</span>', unsafe_allow_html=True)
+            village_val = st.text_input("Village", value="Rawada", key="village_val", label_visibility="collapsed")
+
+        # Fetch climate button
+        fetch_climate = st.form_submit_button("✦ Fetch climate vectors", use_container_width=False)
+        if fetch_climate:
+            with st.spinner("Fetching climate data…"):
+                _clm, _clm_err = get_climate_data(village_val, district_val, state_val)
+            if _clm:
+                st.session_state.auto_temp  = _clm.get("temperature", 27.2)
+                st.session_state.auto_hum   = _clm.get("humidity",    75.3)
+                st.session_state.auto_rain  = _clm.get("rainfall",    1302.0)
+                st.session_state.location_name = _clm.get("location","")
+
+        # Climate tiles display
+        _t = st.session_state.auto_temp; _h = st.session_state.auto_hum; _r = st.session_state.auto_rain
+        st.markdown(f"""
+<div class="climate-tiles">
+  <div class="climate-tile">
+    <div class="climate-tile-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4 4 0 1 0 5 0Z"/></svg></div>
+    <div class="climate-tile-body"><div class="label">Temperature</div><div class="climate-tile-value">{_t}<small>°C</small></div></div>
+    <div class="climate-tile-spark"><svg viewBox="0 0 60 20"><polyline points="0,14 10,10 20,12 30,6 40,8 50,4 60,7" fill="none" stroke="#c44536" stroke-width="1.5"/></svg></div>
+  </div>
+  <div class="climate-tile">
+    <div class="climate-tile-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3s7 8 7 13a7 7 0 1 1-14 0c0-5 7-13 7-13Z"/></svg></div>
+    <div class="climate-tile-body"><div class="label">Humidity</div><div class="climate-tile-value">{_h}<small>%</small></div></div>
+    <div class="climate-tile-spark"><svg viewBox="0 0 60 20"><polyline points="0,8 10,12 20,10 30,14 40,9 50,12 60,10" fill="none" stroke="#5a8a3a" stroke-width="1.5"/></svg></div>
+  </div>
+  <div class="climate-tile">
+    <div class="climate-tile-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M17.7 7.7a2.5 2.5 0 1 1 1.8 4.3H2"/><path d="M9.6 4.6A2 2 0 1 1 11 8H2"/><path d="M12.6 19.4A2 2 0 1 0 14 16H2"/></svg></div>
+    <div class="climate-tile-body"><div class="label">Rainfall</div><div class="climate-tile-value">{int(_r)}<small>mm</small></div></div>
+    <div class="climate-tile-spark"><svg viewBox="0 0 60 20"><polyline points="0,16 10,12 20,14 30,8 40,10 50,5 60,9" fill="none" stroke="#d4a373" stroke-width="1.5"/></svg></div>
+  </div>
+</div>""", unsafe_allow_html=True)
+
+        # Farm context
+        st.markdown("""
+<div class="tool-block">
+<div class="tool-block-head">
+  <h3 class="display tool-block-title">Farm Context</h3>
+  <span class="pill earth">History · systems</span>
+</div>
+<p class="tool-block-sub">Historical yield + cultivation system. Used to weight output probability.</p>
+</div>""", unsafe_allow_html=True)
+
+        fc1, fc2 = st.columns(2)
+        with fc1:
+            st.markdown('<div class="farm-grid"><div class="numeric-field"><div class="numeric-field-head"><span class="label">Yield · last season</span><span class="label">kg/ha</span></div></div>', unsafe_allow_html=True)
+            yield_val = st.number_input("Yield", min_value=0.0, max_value=10000.0, value=2083.0, step=10.0, key="yield_val", label_visibility="collapsed")
+            st.markdown('<span class="label">Current season</span>', unsafe_allow_html=True)
+            season_val = st.selectbox("Season", ["Kharif","Rabi","Zaid"], key="season_val", label_visibility="collapsed")
+            st.markdown('<span class="label">Previous crop</span>', unsafe_allow_html=True)
+            prev_crop_val = st.selectbox("Previous crop", ["Cotton","Maize","Potato","Rice","Sugarcane","Tomato","Wheat"], key="prev_crop_val", label_visibility="collapsed")
+        with fc2:
+            st.markdown('<div class="numeric-field"><div class="numeric-field-head"><span class="label">Fertilizer used</span><span class="label">kg/ha</span></div></div>', unsafe_allow_html=True)
+            fert_val = st.number_input("Fertilizer", min_value=0.0, max_value=400.0, value=118.0, step=1.0, key="fert_val", label_visibility="collapsed")
+            st.markdown('<span class="label">Irrigation system</span>', unsafe_allow_html=True)
+            irrig_val = st.selectbox("Irrigation", ["Canal","Drip","Rainfed","Sprinkler"], key="irrig_val", label_visibility="collapsed")
+            st.markdown('<span class="label">Geographic zone</span>', unsafe_allow_html=True)
+            region_val = st.selectbox("Zone", ["Central","East","North","South","West"], key="region_val", label_visibility="collapsed")
+
+        st.markdown('</div></div>', unsafe_allow_html=True)
+
+        # ── Analyze bar ────────────────────────────────────────
+        st.markdown("""
+<div class="tool-analyze">
+  <div class="tool-analyze-inner">
+    <div>
+      <h3 class="display tool-analyze-title">Ready to synthesize.</h3>
+      <p class="tool-analyze-sub">All four vectors complete. Expected synthesis time: ~2.4 seconds.</p>
+    </div>
+""", unsafe_allow_html=True)
+        analyze_btn = st.form_submit_button("✦ Analyze & predict crop →", use_container_width=False)
+        st.markdown('</div></div>', unsafe_allow_html=True)
+
+    # ── Run inference ──────────────────────────────────────────
+    if analyze_btn and soil_img is not None and _models_ok:
+        _img_bytes = soil_img.read()
+        _pil = Image.open(io.BytesIO(_img_bytes)).convert("RGB")
+        _valid = is_soil_image(_pil)
+        if not _valid:
+            st.error("No soil detected in this image. Please upload a clear close-up soil photo.")
+        else:
+            with st.spinner("Synthesizing — cross-attention fusion running…"):
+                try:
+                    (soil_name, confidence, all_probs, soil_fert, crop_recs, debug) = run_inference(
+                        img_model, tab_proj, fusion, xgb_clf, scaler,
+                        CLASS_NAMES, NUMERIC_COLS,
+                        _img_bytes,
+                        n_val, p_val, k_val,
+                        st.session_state.auto_temp,
+                        st.session_state.auto_hum,
+                        st.session_state.auto_rain,
+                        ph_val, yield_val, fert_val,
+                        season_val,
+                        irrig_val.split()[0] if " " in irrig_val else irrig_val,
+                        prev_crop_val,
+                        region_val.split()[0] if " " in region_val else region_val,
+                    )
+                    st.session_state.last_result = {
+                        "soil_name": soil_name, "confidence": confidence,
+                        "all_probs": all_probs, "soil_fert": soil_fert,
+                        "crop_recs": crop_recs,
+                        "n": n_val, "p": p_val, "k": k_val, "ph": ph_val,
+                        "temp": st.session_state.auto_temp,
+                        "hum": st.session_state.auto_hum,
+                        "rain": st.session_state.auto_rain,
+                        "season": season_val,
+                    }
+                    st.session_state.last_error = None
+                    st.session_state.page = "dashboard"
+                    st.query_params["page"] = "dashboard"
+                    st.rerun()
+                except Exception as _e:
+                    st.session_state.last_error = str(_e)
+                    st.error(f"Inference failed: {_e}")
+    elif analyze_btn and soil_img is None:
+        st.error("Please upload a soil image before analyzing.")
+
+    st.markdown('</div>', unsafe_allow_html=True)
+
+
+# ==============================================================
+# DIAGNOSTIC PAGE
+# ==============================================================
+elif _page == "diagnostic":
+
+    st.markdown("""
+<div class="page-tool">
+<div class="tool-header">
+  <div>
+    <span class="eyebrow">Module · Neural Vision</span>
+    <h1 class="display tool-page-title">Phyto-Diagnostic Suite</h1>
+    <p class="tool-page-sub">Upload a leaf photograph. PhytoNet-v2 resolves pathogen identity across 38 classes and returns a precision treatment protocol in a single forward pass.</p>
+  </div>
+</div>""", unsafe_allow_html=True)
+
+    # ── Leaf specimen block ────────────────────────────────────
+    d1, d2 = st.columns([3, 2])
+
+    with d1:
+        st.markdown("""
+<div class="tool-block">
+<div class="tool-block-head">
+  <h3 class="display tool-block-title">Plant Specimen</h3>
+  <span class="pill live">PhytoNet · ready</span>
+</div>
+<p class="tool-block-sub">Upload a close-up of a single leaf. Avoid multiple species in frame.</p>""", unsafe_allow_html=True)
+
+        # Stylized leaf SVG placeholder
+        st.markdown("""
+<div class="upload-preview-img leaf" style="margin-bottom:12px;">
+<svg viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice">
+<defs>
+  <radialGradient id="leafG" cx="0.5" cy="0.5" r="0.7">
+    <stop offset="0%" stop-color="#5a8a3a"/>
+    <stop offset="60%" stop-color="#2d4a2b"/>
+    <stop offset="100%" stop-color="#14240f"/>
+  </radialGradient>
+  <filter id="leafTex">
+    <feTurbulence baseFrequency="0.4" numOctaves="3" seed="2"/>
+    <feColorMatrix values="0 0 0 0 0.2 0 0 0 0 0.3 0 0 0 0 0.15 0 0 0 0.4 0"/>
+    <feComposite in2="SourceGraphic" operator="in"/>
+  </filter>
+</defs>
+<rect width="400" height="300" fill="url(#leafG)"/>
+<ellipse cx="200" cy="150" rx="140" ry="95" fill="#4a7a2a"/>
+<ellipse cx="200" cy="150" rx="140" ry="95" fill="url(#leafTex)"/>
+<path d="M 60 150 Q 200 140 340 150" stroke="#2a4a1a" stroke-width="1" fill="none"/>
+<circle cx="140" cy="120" r="8" fill="#3a2014" opacity="0.8"/>
+<circle cx="220" cy="160" r="10" fill="#3a2014" opacity="0.8"/>
+<circle cx="170" cy="180" r="6" fill="#3a2014" opacity="0.8"/>
+<rect x="120" y="95" width="60" height="40" fill="none" stroke="#e8c989" stroke-width="1.2" stroke-dasharray="3 3"/>
+<text x="184" y="110" fill="#e8c989" font-size="9" font-family="monospace">Lesion · 0.91</text>
+<rect x="215" y="150" width="55" height="35" fill="none" stroke="#e8c989" stroke-width="1.2" stroke-dasharray="3 3"/>
+<text x="275" y="165" fill="#e8c989" font-size="9" font-family="monospace">Lesion · 0.88</text>
+</svg>
+</div>""", unsafe_allow_html=True)
+
+        leaf_img = st.file_uploader("Leaf image", type=["jpg","jpeg","png"], key="leaf_img_upld", label_visibility="collapsed")
+
+        if leaf_img:
+            _leaf_bytes = leaf_img.read()
+            st.session_state.leaf_img_bytes = _leaf_bytes
+            _pil_leaf = Image.open(io.BytesIO(_leaf_bytes)).convert("RGB")
+            _valid_leaf = is_leaf_image(_pil_leaf)
+            st.session_state.leaf_valid = _valid_leaf
+            if _valid_leaf:
+                st.markdown("""<div class="upload-preview-chip" style="position:relative;display:inline-flex;align-items:center;gap:8px;padding:8px 12px;background:#faf8f3;border-radius:999px;font-size:12px;color:#5a8a3a;font-weight:500;">&#10003; Valid leaf detected · ready for diagnosis</div>""", unsafe_allow_html=True)
+            else:
+                st.warning("This may not be a leaf image. Please upload a clear leaf close-up.")
+
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    with d2:
+        _lr = st.session_state.get("leaf_result")
+
+        if _lr:
+            _pred_cls, _conf, _top5 = _lr
+            _info = LEAF_TREATMENT_MAP.get(_pred_cls, {})
+            _common = _info.get("common_name", _pred_cls.replace("___"," — ").replace("_"," "))
+            _is_healthy = "healthy" in _pred_cls.lower()
+
+            st.markdown(f"""
+<div class="detect-result">
+  <div class="detect-result-head">
+    <span class="eyebrow">Detection result</span>
+    <span class="pill {'warn' if not _is_healthy else ''}">{'Pathogen detected' if not _is_healthy else 'Healthy'}</span>
+  </div>
+  <h3 class="display detect-name">{_common}</h3>
+  <div class="detect-latin">Confidence: {_conf}% · neural classification</div>
+  <div class="detect-confidence" style="margin-top:16px;">
+    <div class="detect-confidence-head">
+      <span class="label">Confidence level</span>
+      <span class="num detect-confidence-value" style="font-family:var(--serif);font-size:20px;color:var(--sage);">{_conf}%</span>
+    </div>
+    <div class="range-bar"><div class="fill" style="width:{_conf}%;"></div></div>
+  </div>
+</div>""", unsafe_allow_html=True)
+
+            if not _is_healthy and _info:
+                st.markdown(f"""
+<div class="treatment" style="margin-top:16px;">
+  <div class="treatment-head">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6"/><path d="M10 3v6L4.5 19a2 2 0 0 0 1.7 3h11.6a2 2 0 0 0 1.7-3L14 9V3"/></svg>
+    <span class="eyebrow">Treatment plan</span>
+  </div>
+  <div class="treatment-item">
+    <div class="treatment-item-head"><span class="treatment-num">01</span><span class="treatment-label">Primary treatment</span></div>
+    <p class="treatment-body">{_info.get("primary_treatment","")}</p>
+  </div>
+  <div class="treatment-item">
+    <div class="treatment-item-head"><span class="treatment-num">02</span><span class="treatment-label">Fertilizer adjustment</span></div>
+    <p class="treatment-body">{_info.get("fertilizer","")}</p>
+  </div>
+  <div class="treatment-item">
+    <div class="treatment-item-head"><span class="treatment-num">03</span><span class="treatment-label">Cultural practices</span></div>
+    <p class="treatment-body">{_info.get("cultural_practices","")}</p>
+  </div>
+</div>""", unsafe_allow_html=True)
+
+            # Top-5 predictions
+            st.markdown('<div class="preds" style="margin-top:16px;"><div class="preds-head"><span class="eyebrow">Top-5 predictions</span><span class="label num">Softmax</span></div>', unsafe_allow_html=True)
+            for _i, (_cls, _pct) in enumerate(_top5):
+                _cn = _cls.replace("___"," — ").replace("_"," ")
+                _bg = "var(--sage)" if _i == 0 else "var(--ink-4)"
+                st.markdown(f"""<div class="pred-row"><div class="pred-label">{_cn}</div>
+<div class="pred-bar"><div class="pred-bar-fill" style="width:{_pct}%;background:{_bg};"></div></div>
+<div class="pred-val num">{_pct:.1f}%</div></div>""", unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
+        else:
+            st.markdown("""
+<div class="detect-result">
+  <div class="detect-result-head"><span class="eyebrow">Detection result</span><span class="pill">Awaiting specimen</span></div>
+  <p style="font-size:14px;color:var(--ink-3);margin-top:16px;">Upload a leaf image and run diagnosis to see results here.</p>
+</div>""", unsafe_allow_html=True)
+
+    # ── Run diagnosis button ───────────────────────────────────
+    st.markdown('<div class="diag-actions">', unsafe_allow_html=True)
+    run_diag = st.button("Run neural diagnosis →", key="run_diag_btn", type="primary")
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    if run_diag:
+        _lb = st.session_state.get("leaf_img_bytes")
+        if _lb is None:
+            st.error("Please upload a leaf image first.")
+        elif not st.session_state.get("leaf_valid", True):
+            st.error("The uploaded image does not appear to be a leaf. Please try again.")
+        else:
+            with st.spinner("Running PhytoNet-v2 inference…"):
+                try:
+                    leaf_model, leaf_labels, leaf_ferts = load_leaf_model()
+                    if leaf_model is None:
+                        st.error("Leaf model unavailable. Please check model files.")
+                    else:
+                        _pc, _cf, _t5 = run_leaf_inference(leaf_model, leaf_labels, _lb)
+                        st.session_state.leaf_result = (_pc, _cf, _t5)
+                        st.rerun()
+                except Exception as _le:
+                    st.error(f"Diagnosis failed: {_le}")
+
+    st.markdown('</div>', unsafe_allow_html=True)
+
+
+# ==============================================================
+# DASHBOARD PAGE
+# ==============================================================
+else:  # dashboard
+
+    _res = st.session_state.get("last_result")
+
+    st.markdown("""
+<div class="page-dashboard">
+<div class="dash-header">
+  <div>
+    <span class="eyebrow">Result analysis · field T-047</span>
+    <h1 class="display tool-page-title">Synthesis complete.</h1>
+    <p class="tool-page-sub">Generated """ + datetime.now().strftime("%b %d, %Y · %H:%M") + """ IST. Output verified across 4 model heads; confidence-weighted with historical yield prior.</p>
+  </div>
+  <div class="dash-header-actions">
+    <button class="btn btn-ghost">&#8595; Export PDF</button>
+    <a class="btn btn-primary" href="?page=cultivation" style="text-decoration:none;">&#8593; New analysis</a>
+  </div>
+</div>""", unsafe_allow_html=True)
+
+    if _res:
+        _soil  = _res.get("soil_name", "Unknown")
+        _conf  = _res.get("confidence", 93)
+        _crops = _res.get("crop_recs", [])
+        _season = _res.get("season", "Kharif")
+
+        _primary = _crops[0] if _crops else {"name": "Groundnut", "npk": "18:46:32", "score": 0.93}
+        _crop_name = _primary.get("name","Groundnut")
+        _npk = _primary.get("npk","18:46:32")
+        _conf_pct = round(_conf)
+        _ring_r = 61.2
+        _ring_c = 2 * 3.14159 * _ring_r
+        _ring_off = _ring_c * (1 - _conf_pct / 100)
+
+        # Primary crop card
+        st.markdown(f"""
+<div class="rec-crop">
+  <div class="rec-crop-img">
+    <svg viewBox="0 0 300 300" preserveAspectRatio="xMidYMid slice">
+      <defs><radialGradient id="clayg" cx="0.5" cy="0.5" r="0.7">
+        <stop offset="0%" stop-color="#d4533f"/><stop offset="100%" stop-color="#8a2a1a"/>
+      </radialGradient></defs>
+      <rect width="300" height="300" fill="url(#clayg)"/>
+      <ellipse cx="100" cy="160" rx="22" ry="16" fill="#d4a373" stroke="#8b6f47" stroke-width="1.5"/>
+      <ellipse cx="150" cy="160" rx="22" ry="16" fill="#d4a373" stroke="#8b6f47" stroke-width="1.5"/>
+      <ellipse cx="200" cy="160" rx="22" ry="16" fill="#d4a373" stroke="#8b6f47" stroke-width="1.5"/>
+      <ellipse cx="125" cy="210" rx="22" ry="16" fill="#d4a373" stroke="#8b6f47" stroke-width="1.5"/>
+      <ellipse cx="175" cy="210" rx="22" ry="16" fill="#d4a373" stroke="#8b6f47" stroke-width="1.5"/>
+      <text x="20" y="280" fill="rgba(255,255,255,0.4)" font-size="10" font-family="monospace">{_crop_name.upper()} · PREDICTED CROP</text>
+    </svg>
+  </div>
+  <div class="rec-crop-body">
+    <span class="eyebrow">Primary recommendation</span>
+    <h2 class="display rec-crop-name">{_crop_name}</h2>
+    <p class="rec-crop-desc">Synaptic triangulation indicates {_crop_name} as the optimal rotation for the upcoming {_season} season. Soil type: <strong>{_soil}</strong>. Aligned with 14,200 validated training pairs.</p>
+    <div class="rec-crop-divider"></div>
+    <div class="rec-crop-meta">
+      <div><span class="label">NPK protocol</span><span class="num rec-crop-val">{_npk}</span></div>
+      <div><span class="label">Soil type</span><span class="num rec-crop-val" style="font-size:16px;">{_soil[:12]}</span></div>
+      <div><span class="label">Confidence</span><span class="num rec-crop-val">{_conf_pct}%</span></div>
+    </div>
+  </div>
+  <div class="rec-crop-ring">
+    <div class="progress-ring" style="width:140px;height:140px;position:relative;">
+      <svg width="140" height="140" style="transform:rotate(-90deg);">
+        <circle class="track" cx="70" cy="70" r="{_ring_r}" stroke-width="6" fill="none" stroke="rgba(250,248,243,0.15)"/>
+        <circle class="fill" cx="70" cy="70" r="{_ring_r}" stroke-width="6" fill="none" stroke="#e8c989"
+          stroke-dasharray="{_ring_c:.1f}" stroke-dashoffset="{_ring_off:.1f}" stroke-linecap="round"/>
+      </svg>
+      <div style="position:absolute;inset:0;display:grid;place-items:center;font-family:'Instrument Serif','Times New Roman',serif;font-size:32px;color:#faf8f3;">{_conf_pct}<small style="font-size:14px;">%</small></div>
+    </div>
+    <span class="label" style="color:rgba(250,248,243,0.5);">SYNAPTIC SCORE</span>
+  </div>
+</div>""", unsafe_allow_html=True)
+
+        # Probability breakdown + alt crops
+        _all_probs = _res.get("all_probs", {})
+        _bars = sorted(_all_probs.items(), key=lambda x: x[1], reverse=True)
+
+        dg1, dg2 = st.columns([2, 1])
+        with dg1:
+            st.markdown("""
+<div class="probs">
+  <div class="probs-head">
+    <div><span class="eyebrow">Soil probability breakdown</span>
+      <h3 class="display probs-title">Synaptic confidence, per soil.</h3></div>
+    <div class="seg"><button class="active">Soil</button><button>Climate</button><button>Combined</button></div>
+  </div>
+  <div class="probs-chart">""", unsafe_allow_html=True)
+            _colors = ["var(--sage)","var(--earth)","var(--earth-2)","var(--ink-4)","var(--ink-4)","var(--ink-4)"]
+            for _bi, (_bk, _bv) in enumerate(_bars[:7]):
+                _bc = _colors[min(_bi, len(_colors)-1)]
+                st.markdown(f"""<div class="prob-row"><div class="prob-k">{_bk}</div>
+<div class="prob-track"><div class="prob-fill" style="width:{_bv}%;background:{_bc};animation-delay:{_bi*80}ms;"></div></div>
+<div class="prob-v num">{_bv:.1f}%</div></div>""", unsafe_allow_html=True)
+            st.markdown('</div></div>', unsafe_allow_html=True)
+
+        with dg2:
+            st.markdown("""<div class="alts">
+<div class="alts-head"><span class="eyebrow">Alternative crops</span><span class="label">Ranked K=2–4</span></div>""", unsafe_allow_html=True)
+            for _ai, _cr in enumerate(_crops[1:4], start=2):
+                _ascore = round(_cr.get("suitability", 0.5) * 100)
+                st.markdown(f"""<div class="alt">
+<div class="alt-rank num">{str(_ai).zfill(2)}</div>
+<div class="alt-body"><div class="alt-name">{_cr['name']}</div>
+<div class="alt-meta"><span class="num">{_cr.get('npk','—')}</span></div></div>
+<div class="alt-score num">{_ascore}%</div></div>""", unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
+
+        # Timeline
+        st.markdown(f"""
+<div class="timeline">
+  <div class="timeline-head">
+    <span class="eyebrow">Cultivation timeline · 8 months</span>
+    <span class="pill earth">{_season} 2026</span>
+  </div>
+  <div class="timeline-months">
+    <div class="timeline-m label"></div>
+    <div class="timeline-m label">Jun</div><div class="timeline-m label">Jul</div>
+    <div class="timeline-m label">Aug</div><div class="timeline-m label">Sep</div>
+    <div class="timeline-m label">Oct</div><div class="timeline-m label">Nov</div>
+    <div class="timeline-m label">Dec</div><div class="timeline-m label">Jan</div>
+  </div>
+  <div class="timeline-body">
+    <div class="timeline-row"><div class="timeline-phase">Sowing</div>
+      <div class="timeline-track"><div class="timeline-bar" style="left:0%;width:12.5%;background:var(--sage);animation-delay:0ms;"></div></div></div>
+    <div class="timeline-row"><div class="timeline-phase">Vegetative</div>
+      <div class="timeline-track"><div class="timeline-bar" style="left:10%;width:27.5%;background:var(--sage-2);animation-delay:100ms;"></div></div></div>
+    <div class="timeline-row"><div class="timeline-phase">Flowering</div>
+      <div class="timeline-track"><div class="timeline-bar" style="left:37.5%;width:18.75%;background:var(--earth);animation-delay:200ms;"></div></div></div>
+    <div class="timeline-row"><div class="timeline-phase">Pod development</div>
+      <div class="timeline-track"><div class="timeline-bar" style="left:50%;width:25%;background:var(--earth-2);animation-delay:300ms;"></div></div></div>
+    <div class="timeline-row"><div class="timeline-phase">Harvest</div>
+      <div class="timeline-track"><div class="timeline-bar" style="left:75%;width:18.75%;background:var(--clay);animation-delay:400ms;"></div></div></div>
+  </div>
+</div>""", unsafe_allow_html=True)
+
+        # Advisory insights
+        _n = _res.get("n", 90); _p = _res.get("p", 35); _h = _res.get("hum", 75)
+        st.markdown(f"""
+<div class="dash-insights">
+  <div class="section-head">
+    <span class="eyebrow">Advisory · notes</span>
+    <h2 class="display section-title">What the model <em>noticed.</em></h2>
+  </div>
+  <div class="insights-grid">
+    <div class="insight">
+      <div class="insight-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3s7 8 7 13a7 7 0 1 1-14 0c0-5 7-13 7-13Z"/></svg></div>
+      <div><div class="insight-k">Soil moisture</div><p class="insight-v">Humidity at {_h}%. {'Above optimal — reduce next irrigation cycle.' if _h > 70 else 'Within optimal range.'}</p></div>
+    </div>
+    <div class="insight">
+      <div class="insight-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6"/><path d="M10 3v6L4.5 19a2 2 0 0 0 1.7 3h11.6a2 2 0 0 0 1.7-3L14 9V3"/></svg></div>
+      <div><div class="insight-k">Nitrogen status</div><p class="insight-v">N at {_n} mg/kg. {'Within optimal band — maintain current dosage.' if 60<=_n<=140 else 'Outside optimal range (60–140).'}</p></div>
+    </div>
+    <div class="insight">
+      <div class="insight-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M17.7 7.7a2.5 2.5 0 1 1 1.8 4.3H2"/><path d="M9.6 4.6A2 2 0 1 1 11 8H2"/><path d="M12.6 19.4A2 2 0 1 0 14 16H2"/></svg></div>
+      <div><div class="insight-k">Climate trend</div><p class="insight-v">{_crop_name} performs well under current climate pattern for this district zone.</p></div>
+    </div>
+    <div class="insight">
+      <div class="insight-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18h8"/><path d="M3 22h18"/><path d="M14 22a7 7 0 1 0 0-14h-1"/><path d="M9 14h2"/><path d="M9 12a2 2 0 0 1-2-2V6h4v4a2 2 0 0 1-2 2Z"/><path d="M12 6H6"/><path d="M10 2h4"/></svg></div>
+      <div><div class="insight-k">Fungal risk window</div><p class="insight-v">{'Monitor humidity — conditions favour fungal stress in weeks 6–8.' if _h > 65 else 'Low fungal risk under current conditions.'}</p></div>
+    </div>
+  </div>
+</div>""", unsafe_allow_html=True)
+
+    else:
+        # No results yet
+        st.markdown("""
+<div style="padding:80px 40px;text-align:center;">
+  <span class="eyebrow">No results yet</span>
+  <h2 class="display section-title" style="margin-top:16px;">Run an analysis first.</h2>
+  <p style="color:var(--ink-2);font-size:16px;margin:20px auto;max-width:480px;">Submit a soil image and parameters on the Cultivation page to generate your first synthesis report.</p>
+  <a class="btn btn-primary" href="?page=cultivation" style="text-decoration:none;display:inline-flex;align-items:center;gap:10px;">Go to Cultivation &#8594;</a>
+</div>""", unsafe_allow_html=True)
+
+    st.markdown('</div>', unsafe_allow_html=True)

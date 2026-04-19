@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>AgroSynapse AI — Synaptic Agronomy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css" />
+<link rel="stylesheet" href="styles-home.css" />
+<link rel="stylesheet" href="styles-tool.css" />
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" src="components/Icon.jsx"></script>
+<script type="text/babel" src="components/Chrome.jsx"></script>
+<script type="text/babel" src="components/HomePage.jsx"></script>
+<script type="text/babel" src="components/CultivationPage.jsx"></script>
+<script type="text/babel" src="components/DiagnosticPage.jsx"></script>
+<script type="text/babel" src="components/DashboardPage.jsx"></script>
+
+<script type="text/babel">
+/*EDITMODE-BEGIN*/
+const TWEAK_DEFAULTS = {
+  "accent": "sage",
+  "theme": "light",
+  "density": "comfy"
+};
+/*EDITMODE-END*/
+
+const accentMap = {
+  sage: { forest: "#0f2818", sage: "#5a8a3a", sage2: "#7ba854", earth: "#d4a373" },
+  ocean: { forest: "#0a2a3a", sage: "#2a7a9a", sage2: "#4aa0c0", earth: "#c89a5c" },
+  terra: { forest: "#3a1a0a", sage: "#b8583a", sage2: "#d47a5c", earth: "#d4a373" },
+  noir:  { forest: "#0a0a0a", sage: "#7ba854", sage2: "#a0c080", earth: "#d4a373" },
+};
+
+function applyTweaks(t) {
+  const a = accentMap[t.accent] || accentMap.sage;
+  const r = document.documentElement;
+  r.style.setProperty("--forest", a.forest);
+  r.style.setProperty("--sage", a.sage);
+  r.style.setProperty("--sage-2", a.sage2);
+  r.style.setProperty("--earth", a.earth);
+  document.body.classList.toggle("dark", t.theme === "dark");
+}
+
+const App = () => {
+  const [page, setPage] = React.useState(() => {
+    const urlPage = new URLSearchParams(window.location.search).get("p");
+    if (urlPage) return urlPage;
+    return localStorage.getItem("as_page") || "home";
+  });
+  const [tweaksOpen, setTweaksOpen] = React.useState(false);
+  const [tweaks, setTweaks] = React.useState(TWEAK_DEFAULTS);
+
+  React.useEffect(() => { applyTweaks(tweaks); }, [tweaks]);
+  React.useEffect(() => { localStorage.setItem("as_page", page); window.scrollTo({ top: 0, behavior: "instant" }); }, [page]);
+  React.useEffect(() => { window.__setPage = setPage; }, [setPage]);
+
+  React.useEffect(() => {
+    const onMsg = (e) => {
+      if (!e.data) return;
+      if (e.data.type === "__activate_edit_mode") setTweaksOpen(true);
+      if (e.data.type === "__deactivate_edit_mode") setTweaksOpen(false);
+    };
+    window.addEventListener("message", onMsg);
+    window.parent.postMessage({ type: "__edit_mode_available" }, "*");
+    return () => window.removeEventListener("message", onMsg);
+  }, []);
+
+  const updateTweak = (k, v) => {
+    const next = { ...tweaks, [k]: v };
+    setTweaks(next);
+    window.parent.postMessage({ type: "__edit_mode_set_keys", edits: { [k]: v } }, "*");
+  };
+
+  // Card hover parallax for module cards
+  React.useEffect(() => {
+    const cards = document.querySelectorAll(".module-card");
+    const handler = (e) => {
+      const card = e.currentTarget;
+      const r = card.getBoundingClientRect();
+      card.style.setProperty("--mx", ((e.clientX - r.left) / r.width * 100) + "%");
+      card.style.setProperty("--my", ((e.clientY - r.top) / r.height * 100) + "%");
+    };
+    cards.forEach(c => c.addEventListener("mousemove", handler));
+    return () => cards.forEach(c => c.removeEventListener("mousemove", handler));
+  });
+
+  return (
+    <div className="shell">
+      <Rail page={page} setPage={setPage} />
+      <main className="main">
+        <TopBar page={page} setPage={setPage} onTweaks={() => setTweaksOpen(o => !o)} />
+        {page === "home" && <HomePage setPage={setPage} />}
+        {page === "cultivation" && <CultivationPage setPage={setPage} />}
+        {page === "diagnostic" && <DiagnosticPage />}
+        {page === "dashboard" && <DashboardPage />}
+      </main>
+
+      <div className={"tweaks " + (tweaksOpen ? "open" : "")}>
+        <h4>Tweaks</h4>
+        <div className="row">
+          <span className="name">Accent</span>
+          <div className="val">
+            {Object.keys(accentMap).map(k => (
+              <div key={k}
+                className={"swatch " + (tweaks.accent === k ? "active" : "")}
+                style={{ background: accentMap[k].sage }}
+                onClick={() => updateTweak("accent", k)}
+                title={k} />
+            ))}
+          </div>
+        </div>
+        <div className="row">
+          <span className="name">Theme</span>
+          <div className="seg">
+            <button className={tweaks.theme === "light" ? "active" : ""} onClick={() => updateTweak("theme", "light")}>Light</button>
+            <button className={tweaks.theme === "dark" ? "active" : ""} onClick={() => updateTweak("theme", "dark")}>Dark</button>
+          </div>
+        </div>
+        <div className="row">
+          <span className="name">Page</span>
+          <div className="seg">
+            <button className={page === "home" ? "active" : ""} onClick={() => setPage("home")}>Home</button>
+            <button className={page === "cultivation" ? "active" : ""} onClick={() => setPage("cultivation")}>Cult.</button>
+            <button className={page === "diagnostic" ? "active" : ""} onClick={() => setPage("diagnostic")}>Diag.</button>
+            <button className={page === "dashboard" ? "active" : ""} onClick={() => setPage("dashboard")}>Dash.</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>
