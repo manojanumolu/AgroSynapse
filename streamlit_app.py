@@ -1856,8 +1856,11 @@ _CHROME_CSS = (
     "div[data-testid='stVerticalBlock']:has(#diag-specimen-card) [data-testid='stFileUploaderDropzone']{background:#efeeea!important;border:1px solid rgba(20,20,15,0.08)!important;border-radius:12px!important;}"
     "div[data-testid='stVerticalBlock']:has(#diag-specimen-card) [data-testid='stImage'] img{border-radius:12px;max-height:360px;width:auto!important;object-fit:contain;display:block;margin:0 auto;}"
     ".tool-header{margin-bottom:10px!important;padding-bottom:14px!important;}"
-    "div[data-testid='column']:has(#cult-soil-card),div[data-testid='column']:has(#cult-chem-card),div[data-testid='column']:has(#cult-climate-card),div[data-testid='column']:has(#cult-farm-card){background:#ffffff!important;border:1.5px solid rgba(20,20,15,0.20)!important;border-radius:20px!important;padding:20px 20px 16px!important;box-shadow:0 2px 12px rgba(15,40,24,0.08),0 1px 3px rgba(15,40,24,0.04)!important;}"
+    "div[data-testid='column']:has(#cult-soil-card),div[data-testid='column']:has(#cult-chem-card),div[data-testid='column']:has(#cult-climate-card),div[data-testid='column']:has(#cult-farm-card){background:#ffffff!important;border:2px solid rgba(20,20,15,0.22)!important;border-radius:20px!important;padding:22px 22px 18px!important;box-shadow:0 4px 18px rgba(15,40,24,0.10),0 1px 4px rgba(15,40,24,0.06)!important;overflow:visible!important;}"
     "div[data-testid='column']:has(#cult-soil-card)>div[data-testid='stVerticalBlock'],div[data-testid='column']:has(#cult-chem-card)>div[data-testid='stVerticalBlock'],div[data-testid='column']:has(#cult-climate-card)>div[data-testid='stVerticalBlock'],div[data-testid='column']:has(#cult-farm-card)>div[data-testid='stVerticalBlock']{gap:0!important;}"
+    "div[data-testid='column']:has(#cult-soil-card) .tool-block,div[data-testid='column']:has(#cult-chem-card) .tool-block,div[data-testid='column']:has(#cult-climate-card) .tool-block,div[data-testid='column']:has(#cult-farm-card) .tool-block{background:transparent!important;border:0!important;box-shadow:none!important;padding:0 0 4px 0!important;}"
+    "div[data-testid='column']:has(#cult-soil-card) .chem-grid,div[data-testid='column']:has(#cult-chem-card) .chem-grid{background:transparent!important;border:0!important;padding:0!important;}"
+    "div[data-testid='column']:has(#cult-farm-card) .farm-grid{background:transparent!important;border:0!important;padding:0!important;}"
     "div[data-testid='column']:has(#cult-soil-card) [data-testid='stFileUploaderDropzone']{background:#f2ede2!important;border:1.5px dashed rgba(20,20,15,0.18)!important;border-radius:12px!important;min-height:120px!important;padding:14px 16px!important;}"
     "div[data-testid='stElementContainer']:has(#ready-synth-card) + div[data-testid='stHorizontalBlock']{background:linear-gradient(135deg,#062515 0%,#0f2818 62%,#173b24 100%)!important;border-radius:20px!important;padding:28px 40px!important;border:1px solid rgba(250,248,243,0.12)!important;box-shadow:0 4px 20px rgba(15,40,24,0.18)!important;margin-top:14px!important;align-items:center!important;width:100%!important;}"
     "div[data-testid='stElementContainer']:has(#ready-synth-card) + div[data-testid='stHorizontalBlock'] [data-testid='stMarkdownContainer'] h3,div[data-testid='stElementContainer']:has(#ready-synth-card) + div[data-testid='stHorizontalBlock'] [data-testid='stMarkdownContainer'] p{color:#faf8f3!important;}"
@@ -2341,12 +2344,11 @@ elif _page == "cultivation":
     with c1:
         st.markdown('<span id="cult-soil-card"></span>', unsafe_allow_html=True)
         st.markdown("""
-<div class="tool-block tight">
-<div class="tool-block-head">
+<div class="tool-block-head" style="margin-bottom:6px;">
   <h3 class="display tool-block-title">Soil Specimen</h3>
   <span class="pill live">Vision ready</span>
 </div>
-<p class="tool-block-sub">Upload a clear close-up of the soil sample. Avoid leaves, hands, or moisture artifacts.</p>""", unsafe_allow_html=True)
+<p class="tool-block-sub" style="margin-bottom:12px;">Upload a clear close-up of the soil sample. Avoid leaves, hands, or moisture artifacts.</p>""", unsafe_allow_html=True)
         soil_img = st.file_uploader("Soil image", type=["jpg", "jpeg", "png"], key="soil_img_cult", label_visibility="collapsed")
         if soil_img:
             soil_img_bytes = soil_img.getvalue()
@@ -2360,18 +2362,14 @@ elif _page == "cultivation":
                 '</div>',
                 unsafe_allow_html=True,
             )
-        st.markdown('</div>', unsafe_allow_html=True)
-
     with c2:
         st.markdown('<span id="cult-chem-card"></span>', unsafe_allow_html=True)
         st.markdown("""
-<div class="tool-block tight">
-<div class="tool-block-head">
+<div class="tool-block-head" style="margin-bottom:6px;">
   <h3 class="display tool-block-title">Chemical Profile</h3>
   <span class="pill">NPK - pH</span>
 </div>
-<p class="tool-block-sub">Known values from lab report, or estimates from field tests.</p>
-<div class="chem-grid">""", unsafe_allow_html=True)
+<p class="tool-block-sub" style="margin-bottom:12px;">Known values from lab report, or estimates from field tests.</p>""", unsafe_allow_html=True)
         cc1, cc2 = st.columns(2)
         with cc1:
             n_val = st.number_input("Nitrogen (N) - mg/kg", min_value=0.0, max_value=200.0, value=90.0, step=1.0, key="n_val")
@@ -2383,19 +2381,16 @@ elif _page == "cultivation":
             st.markdown(_metric_range_html("P", p_val, 0.0, 100.0, 20.0, 60.0, "mg/kg"), unsafe_allow_html=True)
             ph_val = st.number_input("Soil pH", min_value=3.0, max_value=10.0, value=6.5, step=0.1, key="ph_val")
             st.markdown(_metric_range_html("PH", ph_val, 3.0, 10.0, 6.0, 7.2, "units"), unsafe_allow_html=True)
-        st.markdown('</div></div>', unsafe_allow_html=True)
-
     lc1, lc2 = st.columns(2)
 
     with lc1:
         st.markdown('<span id="cult-climate-card"></span>', unsafe_allow_html=True)
         st.markdown("""
-<div class="tool-block">
-<div class="tool-block-head">
+<div class="tool-block-head" style="margin-bottom:6px;">
   <h3 class="display tool-block-title">Climate Synthesis</h3>
   <span class="pill live">Auto-filled</span>
 </div>
-<p class="tool-block-sub">District-grade vectors pulled from 12-year IMD historical series.</p>""", unsafe_allow_html=True)
+<p class="tool-block-sub" style="margin-bottom:12px;">District-grade vectors pulled from 12-year IMD historical series.</p>""", unsafe_allow_html=True)
         clc1, clc2, clc3 = st.columns(3)
         with clc1:
             state_val = st.selectbox("State", ["Andhra Pradesh", "Telangana", "Karnataka", "Tamil Nadu", "Maharashtra", "Gujarat", "Rajasthan", "Punjab", "Haryana", "Uttar Pradesh", "Madhya Pradesh", "Bihar", "West Bengal", "Odisha", "Kerala"], key="state_val")
@@ -2439,17 +2434,14 @@ elif _page == "cultivation":
     <div class="climate-tile-spark"><svg viewBox="0 0 60 20"><polyline points="0,16 10,12 20,14 30,8 40,10 50,5 60,9" fill="none" stroke="#d4a373" stroke-width="1.5"/></svg></div>
   </div>
 </div>""", unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
-
     with lc2:
         st.markdown('<span id="cult-farm-card"></span>', unsafe_allow_html=True)
         st.markdown("""
-<div class="tool-block">
-<div class="tool-block-head">
+<div class="tool-block-head" style="margin-bottom:6px;">
   <h3 class="display tool-block-title">Farm Context</h3>
   <span class="pill earth">History - systems</span>
 </div>
-<p class="tool-block-sub">Historical yield + cultivation system. Used to weight output probability.</p>""", unsafe_allow_html=True)
+<p class="tool-block-sub" style="margin-bottom:12px;">Historical yield + cultivation system. Used to weight output probability.</p>""", unsafe_allow_html=True)
 
         fc1, fc2 = st.columns(2)
         with fc1:
@@ -2462,8 +2454,6 @@ elif _page == "cultivation":
             st.markdown(_metric_range_html("Fertilizer", fert_val, 0.0, 400.0, 60.0, 200.0, "kg/ha", accent="earth"), unsafe_allow_html=True)
             irrig_val = st.selectbox("Irrigation system", ["Canal", "Drip", "Rainfed", "Sprinkler"], key="irrig_val")
             region_val = st.selectbox("Geographic zone", ["Central", "East", "North", "South", "West"], key="region_val")
-
-        st.markdown('</div>', unsafe_allow_html=True)
 
     st.markdown('<span id="ready-synth-card"></span>', unsafe_allow_html=True)
     st.markdown('<div class="tool-analyze">', unsafe_allow_html=True)
