@@ -1686,96 +1686,94 @@ _crumb = {
     "dashboard":   " · ANALYTICS DASHBOARD",
 }.get(_page, "")
 
-# ── Inject fonts + design system CSS + chrome ─────────────────
+# ── 1. Fonts ──────────────────────────────────────────────────
+st.markdown(
+    '<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1'
+    '&family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">',
+    unsafe_allow_html=True,
+)
+
+# ── 2. CSS (string concat — never f-string, avoids markdown mangling) ──
+_CHROME_CSS = (
+    "[data-testid='stSidebar'],[data-testid='stSidebarNav'],"
+    "#MainMenu,footer,header.stAppHeader,.stDeployButton,"
+    "[data-testid='stToolbar'],[data-testid='stDecoration'],"
+    "[data-testid='stStatusWidget'],[data-testid='collapsedControl']"
+    "{display:none!important;visibility:hidden!important;}"
+    ".block-container{padding:0!important;max-width:100%!important;padding-top:0!important;padding-bottom:0!important;}"
+    "section[data-testid='stMain']>div:first-child{padding-top:0!important;}"
+    ".stApp{background:#faf8f3!important;}"
+    "section[data-testid='stMain']{padding-left:72px!important;padding-top:69px!important;min-height:100vh;}"
+    "#as-rail{position:fixed;left:0;top:0;z-index:100;width:72px;height:100vh;}"
+    "#as-topbar{position:fixed;top:0;left:72px;right:0;z-index:90;height:69px;"
+    "display:flex;align-items:center;padding:16px 40px;gap:24px;"
+    "background:rgba(250,248,243,0.85);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);"
+    "border-bottom:1px solid rgba(20,20,15,0.06);}"
+    ".rail-btn{text-decoration:none;width:44px;height:44px;border:0;background:transparent;"
+    "color:rgba(250,248,243,0.5);border-radius:10px;display:grid;place-items:center;"
+    "cursor:pointer;transition:all 0.25s cubic-bezier(0.2,0.8,0.2,1);position:relative;}"
+    ".rail-btn:hover{color:#faf8f3;background:rgba(250,248,243,0.06);}"
+    ".rail-btn.active{color:#7ba854;background:rgba(122,168,84,0.12);}"
+    ".rail-btn.active::before{content:'';position:absolute;left:-18px;top:50%;"
+    "transform:translateY(-50%);width:2px;height:22px;background:#7ba854;border-radius:0 2px 2px 0;}"
+    ".topbar-nav a{text-decoration:none;cursor:pointer;padding:7px 16px;font-size:13px;"
+    "color:#3a3a32;border-radius:999px;font-weight:500;transition:all 0.2s;}"
+    ".topbar-nav a:hover{color:#14140f;}"
+    ".topbar-nav a.active{background:#0f2818;color:#faf8f3;"
+    "box-shadow:0 1px 2px rgba(15,40,24,0.04),0 2px 8px rgba(15,40,24,0.03);}"
+    "[data-testid='stNumberInput']>div>div>input{"
+    "font-family:'JetBrains Mono',monospace!important;font-size:14px!important;"
+    "border:1px solid rgba(20,20,15,0.12)!important;border-radius:10px!important;"
+    "background:#faf8f3!important;color:#14140f!important;padding:12px 14px!important;}"
+    "[data-testid='stSelectbox']>div>div{"
+    "border:1px solid rgba(20,20,15,0.12)!important;border-radius:10px!important;"
+    "background:#faf8f3!important;font-family:'JetBrains Mono',monospace!important;}"
+    "[data-testid='stTextInput'] input{"
+    "font-family:'JetBrains Mono',monospace!important;"
+    "border:1px solid rgba(20,20,15,0.12)!important;border-radius:10px!important;"
+    "background:#faf8f3!important;color:#14140f!important;padding:12px 14px!important;}"
+    "[data-testid='stFileUploadDropzone']{"
+    "border:1.5px dashed rgba(20,20,15,0.12)!important;"
+    "border-radius:14px!important;background:#faf8f3!important;}"
+    "[data-testid='stButton']>button{"
+    "font-family:'Inter Tight',-apple-system,sans-serif!important;"
+    "border-radius:999px!important;cursor:pointer;}"
+    "div.stElementContainer,div.stMarkdown,div[data-testid='stVerticalBlock']{gap:0!important;}"
+    "[data-testid='stFormSubmitButton']>button{"
+    "background:#0f2818!important;color:#faf8f3!important;"
+    "border-radius:999px!important;padding:16px 28px!important;"
+    "font-size:15px!important;font-weight:500!important;"
+    "border:0!important;cursor:pointer!important;"
+    "font-family:'Inter Tight',-apple-system,sans-serif!important;}"
+    "[data-testid='stFormSubmitButton']>button:hover{background:#14140f!important;}"
+)
+
+_ALL_CSS = "<style>" + _CHROME_CSS + _DESIGN_CSS + "</style>"
+if hasattr(st, "html"):
+    st.html(_ALL_CSS)
+else:
+    st.markdown(_ALL_CSS, unsafe_allow_html=True)
+
+# ── 3. Chrome HTML (f-string only for dynamic active states) ──
+_ac_home = _ac("home"); _ac_cult = _ac("cultivation")
+_ac_diag = _ac("diagnostic"); _ac_dash = _ac("dashboard")
 st.markdown(f"""
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<style>
-/* ── Streamlit chrome removal ── */
-[data-testid="stSidebar"],[data-testid="stSidebarNav"],
-#MainMenu,footer,header.stAppHeader,.stDeployButton,
-[data-testid="stToolbar"],[data-testid="stDecoration"],
-[data-testid="stStatusWidget"],
-[data-testid="collapsedControl"]{{
-  display:none!important;visibility:hidden!important;
-}}
-.block-container{{padding:0!important;max-width:100%!important;padding-top:0!important;padding-bottom:0!important;}}
-section[data-testid="stMain"]>div:first-child{{padding-top:0!important;}}
-.stApp{{background:#faf8f3!important;}}
-section[data-testid="stMain"]{{padding-left:72px!important;padding-top:69px!important;min-height:100vh;}}
-/* ── Fixed chrome positioning ── */
-#as-rail{{position:fixed;left:0;top:0;z-index:100;width:72px;height:100vh;}}
-#as-topbar{{position:fixed;top:0;left:72px;right:0;z-index:90;height:69px;
-  display:flex;align-items:center;padding:16px 40px;gap:24px;
-  background:rgba(250,248,243,0.85);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
-  border-bottom:1px solid rgba(20,20,15,0.06);}}
-.rail-btn{{text-decoration:none;width:44px;height:44px;border:0;background:transparent;
-  color:rgba(250,248,243,0.5);border-radius:10px;display:grid;place-items:center;
-  cursor:pointer;transition:all 0.25s cubic-bezier(0.2,0.8,0.2,1);position:relative;}}
-.rail-btn:hover{{color:#faf8f3;background:rgba(250,248,243,0.06);}}
-.rail-btn.active{{color:#7ba854;background:rgba(122,168,84,0.12);}}
-.rail-btn.active::before{{content:"";position:absolute;left:-18px;top:50%;
-  transform:translateY(-50%);width:2px;height:22px;background:#7ba854;border-radius:0 2px 2px 0;}}
-.topbar-nav a{{text-decoration:none;cursor:pointer;padding:7px 16px;font-size:13px;
-  color:#3a3a32;border-radius:999px;font-weight:500;transition:all 0.2s;}}
-.topbar-nav a:hover{{color:#14140f;}}
-.topbar-nav a.active{{background:#0f2818;color:#faf8f3;box-shadow:0 1px 2px rgba(15,40,24,0.04),0 2px 8px rgba(15,40,24,0.03);}}
-
-/* ── Design system CSS ── */
-{_DESIGN_CSS}
-
-/* ── Streamlit widget overrides ── */
-[data-testid="stNumberInput"]>div>div>input{{
-  font-family:"JetBrains Mono",monospace!important;font-size:14px!important;
-  border:1px solid rgba(20,20,15,0.12)!important;border-radius:10px!important;
-  background:#faf8f3!important;color:#14140f!important;padding:12px 14px!important;
-}}
-[data-testid="stSelectbox"]>div>div{{
-  border:1px solid rgba(20,20,15,0.12)!important;border-radius:10px!important;
-  background:#faf8f3!important;font-family:"JetBrains Mono",monospace!important;
-}}
-[data-testid="stTextInput"] input{{
-  font-family:"JetBrains Mono",monospace!important;
-  border:1px solid rgba(20,20,15,0.12)!important;border-radius:10px!important;
-  background:#faf8f3!important;color:#14140f!important;padding:12px 14px!important;
-}}
-[data-testid="stFileUploadDropzone"]{{
-  border:1.5px dashed rgba(20,20,15,0.12)!important;
-  border-radius:14px!important;background:#faf8f3!important;
-}}
-[data-testid="stButton"]>button{{
-  font-family:"Inter Tight",-apple-system,sans-serif!important;
-  border-radius:999px!important;cursor:pointer;
-}}
-div.stElementContainer,div.stMarkdown,div[data-testid="stVerticalBlock"]{{
-  gap:0!important;
-}}
-[data-testid="stFormSubmitButton"]>button{{
-  background:#0f2818!important;color:#faf8f3!important;
-  border-radius:999px!important;padding:16px 28px!important;
-  font-size:15px!important;font-weight:500!important;
-  border:0!important;cursor:pointer!important;
-  font-family:"Inter Tight",-apple-system,sans-serif!important;
-}}
-[data-testid="stFormSubmitButton"]>button:hover{{background:#14140f!important;}}
-</style>
-
-<!-- LEFT RAIL -->
 <aside class="rail" id="as-rail">
   <div class="rail-logo" title="AgroSynapse AI">
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M4 20c0-9 7-16 16-16 0 9-7 16-16 16Z" fill="currentColor" fill-opacity="0.2"/><path d="M4 20 12 12"/>
     </svg>
   </div>
-  <a class="rail-btn {_ac('home')}" href="?page=home" title="Home">
+  <a class="rail-btn {_ac_home}" href="?page=home" title="Home">
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-7h-6v7H4a1 1 0 0 1-1-1v-9.5Z"/></svg>
   </a>
-  <a class="rail-btn {_ac('cultivation')}" href="?page=cultivation" title="Cultivation">
+  <a class="rail-btn {_ac_cult}" href="?page=cultivation" title="Cultivation">
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22V10"/><path d="M12 10c0-3 2-6 6-6 0 3-2 6-6 6Z"/><path d="M12 12c0-2.5-2-5-6-5 0 2.5 2 5 6 5Z"/></svg>
   </a>
-  <a class="rail-btn {_ac('diagnostic')}" href="?page=diagnostic" title="Diagnostic">
+  <a class="rail-btn {_ac_diag}" href="?page=diagnostic" title="Diagnostic">
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V4a1 1 0 0 1 1-1h3"/><path d="M17 3h3a1 1 0 0 1 1 1v3"/><path d="M21 17v3a1 1 0 0 1-1 1h-3"/><path d="M7 21H4a1 1 0 0 1-1-1v-3"/><path d="M3 12h18"/></svg>
   </a>
-  <a class="rail-btn {_ac('dashboard')}" href="?page=dashboard" title="Dashboard">
+  <a class="rail-btn {_ac_dash}" href="?page=dashboard" title="Dashboard">
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-6"/></svg>
   </a>
   <div class="rail-spacer"></div>
@@ -1784,8 +1782,6 @@ div.stElementContainer,div.stMarkdown,div[data-testid="stVerticalBlock"]{{
   </a>
   <div class="rail-user">MA</div>
 </aside>
-
-<!-- TOP BAR -->
 <header class="topbar" id="as-topbar">
   <div class="topbar-crumb">
     <span class="dot"></span>
@@ -1793,10 +1789,10 @@ div.stElementContainer,div.stMarkdown,div[data-testid="stVerticalBlock"]{{
   </div>
   <div class="topbar-spacer"></div>
   <nav class="topbar-nav">
-    <a class="{_ac('home')}" href="?page=home">Home</a>
-    <a class="{_ac('cultivation')}" href="?page=cultivation">Cultivation</a>
-    <a class="{_ac('diagnostic')}" href="?page=diagnostic">Diagnostic</a>
-    <a class="{_ac('dashboard')}" href="?page=dashboard">Dashboard</a>
+    <a class="{_ac_home}" href="?page=home">Home</a>
+    <a class="{_ac_cult}" href="?page=cultivation">Cultivation</a>
+    <a class="{_ac_diag}" href="?page=diagnostic">Diagnostic</a>
+    <a class="{_ac_dash}" href="?page=dashboard">Dashboard</a>
   </nav>
   <button class="topbar-icon" title="Search">
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
