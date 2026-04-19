@@ -4,6 +4,7 @@
 
 import io, os, json, pickle, re, zipfile
 from datetime import datetime
+from zoneinfo import ZoneInfo
 import requests
 import numpy as np, pandas as pd
 import streamlit as st
@@ -1694,11 +1695,11 @@ def _ac(p): return "active" if _page == p else ""
 
 
 def _metric_range_html(name, value, min_v, max_v, opt_lo, opt_hi, unit, accent="sage"):
-    _pct = min(100.0, max(0.0, (value - min_v) / (max_v - min_v) * 100))
+    _pct = min(100.0, max(0.0, (value / opt_hi) * 100 if opt_hi else 0.0))
     _opt_left = round((opt_lo - min_v) / (max_v - min_v) * 100, 1)
     _opt_width = round((opt_hi - opt_lo) / (max_v - min_v) * 100, 1)
     _in_range = opt_lo <= value <= opt_hi
-    _fill = "var(--sage)" if accent == "sage" else "var(--earth-2)"
+    _fill = ("var(--sage)" if accent == "sage" else "var(--earth-2)") if _in_range else "var(--earth-2)"
     _status_class = "ok" if _in_range else "warn"
     _status_text = "Optimal" if _in_range else "Outside range"
     return f"""
@@ -1713,6 +1714,10 @@ def _metric_range_html(name, value, min_v, max_v, opt_lo, opt_hi, unit, accent="
   </div>
   <div class="field-range-note">Opt: {opt_lo:g}–{opt_hi:g} {unit}</div>
 </div>"""
+
+
+def _now_ist():
+    return datetime.now(ZoneInfo("Asia/Kolkata"))
 
 _crumb = {
     "cultivation": " · PREDICTIVE CULTIVATION",
@@ -1793,6 +1798,12 @@ _CHROME_CSS = (
     "border:0!important;cursor:pointer!important;"
     "font-family:'Inter Tight',-apple-system,sans-serif!important;}"
     "[data-testid='stFormSubmitButton']>button:hover{background:#14140f!important;}"
+    "[data-testid='stDownloadButton']>button,[data-testid='stButton']>button{"
+    "font-family:'Inter Tight',-apple-system,sans-serif!important;"
+    "border-radius:999px!important;padding:14px 24px!important;"
+    "font-size:14px!important;border:1px solid rgba(20,20,15,0.12)!important;"
+    "background:#faf8f3!important;color:#14140f!important;box-shadow:none!important;}"
+    "[data-testid='stDownloadButton']>button:hover,[data-testid='stButton']>button:hover{background:#f2ede2!important;}"
     "[data-testid='stNumberInput']{margin-bottom:20px!important;}"
     "[data-testid='stNumberInput'] label{"
     "font-family:'JetBrains Mono',monospace!important;font-size:10px!important;"
@@ -2108,7 +2119,7 @@ function floatSVG(now){
 requestAnimationFrame(floatSVG);
 </script>
 </body></html>"""
-    components.html(_HERO, height=760, scrolling=False)
+    components.html(_HERO, height=680, scrolling=False)
 
     # ── Module cards ───────────────────────────────────────────
     st.markdown("""
@@ -2325,8 +2336,7 @@ elif _page == "cultivation":
   <h3 class="display tool-block-title">Soil Specimen</h3>
   <span class="pill live">Vision ready</span>
 </div>
-<p class="tool-block-sub">Upload a clear close-up of the soil sample. Avoid leaves, hands, or moisture artifacts.</p>
-</div>""", unsafe_allow_html=True)
+<p class="tool-block-sub">Upload a clear close-up of the soil sample. Avoid leaves, hands, or moisture artifacts.</p>""", unsafe_allow_html=True)
             soil_img = st.file_uploader("Soil image", type=["jpg","jpeg","png"], key="soil_img_cult", label_visibility="collapsed")
             if soil_img:
                 import base64 as _sb64
@@ -2352,6 +2362,7 @@ elif _page == "cultivation":
                     '</div>',
                     unsafe_allow_html=True,
                 )
+            st.markdown('</div>', unsafe_allow_html=True)
 
         with c2:
             st.markdown("""
@@ -2376,7 +2387,6 @@ elif _page == "cultivation":
             st.markdown('</div></div>', unsafe_allow_html=True)
 
         # ROW 2: Climate Synthesis + Farm Context
-        st.markdown('<div class="tool-grid-lower">', unsafe_allow_html=True)
         lc1, lc2 = st.columns(2)
 
         with lc1:
@@ -2386,18 +2396,14 @@ elif _page == "cultivation":
   <h3 class="display tool-block-title">Climate Synthesis</h3>
   <span class="pill live">Auto-filled</span>
 </div>
-<p class="tool-block-sub">District-grade vectors pulled from 12-year IMD historical series.</p>
-</div>""", unsafe_allow_html=True)
+<p class="tool-block-sub">District-grade vectors pulled from 12-year IMD historical series.</p>""", unsafe_allow_html=True)
             clc1, clc2, clc3 = st.columns(3)
             with clc1:
-                st.markdown('<span class="label">State</span>', unsafe_allow_html=True)
-                state_val = st.selectbox("State", ["Andhra Pradesh","Telangana","Karnataka","Tamil Nadu","Maharashtra","Gujarat","Rajasthan","Punjab","Haryana","Uttar Pradesh","Madhya Pradesh","Bihar","West Bengal","Odisha","Kerala"], key="state_val", label_visibility="collapsed")
+                state_val = st.selectbox("State", ["Andhra Pradesh","Telangana","Karnataka","Tamil Nadu","Maharashtra","Gujarat","Rajasthan","Punjab","Haryana","Uttar Pradesh","Madhya Pradesh","Bihar","West Bengal","Odisha","Kerala"], key="state_val")
             with clc2:
-                st.markdown('<span class="label">District</span>', unsafe_allow_html=True)
-                district_val = st.selectbox("District", ["Guntur","Krishna","Nellore","Kurnool","Chittoor","Hyderabad","Warangal","Bengaluru","Chennai","Mumbai"], key="district_val", label_visibility="collapsed")
+                district_val = st.selectbox("District", ["Guntur","Krishna","Nellore","Kurnool","Chittoor","Hyderabad","Warangal","Bengaluru","Chennai","Mumbai"], key="district_val")
             with clc3:
-                st.markdown('<span class="label">Village / Town</span>', unsafe_allow_html=True)
-                village_val = st.text_input("Village", value="Rawada", key="village_val", label_visibility="collapsed")
+                village_val = st.text_input("Village / Town", value="Rawada", key="village_val")
 
             st.markdown('<div class="climate-action-row">', unsafe_allow_html=True)
             fetch_climate = st.form_submit_button("✦ Fetch climate vectors", use_container_width=False)
@@ -2431,6 +2437,7 @@ elif _page == "cultivation":
     <div class="climate-tile-spark"><svg viewBox="0 0 60 20"><polyline points="0,16 10,12 20,14 30,8 40,10 50,5 60,9" fill="none" stroke="#d4a373" stroke-width="1.5"/></svg></div>
   </div>
 </div>""", unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
 
         with lc2:
             st.markdown("""
@@ -2439,8 +2446,7 @@ elif _page == "cultivation":
   <h3 class="display tool-block-title">Farm Context</h3>
   <span class="pill earth">History · systems</span>
 </div>
-<p class="tool-block-sub">Historical yield + cultivation system. Used to weight output probability.</p>
-</div>""", unsafe_allow_html=True)
+<p class="tool-block-sub">Historical yield + cultivation system. Used to weight output probability.</p>""", unsafe_allow_html=True)
 
             fc1, fc2 = st.columns(2)
             with fc1:
@@ -2454,7 +2460,7 @@ elif _page == "cultivation":
                 irrig_val = st.selectbox("Irrigation system", ["Canal","Drip","Rainfed","Sprinkler"], key="irrig_val")
                 region_val = st.selectbox("Geographic zone", ["Central","East","North","South","West"], key="region_val")
 
-        st.markdown('</div></div>', unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
 
         # ── Analyze bar ────────────────────────────────────────
         st.markdown("""
@@ -2464,9 +2470,10 @@ elif _page == "cultivation":
       <h3 class="display tool-analyze-title">Ready to synthesize.</h3>
       <p class="tool-analyze-sub">All four vectors complete. Expected synthesis time: ~2.4 seconds.</p>
     </div>
+    <div class="tool-analyze-action">
 """, unsafe_allow_html=True)
         analyze_btn = st.form_submit_button("✦ Analyze & predict crop →", use_container_width=False)
-        st.markdown('</div></div>', unsafe_allow_html=True)
+        st.markdown('</div></div></div>', unsafe_allow_html=True)
 
     # ── Run inference ──────────────────────────────────────────
     if analyze_btn and soil_img is not None and _models_ok:
@@ -2560,19 +2567,15 @@ elif _page == "diagnostic":
                 unsafe_allow_html=True,
             )
             _pil_leaf = Image.open(io.BytesIO(_leaf_bytes)).convert("RGB")
-            _valid_leaf = is_leaf_image(_pil_leaf)
-            st.session_state.leaf_valid = _valid_leaf
-            if _valid_leaf:
-                st.markdown(
-                    '<div class="upload-preview-chip"><span>&#10003; Valid leaf detected · ready for diagnosis</span></div></div>'
-                    '<div class="upload-meta"><div class="upload-meta-file"><div class="upload-meta-thumb leaf"></div><div>'
-                    '<div class="upload-meta-name">' + leaf_img.name + '</div>'
-                    '<div class="upload-meta-sub num">' + f'{leaf_img.size/1024:.1f}' + ' KB</div>'
-                    '</div></div></div>',
-                    unsafe_allow_html=True,
-                )
-            else:
-                st.warning("This may not be a leaf image. Please upload a clear leaf close-up.")
+            st.session_state.leaf_valid = None
+            st.markdown(
+                '<div class="upload-preview-chip"><span>Preview ready · run diagnosis</span></div></div>'
+                '<div class="upload-meta"><div class="upload-meta-file"><div class="upload-meta-thumb leaf"></div><div>'
+                '<div class="upload-meta-name">' + leaf_img.name + '</div>'
+                '<div class="upload-meta-sub num">' + f'{leaf_img.size/1024:.1f}' + ' KB</div>'
+                '</div></div></div>',
+                unsafe_allow_html=True,
+            )
         else:
             st.markdown("""
 <div style="margin-top:12px;padding:18px;border:1px dashed rgba(20,20,15,0.18);border-radius:14px;background:#f8f4eb;color:#6b6b5e;font-size:13px;">
@@ -2653,20 +2656,24 @@ Upload a leaf image to preview the exact specimen here.
         _lb = st.session_state.get("leaf_img_bytes")
         if _lb is None:
             st.error("Please upload a leaf image first.")
-        elif not st.session_state.get("leaf_valid", True):
-            st.error("The uploaded image does not appear to be a leaf. Please try again.")
         else:
-            with st.spinner("Running PhytoNet-v2 inference…"):
-                try:
-                    leaf_model, leaf_labels, leaf_ferts = load_leaf_model()
-                    if leaf_model is None:
-                        st.error("Leaf model unavailable. Please check model files.")
-                    else:
-                        _pc, _cf, _t5 = run_leaf_inference(leaf_model, leaf_labels, _lb)
-                        st.session_state.leaf_result = (_pc, _cf, _t5)
-                        st.rerun()
-                except Exception as _le:
-                    st.error(f"Diagnosis failed: {_le}")
+            _pil_leaf = Image.open(io.BytesIO(_lb)).convert("RGB")
+            _valid_leaf = is_leaf_image(_pil_leaf)
+            st.session_state.leaf_valid = _valid_leaf
+            if not _valid_leaf:
+                st.error("The uploaded image does not appear to be a leaf. Please try again.")
+            else:
+                with st.spinner("Running PhytoNet-v2 inference…"):
+                    try:
+                        leaf_model, leaf_labels, leaf_ferts = load_leaf_model()
+                        if leaf_model is None:
+                            st.error("Leaf model unavailable. Please check model files.")
+                        else:
+                            _pc, _cf, _t5 = run_leaf_inference(leaf_model, leaf_labels, _lb)
+                            st.session_state.leaf_result = (_pc, _cf, _t5)
+                            st.rerun()
+                    except Exception as _le:
+                        st.error(f"Diagnosis failed: {_le}")
 
     st.markdown('</div>', unsafe_allow_html=True)
 
@@ -2677,19 +2684,22 @@ Upload a leaf image to preview the exact specimen here.
 else:  # dashboard
 
     _res = st.session_state.get("last_result")
-
-    st.markdown("""
-<div class="page-dashboard">
-<div class="dash-header">
-  <div>
-    <span class="eyebrow">Result analysis · field T-047</span>
-    <h1 class="display tool-page-title">Synthesis complete.</h1>
-    <p class="tool-page-sub">Generated """ + datetime.now().strftime("%b %d, %Y · %H:%M") + """ IST. Output verified across 4 model heads; confidence-weighted with historical yield prior.</p>
-  </div>
+    _now = _now_ist()
+    components.html("<script>window.parent.scrollTo({top: 0, behavior: 'auto'});</script>", height=0)
+    st.markdown('<div class="page-dashboard">', unsafe_allow_html=True)
+    dh1, dh2 = st.columns([4, 1.2])
+    with dh1:
+        st.markdown("""
+<div class="dash-title-wrap">
+  <span class="eyebrow">Result analysis · field T-047</span>
+  <h1 class="display tool-page-title">Synthesis complete.</h1>
+  <p class="tool-page-sub">Generated """ + _now.strftime("%b %d, %Y · %H:%M") + """ IST. Output verified across 4 model heads; confidence-weighted with historical yield prior.</p>
 </div>""", unsafe_allow_html=True)
+    with dh2:
+        st.markdown('<div class="dash-header-actions" style="justify-content:flex-end;padding-top:54px;">', unsafe_allow_html=True)
 
     # Header action buttons — Export PDF + New Analysis
-    _hcol1, _hcol2, _hcol3 = st.columns([1, 1, 5])
+    _hcol1, _hcol2 = dh2.columns([1, 1])
     with _hcol1:
         _res_for_dl = st.session_state.get("last_result")
         if _res_for_dl:
@@ -2712,7 +2722,7 @@ else:  # dashboard
                 ".badge{display:inline-block;padding:4px 12px;background:#0f2818;color:#faf8f3;border-radius:999px;font-size:13px;}"
                 "</style></head><body>"
                 "<h1>AgroSynapse Analysis Report</h1>"
-                "<p style='color:#6b6b5e;font-size:14px;'>Generated " + datetime.now().strftime("%B %d, %Y at %H:%M") + " IST &nbsp;·&nbsp; AgroSynapse AI v0.4</p>"
+                "<p style='color:#6b6b5e;font-size:14px;'>Generated " + _now.strftime("%B %d, %Y at %H:%M") + " IST &nbsp;·&nbsp; AgroSynapse AI v0.4</p>"
                 "<h2>Primary Recommendation</h2>"
                 "<p><span class='badge'>" + _dl_crop + "</span> &nbsp; Confidence: <strong>" + str(_dl_conf) + "%</strong></p>"
                 "<table><tr><th>Parameter</th><th>Value</th></tr>"
@@ -2737,17 +2747,19 @@ else:  # dashboard
                 "</body></html>"
             )
             st.download_button(
-                label="↓ Export PDF",
+                label="Export PDF",
                 data=_report_html.encode("utf-8"),
                 file_name="agrosynapse_report.html",
                 mime="text/html",
                 key="dl_report_btn",
             )
     with _hcol2:
-        if st.button("↑ New analysis", key="new_analysis_btn"):
+        if st.button("New analysis", key="new_analysis_btn"):
             st.session_state.page = "cultivation"
             st.query_params["page"] = "cultivation"
             st.rerun()
+    with dh2:
+        st.markdown('</div>', unsafe_allow_html=True)
 
     if _res:
         _soil  = _res.get("soil_name", "Unknown")
@@ -2811,7 +2823,7 @@ else:  # dashboard
         <circle cx="62" cy="62" r="{_ring_r}" stroke-width="6" fill="none" stroke="#e8c989"
           stroke-dasharray="{_ring_c:.1f}" stroke-dashoffset="{_ring_off:.1f}" stroke-linecap="round"/>
       </svg>
-      <div style="position:absolute;inset:0;display:grid;place-items:center;font-family:'Instrument Serif','Times New Roman',serif;font-size:30px;color:#faf8f3;line-height:1;">{_conf_pct}<sup style="font-size:13px;vertical-align:super;">%</sup></div>
+      <div style="position:absolute;inset:0;display:grid;place-items:center;font-family:'Instrument Serif','Times New Roman',serif;font-size:30px;color:#faf8f3;line-height:1;">{_conf_pct}%</div>
     </div>
     <span style="font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(250,248,243,0.4);font-family:'JetBrains Mono',monospace;">Synaptic score</span>
   </div>
