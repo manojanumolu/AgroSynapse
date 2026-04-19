@@ -2547,9 +2547,9 @@ elif _page == "diagnostic":
         if leaf_img:
             _leaf_bytes = leaf_img.getvalue()
             st.session_state.leaf_img_bytes = _leaf_bytes
-          _img_col_l, _img_col_c, _img_col_r = st.columns([1.2, 3.6, 1.2])
-          with _img_col_c:
-            st.image(_leaf_bytes, width=420, output_format="auto")
+            _img_col_l, _img_col_c, _img_col_r = st.columns([1.2, 3.6, 1.2])
+            with _img_col_c:
+                st.image(_leaf_bytes, width=420, output_format="auto")
             _pil_leaf = Image.open(io.BytesIO(_leaf_bytes)).convert("RGB")
             st.session_state.leaf_valid = None
             st.markdown(
@@ -2648,13 +2648,13 @@ Upload a leaf image to preview the exact specimen here.
             else:
                 with st.spinner("Running PhytoNet-v2 inference…"):
                     try:
-                    leaf_model = st.session_state.get("leaf_model_cached")
-                    leaf_labels = st.session_state.get("leaf_labels_cached")
-                    if leaf_model is None or leaf_labels is None:
-                      leaf_model, leaf_labels, leaf_ferts = load_leaf_model()
-                      st.session_state.leaf_model_cached = leaf_model
-                      st.session_state.leaf_labels_cached = leaf_labels
-                      st.session_state.leaf_ferts_cached = leaf_ferts
+                  leaf_model = st.session_state.get("leaf_model_cached")
+                  leaf_labels = st.session_state.get("leaf_labels_cached")
+                  if leaf_model is None or leaf_labels is None:
+                    leaf_model, leaf_labels, leaf_ferts = load_leaf_model()
+                    st.session_state.leaf_model_cached = leaf_model
+                    st.session_state.leaf_labels_cached = leaf_labels
+                    st.session_state.leaf_ferts_cached = leaf_ferts
                         if leaf_model is None:
                             st.error("Leaf model unavailable. Please check model files.")
                         else:
