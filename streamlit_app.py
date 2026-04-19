@@ -1712,7 +1712,7 @@ def _metric_range_html(name, value, min_v, max_v, opt_lo, opt_hi, unit, accent="
     <div class="opt" style="left:{_opt_left}%;width:{_opt_width}%;"></div>
     <div class="fill" style="width:{_pct:.1f}%;background:{_fill};"></div>
   </div>
-  <div class="field-range-note">Opt: {opt_lo:g}â€“{opt_hi:g} {unit}</div>
+  <div class="field-range-note">Opt: {opt_lo:g}-{opt_hi:g} {unit}</div>
 </div>"""
 
 
@@ -1720,9 +1720,9 @@ def _now_ist():
     return datetime.now(ZoneInfo("Asia/Kolkata"))
 
 _crumb = {
-    "cultivation": " Â· PREDICTIVE CULTIVATION",
-    "diagnostic":  " Â· PHYTO-DIAGNOSTIC SUITE",
-    "dashboard":   " Â· ANALYTICS DASHBOARD",
+    "cultivation": " - PREDICTIVE CULTIVATION",
+    "diagnostic":  " - PHYTO-DIAGNOSTIC SUITE",
+    "dashboard":   " - ANALYTICS DASHBOARD",
 }.get(_page, "")
 
 # â”€â”€ 1. Fonts â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -2051,7 +2051,7 @@ body{background:#faf8f3;font-family:"Inter Tight",-apple-system,sans-serif;overf
   <h1 class="hero-title">
     Laboratory-grade<br>agronomy, delivered<br>to every <em>acre.</em>
   </h1>
-  <p class="hero-lede">Fusing soil vision, climate synthesis, and phyto-diagnostic neural nets into a single recommendation engine â€” tuned for your field, not the average of everyone else&#8217;s.</p>
+  <p class="hero-lede">Fusing soil vision, climate synthesis, and phyto-diagnostic neural nets into a single recommendation engine - tuned for your field, not the average of everyone else&#8217;s.</p>
 </div>
 </div>
 <div class="hero-tick"><span>SCROLL</span><span>&#8595;</span></div>
@@ -2511,20 +2511,19 @@ elif _page == "cultivation":
 # DIAGNOSTIC PAGE
 # ==============================================================
 elif _page == "diagnostic":
-
-  # Warm up and cache leaf model once so diagnosis click latency stays low.
-  if "leaf_model_ready" not in st.session_state:
-    _leaf_model, _leaf_labels, _leaf_ferts = load_leaf_model()
-    st.session_state.leaf_model_ready = _leaf_model is not None
-    st.session_state.leaf_model_cached = _leaf_model
-    st.session_state.leaf_labels_cached = _leaf_labels
-    st.session_state.leaf_ferts_cached = _leaf_ferts
+    # Warm up and cache leaf model once so diagnosis click latency stays low.
+    if "leaf_model_ready" not in st.session_state:
+        _leaf_model, _leaf_labels, _leaf_ferts = load_leaf_model()
+        st.session_state.leaf_model_ready = _leaf_model is not None
+        st.session_state.leaf_model_cached = _leaf_model
+        st.session_state.leaf_labels_cached = _leaf_labels
+        st.session_state.leaf_ferts_cached = _leaf_ferts
 
     st.markdown("""
 <div class="page-tool">
 <div class="tool-header">
   <div>
-    <span class="eyebrow">Module Â· Neural Vision</span>
+    <span class="eyebrow">Module &middot; Neural Vision</span>
     <h1 class="display tool-page-title">Phyto-Diagnostic Suite</h1>
     <p class="tool-page-sub">Upload a leaf photograph. PhytoNet-v2 resolves pathogen identity across 38 classes and returns a precision treatment protocol in a single forward pass.</p>
   </div>
@@ -2538,7 +2537,7 @@ elif _page == "diagnostic":
 <div class="tool-block tight">
 <div class="tool-block-head">
   <h3 class="display tool-block-title">Plant Specimen</h3>
-  <span class="pill live">PhytoNet Â· ready</span>
+  <span class="pill live">PhytoNet &middot; ready</span>
 </div>
 <p class="tool-block-sub">Upload a close-up of a single leaf. Avoid multiple species in frame.</p>""", unsafe_allow_html=True)
 
@@ -2547,9 +2546,7 @@ elif _page == "diagnostic":
         if leaf_img:
             _leaf_bytes = leaf_img.getvalue()
             st.session_state.leaf_img_bytes = _leaf_bytes
-            _img_col_l, _img_col_c, _img_col_r = st.columns([1.2, 3.6, 1.2])
-            with _img_col_c:
-                st.image(_leaf_bytes, width=420, output_format="auto")
+            st.image(_leaf_bytes, width=420, output_format="auto")
             _pil_leaf = Image.open(io.BytesIO(_leaf_bytes)).convert("RGB")
             st.session_state.leaf_valid = None
             st.markdown(
@@ -2573,7 +2570,7 @@ Upload a leaf image to preview the exact specimen here.
         if _lr:
             _pred_cls, _conf, _top5 = _lr
             _info = LEAF_TREATMENT_MAP.get(_pred_cls, {})
-            _common = _info.get("common_name", _pred_cls.replace("___"," â€” ").replace("_"," "))
+            _common = _info.get("common_name", _pred_cls.replace("___", " - ").replace("_", " "))
             _is_healthy = "healthy" in _pred_cls.lower()
 
             st.markdown(f"""
@@ -2583,7 +2580,7 @@ Upload a leaf image to preview the exact specimen here.
     <span class="pill {'warn' if not _is_healthy else ''}">{'Pathogen detected' if not _is_healthy else 'Healthy'}</span>
   </div>
   <h3 class="display detect-name">{_common}</h3>
-  <div class="detect-latin">Confidence: {_conf}% Â· neural classification</div>
+  <div class="detect-latin">Confidence: {_conf}% &middot; neural classification</div>
   <div class="detect-confidence" style="margin-top:16px;">
     <div class="detect-confidence-head">
       <span class="label">Confidence level</span>
@@ -2617,7 +2614,7 @@ Upload a leaf image to preview the exact specimen here.
             # Top-5 predictions
             st.markdown('<div class="preds" style="margin-top:16px;"><div class="preds-head"><span class="eyebrow">Top-5 predictions</span><span class="label num">Softmax</span></div>', unsafe_allow_html=True)
             for _i, (_cls, _pct) in enumerate(_top5):
-                _cn = _cls.replace("___"," â€” ").replace("_"," ")
+                _cn = _cls.replace("___", " - ").replace("_", " ")
                 _bg = "var(--sage)" if _i == 0 else "var(--ink-4)"
                 st.markdown(f"""<div class="pred-row"><div class="pred-label">{_cn}</div>
 <div class="pred-bar"><div class="pred-bar-fill" style="width:{_pct}%;background:{_bg};"></div></div>
@@ -2632,7 +2629,7 @@ Upload a leaf image to preview the exact specimen here.
 
     # â”€â”€ Run diagnosis button â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     st.markdown('<div class="diag-actions">', unsafe_allow_html=True)
-    run_diag = st.button("Run neural diagnosis â†’", key="run_diag_btn", type="primary")
+    run_diag = st.button("Run neural diagnosis ->", key="run_diag_btn", type="primary")
     st.markdown('</div>', unsafe_allow_html=True)
 
     if run_diag:
@@ -2646,7 +2643,7 @@ Upload a leaf image to preview the exact specimen here.
             if not _valid_leaf:
                 st.error("The uploaded image does not appear to be a leaf. Please try again.")
             else:
-                with st.spinner("Running PhytoNet-v2 inferenceâ€¦"):
+              with st.spinner("Running PhytoNet-v2 inference..."):
                     try:
                         leaf_model = st.session_state.get("leaf_model_cached")
                         leaf_labels = st.session_state.get("leaf_labels_cached")
@@ -2963,3 +2960,4 @@ else:  # dashboard
 </div>""", unsafe_allow_html=True)
 
     st.markdown('</div>', unsafe_allow_html=True)
+
