@@ -1855,7 +1855,9 @@ _CHROME_CSS = (
     "div[data-testid='stVerticalBlock']:has(#diag-specimen-card){background:#fdfbf6;border:1px solid rgba(20,20,15,0.12);border-radius:20px;padding:24px;box-shadow:0 10px 28px rgba(15,40,24,0.06);}" 
     "div[data-testid='stVerticalBlock']:has(#diag-specimen-card) [data-testid='stFileUploaderDropzone']{background:#efeeea!important;border:1px solid rgba(20,20,15,0.08)!important;border-radius:12px!important;}"
     "div[data-testid='stVerticalBlock']:has(#diag-specimen-card) [data-testid='stImage'] img{border-radius:12px;max-height:360px;width:auto!important;object-fit:contain;display:block;margin:0 auto;}"
-    "div[data-testid='column']:has(#cult-soil-card)>div[data-testid='stVerticalBlock'],div[data-testid='column']:has(#cult-chem-card)>div[data-testid='stVerticalBlock'],div[data-testid='column']:has(#cult-climate-card)>div[data-testid='stVerticalBlock'],div[data-testid='column']:has(#cult-farm-card)>div[data-testid='stVerticalBlock']{background:#fdfbf6;border:1px solid rgba(20,20,15,0.12);border-radius:20px;padding:22px;box-shadow:0 10px 24px rgba(15,40,24,0.05);}"
+    ".tool-header{margin-bottom:30px!important;padding-bottom:22px!important;}"
+    "div[data-testid='column']:has(#cult-soil-card),div[data-testid='column']:has(#cult-chem-card),div[data-testid='column']:has(#cult-climate-card),div[data-testid='column']:has(#cult-farm-card){background:#fdfbf6;border:1px solid rgba(20,20,15,0.12);border-radius:20px;padding:20px 22px 18px;box-shadow:0 10px 24px rgba(15,40,24,0.05);overflow:hidden;}"
+    "div[data-testid='column']:has(#cult-soil-card)>div[data-testid='stVerticalBlock'],div[data-testid='column']:has(#cult-chem-card)>div[data-testid='stVerticalBlock'],div[data-testid='column']:has(#cult-climate-card)>div[data-testid='stVerticalBlock'],div[data-testid='column']:has(#cult-farm-card)>div[data-testid='stVerticalBlock']{gap:0!important;}"
     "div[data-testid='column']:has(#cult-soil-card) [data-testid='stFileUploaderDropzone']{background:#efeeea!important;border:1px solid rgba(20,20,15,0.08)!important;border-radius:12px!important;min-height:120px!important;padding:10px 14px!important;}"
     "div[data-testid='stElementContainer']:has(#ready-synth-card) + div[data-testid='stHorizontalBlock']{background:linear-gradient(135deg,#062515 0%,#0f2818 62%,#173b24 100%);border-radius:20px;padding:26px 28px;border:1px solid rgba(250,248,243,0.12);box-shadow:0 14px 32px rgba(15,40,24,0.2);margin-top:10px;align-items:center;}"
     "div[data-testid='stElementContainer']:has(#ready-synth-card) + div[data-testid='stHorizontalBlock'] [data-testid='stMarkdownContainer'] h3,div[data-testid='stElementContainer']:has(#ready-synth-card) + div[data-testid='stHorizontalBlock'] [data-testid='stMarkdownContainer'] p{color:#faf8f3!important;}"
@@ -2306,9 +2308,9 @@ elif _page == "cultivation":
 <div class="page-tool">
 <div class="tool-header">
   <div>
-    <span class="eyebrow">Module - Agricultural Core</span>
+    <span class="eyebrow">Module &middot; Agricultural Core</span>
     <h1 class="display tool-page-title">Predictive Cultivation</h1>
-    <p class="tool-page-sub">Synthesize soil specimen, chemical profile, climate vectors, and farm history into laboratory-grade crop recommendations - probability-ranked, protocol-complete.</p>
+    <p class="tool-page-sub">Synthesize soil specimen, chemical profile, climate vectors, and farm history into laboratory-grade crop recommendations &mdash; probability-ranked, protocol-complete.</p>
   </div>
   <aside class="unit-guide">
     <div class="unit-guide-head">
