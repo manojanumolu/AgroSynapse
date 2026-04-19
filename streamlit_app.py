@@ -1804,6 +1804,8 @@ _CHROME_CSS = (
     "font-size:14px!important;border:1px solid rgba(20,20,15,0.12)!important;"
     "background:#faf8f3!important;color:#14140f!important;box-shadow:none!important;}"
     "[data-testid='stDownloadButton']>button:hover,[data-testid='stButton']>button:hover{background:#f2ede2!important;}"
+    "[data-testid='stButton']>button[kind='primary']{background:#5a8a3a!important;color:#faf8f3!important;border-color:transparent!important;}"
+    "[data-testid='stButton']>button[kind='primary']:hover{background:#0f2818!important;color:#faf8f3!important;}"
     "[data-testid='stNumberInput']{margin-bottom:20px!important;}"
     "[data-testid='stNumberInput'] label{"
     "font-family:'JetBrains Mono',monospace!important;font-size:10px!important;"
@@ -1847,6 +1849,9 @@ _CHROME_CSS = (
     ".range-bar-fill{height:100%;border-radius:2px;"
     "transition:width 0.6s cubic-bezier(0.2,0.8,0.2,1);}"
     ".range-hint{font-size:10px;margin-top:5px;letter-spacing:0.02em;}"
+    ".diag-specimen-wrap{background:#f2ede2;border:1px solid rgba(20,20,15,0.08);border-radius:14px;padding:12px;margin-top:10px;}"
+    ".diag-specimen-wrap [data-testid='stFileUploader']{margin-bottom:10px!important;}"
+    ".diag-specimen-wrap [data-testid='stImage'] img{border-radius:12px;object-fit:contain;max-height:360px;width:auto!important;margin:auto;display:block;}"
 )
 
 _DARK_CSS = (
@@ -2524,7 +2529,7 @@ elif _page == "diagnostic":
 <div class="tool-header">
   <div>
     <span class="eyebrow">Module &middot; Neural Vision</span>
-    <h1 class="display tool-page-title">Phyto-Diagnostic Suite</h1>
+    <h1 class="display tool-page-title" style="font-family:'Instrument Serif','Times New Roman',serif;font-size:clamp(56px,6.5vw,88px);line-height:1;">Phyto-Diagnostic Suite</h1>
     <p class="tool-page-sub">Upload a leaf photograph. PhytoNet-v2 resolves pathogen identity across 38 classes and returns a precision treatment protocol in a single forward pass.</p>
   </div>
 </div>""", unsafe_allow_html=True)
@@ -2536,17 +2541,21 @@ elif _page == "diagnostic":
         st.markdown("""
 <div class="tool-block tight">
 <div class="tool-block-head">
-  <h3 class="display tool-block-title">Plant Specimen</h3>
+  <h3 class="display tool-block-title" style="font-family:'Instrument Serif','Times New Roman',serif;font-size:46px;line-height:1;">Plant Specimen</h3>
   <span class="pill live">PhytoNet &middot; ready</span>
 </div>
 <p class="tool-block-sub">Upload a close-up of a single leaf. Avoid multiple species in frame.</p>""", unsafe_allow_html=True)
+
+        st.markdown('<div class="diag-specimen-wrap">', unsafe_allow_html=True)
 
         leaf_img = st.file_uploader("Upload leaf image (JPG/PNG)", type=["jpg","jpeg","png"], key="leaf_img_upld")
 
         if leaf_img:
             _leaf_bytes = leaf_img.getvalue()
             st.session_state.leaf_img_bytes = _leaf_bytes
-            st.image(_leaf_bytes, width=420, output_format="auto")
+            _img_l, _img_c, _img_r = st.columns([1, 8, 1])
+            with _img_c:
+                st.image(_leaf_bytes, use_container_width=True, output_format="auto")
             _pil_leaf = Image.open(io.BytesIO(_leaf_bytes)).convert("RGB")
             st.session_state.leaf_valid = None
             st.markdown(
@@ -2561,6 +2570,8 @@ elif _page == "diagnostic":
 <div style="margin-top:12px;padding:18px;border:1px dashed rgba(20,20,15,0.18);border-radius:14px;background:#f8f4eb;color:#6b6b5e;font-size:13px;">
 Upload a leaf image to preview the exact specimen here.
 </div>""", unsafe_allow_html=True)
+
+        st.markdown('</div>', unsafe_allow_html=True)
 
         st.markdown('</div>', unsafe_allow_html=True)
 
