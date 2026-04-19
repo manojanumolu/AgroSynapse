@@ -1852,6 +1852,9 @@ _CHROME_CSS = (
     ".diag-specimen-wrap{background:#f2ede2;border:1px solid rgba(20,20,15,0.08);border-radius:14px;padding:12px;margin-top:10px;}"
     ".diag-specimen-wrap [data-testid='stFileUploader']{margin-bottom:10px!important;}"
     ".diag-specimen-wrap [data-testid='stImage'] img{border-radius:12px;object-fit:contain;max-height:360px;width:auto!important;margin:auto;display:block;}"
+    "div[data-testid='stVerticalBlock']:has(#diag-specimen-card){background:#fdfbf6;border:1px solid rgba(20,20,15,0.12);border-radius:20px;padding:24px;box-shadow:0 10px 28px rgba(15,40,24,0.06);}" 
+    "div[data-testid='stVerticalBlock']:has(#diag-specimen-card) [data-testid='stFileUploaderDropzone']{background:#efeeea!important;border:1px solid rgba(20,20,15,0.08)!important;border-radius:12px!important;}"
+    "div[data-testid='stVerticalBlock']:has(#diag-specimen-card) [data-testid='stImage'] img{border-radius:12px;max-height:360px;width:auto!important;object-fit:contain;display:block;margin:0 auto;}"
 )
 
 _DARK_CSS = (
@@ -2538,42 +2541,37 @@ elif _page == "diagnostic":
     d1, d2 = st.columns([3, 2])
 
     with d1:
+      with st.container():
+        st.markdown('<span id="diag-specimen-card"></span>', unsafe_allow_html=True)
         st.markdown("""
-<div class="tool-block tight">
-<div class="tool-block-head">
-  <h3 class="display tool-block-title" style="font-family:'Instrument Serif','Times New Roman',serif;font-size:46px;line-height:1;">Plant Specimen</h3>
-  <span class="pill live">PhytoNet &middot; ready</span>
-</div>
-<p class="tool-block-sub">Upload a close-up of a single leaf. Avoid multiple species in frame.</p>""", unsafe_allow_html=True)
-
-        st.markdown('<div class="diag-specimen-wrap">', unsafe_allow_html=True)
+  <div class="tool-block-head">
+    <h3 class="display tool-block-title" style="font-family:'Instrument Serif','Times New Roman',serif;font-size:46px;line-height:1;">Plant Specimen</h3>
+    <span class="pill live">PhytoNet &middot; ready</span>
+  </div>
+  <p class="tool-block-sub">Upload a close-up of a single leaf. Avoid multiple species in frame.</p>""", unsafe_allow_html=True)
 
         leaf_img = st.file_uploader("Upload leaf image (JPG/PNG)", type=["jpg","jpeg","png"], key="leaf_img_upld")
 
         if leaf_img:
-            _leaf_bytes = leaf_img.getvalue()
-            st.session_state.leaf_img_bytes = _leaf_bytes
-            _img_l, _img_c, _img_r = st.columns([1, 8, 1])
-            with _img_c:
-                st.image(_leaf_bytes, use_container_width=True, output_format="auto")
-            _pil_leaf = Image.open(io.BytesIO(_leaf_bytes)).convert("RGB")
-            st.session_state.leaf_valid = None
-            st.markdown(
-                '<div class="upload-meta" style="margin-top:12px;"><div class="upload-meta-file"><div class="upload-meta-thumb leaf"></div><div>'
-                '<div class="upload-meta-name">' + leaf_img.name + '</div>'
-                '<div class="upload-meta-sub num">' + f'{leaf_img.size/1024:.1f}' + ' KB</div>'
-                '</div></div><div class="upload-preview-chip-static"><span>Preview ready run diagnosis</span></div></div>',
-                unsafe_allow_html=True,
-            )
+          _leaf_bytes = leaf_img.getvalue()
+          st.session_state.leaf_img_bytes = _leaf_bytes
+          _img_l, _img_c, _img_r = st.columns([1, 8, 1])
+          with _img_c:
+            st.image(_leaf_bytes, use_container_width=True, output_format="auto")
+          _pil_leaf = Image.open(io.BytesIO(_leaf_bytes)).convert("RGB")
+          st.session_state.leaf_valid = None
+          st.markdown(
+            '<div class="upload-meta" style="margin-top:12px;"><div class="upload-meta-file"><div class="upload-meta-thumb leaf"></div><div>'
+            '<div class="upload-meta-name">' + leaf_img.name + '</div>'
+            '<div class="upload-meta-sub num">' + f'{leaf_img.size/1024:.1f}' + ' KB</div>'
+            '</div></div><div class="upload-preview-chip-static"><span>Preview ready run diagnosis</span></div></div>',
+            unsafe_allow_html=True,
+          )
         else:
-            st.markdown("""
-<div style="margin-top:12px;padding:18px;border:1px dashed rgba(20,20,15,0.18);border-radius:14px;background:#f8f4eb;color:#6b6b5e;font-size:13px;">
-Upload a leaf image to preview the exact specimen here.
-</div>""", unsafe_allow_html=True)
-
-        st.markdown('</div>', unsafe_allow_html=True)
-
-        st.markdown('</div>', unsafe_allow_html=True)
+          st.markdown("""
+  <div style="margin-top:12px;padding:18px;border:1px dashed rgba(20,20,15,0.18);border-radius:14px;background:#f8f4eb;color:#6b6b5e;font-size:13px;">
+  Upload a leaf image to preview the exact specimen here.
+  </div>""", unsafe_allow_html=True)
 
     with d2:
         _lr = st.session_state.get("leaf_result")
