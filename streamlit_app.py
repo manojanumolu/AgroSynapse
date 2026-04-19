@@ -1663,8 +1663,18 @@ if _qp and _qp in ("home", "cultivation", "diagnostic", "dashboard"):
     st.session_state.page = _qp
 
 _page = st.session_state.page
-_theme = st.query_params.get("theme", "light")
+_theme  = st.query_params.get("theme", "light")
+_accent = st.query_params.get("accent", "0")
+_tweaks = st.query_params.get("tweaks", "0")
 _toggle_theme = "dark" if _theme == "light" else "light"
+
+_ACCENT_MAP = {
+    "0": ("#5a8a3a", "#7ba854", "rgba(122,168,84,0.12)"),
+    "1": ("#1a6aae", "#3a8fd0", "rgba(58,143,208,0.12)"),
+    "2": ("#c44536", "#e05a4a", "rgba(196,69,54,0.12)"),
+    "3": ("#7a9a20", "#9ab830", "rgba(154,184,48,0.12)"),
+}
+_ac_base, _ac_mid, _ac_alpha = _ACCENT_MAP.get(_accent, _ACCENT_MAP["0"])
 
 # ── Read design CSS ───────────────────────────────────────────
 def _read_design_css():
@@ -1695,36 +1705,51 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# ── 2. CSS (string concat — never f-string, avoids markdown mangling) ──
+# ── 2. CSS — dynamic accent + static chrome ───────────────────
 _CHROME_CSS = (
     "[data-testid='stSidebar'],[data-testid='stSidebarNav'],"
     "#MainMenu,footer,header.stAppHeader,.stDeployButton,"
     "[data-testid='stToolbar'],[data-testid='stDecoration'],"
-    "[data-testid='stStatusWidget'],[data-testid='collapsedControl']"
+    "[data-testid='stStatusWidget'],[data-testid='collapsedControl'],"
+    "[data-testid='stFileUploaderDeleteBtn'],button[title='Clear file'],"
+    "button[aria-label='Delete']"
     "{display:none!important;visibility:hidden!important;}"
     ".block-container{padding:0!important;max-width:100%!important;padding-top:0!important;padding-bottom:0!important;}"
     "section[data-testid='stMain']>div:first-child{padding-top:0!important;}"
     ".stApp{background:#faf8f3!important;}"
     "section[data-testid='stMain']{padding-left:72px!important;padding-top:69px!important;min-height:100vh;}"
-    "#as-rail{position:fixed;left:0;top:0;z-index:100;width:72px;height:100vh;}"
+    "[data-testid='stForm']{margin-top:0!important;padding-top:0!important;border:0!important;}"
+    ".tool-header{padding-bottom:16px!important;}"
+    "#as-rail{position:fixed;left:0;top:0;z-index:100;width:72px;height:100vh;background:#0f2818;}"
     "#as-topbar{position:fixed;top:0;left:72px;right:0;z-index:90;height:69px;"
-    "display:flex;align-items:center;padding:16px 40px;gap:24px;"
-    "background:rgba(250,248,243,0.85);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);"
-    "border-bottom:1px solid rgba(20,20,15,0.06);}"
-    ".rail-btn{text-decoration:none;width:44px;height:44px;border:0;background:transparent;"
-    "color:rgba(250,248,243,0.5);border-radius:10px;display:grid;place-items:center;"
+    "display:flex;align-items:center;padding:0 32px;gap:16px;"
+    "background:rgba(250,248,243,0.92);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);"
+    "border-bottom:1px solid rgba(20,20,15,0.08);}"
+    "a.rail-btn,a.rail-btn:visited,a.rail-btn:link{"
+    "text-decoration:none!important;color:rgba(250,248,243,0.45)!important;"
+    "width:44px;height:44px;border:0;background:transparent;"
+    "border-radius:10px;display:grid;place-items:center;"
     "cursor:pointer;transition:all 0.25s cubic-bezier(0.2,0.8,0.2,1);position:relative;}"
-    ".rail-btn:hover{color:#faf8f3;background:rgba(250,248,243,0.06);}"
-    ".rail-btn.active{color:#7ba854;background:rgba(122,168,84,0.12);}"
-    ".rail-btn.active::before{content:'';position:absolute;left:-18px;top:50%;"
-    "transform:translateY(-50%);width:2px;height:22px;background:#7ba854;border-radius:0 2px 2px 0;}"
-    ".topbar-nav a{text-decoration:none;cursor:pointer;padding:7px 16px;font-size:13px;"
+    "a.rail-btn:hover{color:#faf8f3!important;background:rgba(250,248,243,0.08)!important;}"
+    + "a.rail-btn.active{color:" + _ac_mid + "!important;background:" + _ac_alpha + "!important;}"
+    + "a.rail-btn.active::before{content:'';position:absolute;left:-18px;top:50%;"
+    "transform:translateY(-50%);width:2px;height:22px;background:" + _ac_mid + ";border-radius:0 2px 2px 0;}"
+    + ".topbar-nav a{text-decoration:none!important;cursor:pointer;padding:7px 16px;font-size:13px;"
     "color:#3a3a32;border-radius:999px;font-weight:500;transition:all 0.2s;}"
-    ".topbar-nav a:hover{color:#14140f;}"
-    ".topbar-nav a.active{background:#0f2818;color:#faf8f3;"
+    ".topbar-nav a:hover{color:#14140f;background:rgba(20,20,15,0.05);}"
+    + ".topbar-nav a.active{background:" + _ac_base + "!important;color:#faf8f3!important;"
     "box-shadow:0 1px 2px rgba(15,40,24,0.04),0 2px 8px rgba(15,40,24,0.03);}"
+    + ".topbar-icon{width:34px;height:34px;border:0;background:transparent;"
+    "border-radius:8px;display:grid;place-items:center;cursor:pointer;"
+    "color:#3a3a32;text-decoration:none;transition:all 0.2s;flex-shrink:0;}"
+    ".topbar-icon:hover{background:rgba(20,20,15,0.07);}"
+    ".rail-logo{width:36px;height:36px;border-radius:10px;background:" + _ac_alpha + ";"
+    "display:grid;place-items:center;color:" + _ac_mid + ";margin-bottom:8px;}"
+    + ".rail-spacer{flex:1;}"
+    ".rail-user{width:36px;height:36px;border-radius:50%;background:#d4a373;color:#0f2818;"
+    "display:grid;place-items:center;font-weight:600;font-size:12px;font-family:'JetBrains Mono',monospace;margin-top:8px;}"
     "[data-testid='stNumberInput']>div>div>input{"
-    "font-family:'JetBrains Mono',monospace!important;font-size:14px!important;"
+    "font-family:'JetBrains Mono',monospace!important;font-size:15px!important;"
     "border:1px solid rgba(20,20,15,0.12)!important;border-radius:10px!important;"
     "background:#faf8f3!important;color:#14140f!important;padding:12px 14px!important;}"
     "[data-testid='stSelectbox']>div>div{"
@@ -1737,68 +1762,73 @@ _CHROME_CSS = (
     "[data-testid='stFileUploadDropzone']{"
     "border:1.5px dashed rgba(20,20,15,0.12)!important;"
     "border-radius:14px!important;background:#faf8f3!important;}"
-    "[data-testid='stButton']>button{"
-    "font-family:'Inter Tight',-apple-system,sans-serif!important;"
-    "border-radius:999px!important;cursor:pointer;}"
+    "[data-testid='stButton']>button{font-family:'Inter Tight',-apple-system,sans-serif!important;border-radius:999px!important;cursor:pointer;}"
     "div.stElementContainer,div.stMarkdown,div[data-testid='stVerticalBlock']{gap:0!important;}"
     "[data-testid='stFormSubmitButton']>button{"
     "background:#0f2818!important;color:#faf8f3!important;"
-    "border-radius:999px!important;padding:16px 28px!important;"
-    "font-size:15px!important;font-weight:500!important;"
+    "border-radius:999px!important;padding:14px 28px!important;"
+    "font-size:14px!important;font-weight:500!important;"
     "border:0!important;cursor:pointer!important;"
     "font-family:'Inter Tight',-apple-system,sans-serif!important;}"
     "[data-testid='stFormSubmitButton']>button:hover{background:#14140f!important;}"
-    "[data-testid='stNumberInput']{margin-bottom:18px!important;}"
+    "[data-testid='stNumberInput']{margin-bottom:20px!important;}"
     "[data-testid='stNumberInput'] label{"
     "font-family:'JetBrains Mono',monospace!important;font-size:10px!important;"
     "letter-spacing:0.14em!important;text-transform:uppercase!important;"
     "color:#8a8a78!important;margin-bottom:6px!important;display:block!important;}"
-    "[data-testid='stSelectbox']{margin-bottom:18px!important;}"
+    "[data-testid='stSelectbox']{margin-bottom:20px!important;}"
     "[data-testid='stSelectbox'] label{"
     "font-family:'JetBrains Mono',monospace!important;font-size:10px!important;"
     "letter-spacing:0.14em!important;text-transform:uppercase!important;"
     "color:#8a8a78!important;margin-bottom:6px!important;display:block!important;}"
-    "[data-testid='stTextInput']{margin-bottom:18px!important;}"
+    "[data-testid='stTextInput']{margin-bottom:20px!important;}"
     "[data-testid='stTextInput'] label{"
     "font-family:'JetBrains Mono',monospace!important;font-size:10px!important;"
     "letter-spacing:0.14em!important;text-transform:uppercase!important;"
     "color:#8a8a78!important;margin-bottom:6px!important;display:block!important;}"
-    ".topbar-icon{width:36px;height:36px;border:0;background:transparent;"
-    "border-radius:8px;display:grid;place-items:center;cursor:pointer;"
-    "color:#3a3a32;text-decoration:none;transition:all 0.2s;}"
-    ".topbar-icon:hover{background:rgba(20,20,15,0.06);}"
-    ".topbar-icon svg{pointer-events:none;}"
-    ".rec-crop{display:grid;grid-template-columns:200px 1fr 180px;min-height:260px;"
-    "background:#0f2818;border-radius:16px;overflow:hidden;margin-bottom:32px;}"
-    ".rec-crop-img{background:linear-gradient(135deg,#1e3a14,#0a1808);"
-    "display:grid;place-items:center;font-size:72px;}"
-    ".rec-crop-body{padding:32px;color:#faf8f3;}"
-    ".rec-crop-ring{display:flex;flex-direction:column;align-items:center;"
-    "justify-content:center;gap:8px;padding:24px;border-left:1px solid rgba(250,248,243,0.08);}"
-    ".prob-row{display:grid;grid-template-columns:120px 1fr 50px;gap:10px;"
-    "align-items:center;padding:8px 0;border-bottom:1px solid rgba(20,20,15,0.06);}"
-    ".prob-track{height:6px;background:rgba(20,20,15,0.06);border-radius:3px;overflow:hidden;}"
-    ".prob-fill{height:100%;border-radius:3px;transition:width 1s ease;}"
-    ".prob-k{font-size:12px;color:#6b6b5e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}"
+    ".prob-row{display:grid;grid-template-columns:130px 1fr 54px;gap:12px;"
+    "align-items:center;padding:9px 0;border-bottom:1px solid rgba(20,20,15,0.05);}"
+    ".prob-track{height:5px;background:rgba(20,20,15,0.07);border-radius:3px;overflow:hidden;}"
+    ".prob-fill{height:100%;border-radius:3px;transition:width 1.2s cubic-bezier(0.2,0.8,0.2,1);}"
+    ".prob-k{font-size:12px;color:#6b6b5e;font-family:'JetBrains Mono',monospace;"
+    "white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}"
     ".prob-v{font-size:12px;color:#3a3a32;text-align:right;font-family:'JetBrains Mono',monospace;}"
+    ".tweaks-panel{position:fixed;bottom:80px;right:20px;z-index:9999;"
+    "background:#faf8f3;border:1px solid rgba(20,20,15,0.1);border-radius:16px;"
+    "padding:20px 24px;box-shadow:0 12px 48px rgba(15,40,24,0.18);min-width:230px;"
+    "font-family:'JetBrains Mono',monospace;}"
+    ".tweaks-row{display:flex;align-items:center;justify-content:space-between;"
+    "gap:12px;margin-top:14px;}"
+    ".tweaks-label{font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8a8a78;}"
+    ".tweaks-dots{display:flex;gap:6px;}"
+    ".tweaks-dot{width:20px;height:20px;border-radius:50%;border:2px solid transparent;"
+    "cursor:pointer;text-decoration:none;transition:border 0.2s;}"
+    ".tweaks-dot.selected{border-color:#14140f;}"
+    ".tweaks-btns{display:flex;gap:4px;}"
+    ".tweaks-btn{padding:5px 10px;border-radius:6px;font-size:11px;text-decoration:none;"
+    "background:rgba(20,20,15,0.06);color:#3a3a32;transition:all 0.2s;}"
+    ".tweaks-btn.active{background:#0f2818;color:#faf8f3;}"
+    ".range-bar-wrap{margin-top:8px;margin-bottom:4px;}"
+    ".range-bar-track{height:4px;background:rgba(20,20,15,0.08);border-radius:2px;"
+    "position:relative;overflow:hidden;}"
+    ".range-bar-fill{height:100%;border-radius:2px;"
+    "transition:width 0.6s cubic-bezier(0.2,0.8,0.2,1);}"
+    ".range-hint{font-size:10px;margin-top:5px;letter-spacing:0.02em;}"
 )
 
 _DARK_CSS = (
-    "body,.stApp{background:#0d1a0d!important;}"
-    "section[data-testid='stMain']{background:#0d1a0d!important;}"
-    "#as-rail{background:#071007!important;border-right:1px solid rgba(250,248,243,0.06)!important;}"
-    "#as-topbar{background:rgba(7,16,7,0.95)!important;border-bottom-color:rgba(250,248,243,0.06)!important;}"
-    ".topbar-crumb,.topbar-nav a{color:#8a9a80!important;}"
-    ".stApp *:not([style*='background:#0f2818']):not([style*='background:#14140f']){"
-    "border-color:rgba(250,248,243,0.08);}"
-    "[data-testid='stNumberInput']>div>div>input,"
-    "[data-testid='stTextInput'] input{"
-    "background:#132013!important;color:#e8e5dc!important;"
-    "border-color:rgba(250,248,243,0.15)!important;}"
-    "[data-testid='stSelectbox']>div>div{background:#132013!important;}"
+    "body,.stApp{background:#0a160a!important;}"
+    "section[data-testid='stMain']{background:#0a160a!important;}"
+    "#as-rail{background:#050e05!important;}"
+    "#as-topbar{background:rgba(5,14,5,0.96)!important;border-bottom-color:rgba(250,248,243,0.06)!important;}"
+    ".topbar-crumb span,.topbar-nav a{color:#7a9a70!important;}"
+    "[data-testid='stNumberInput']>div>div>input,[data-testid='stTextInput'] input{"
+    "background:#0f1f0f!important;color:#e8e5dc!important;border-color:rgba(250,248,243,0.12)!important;}"
+    "[data-testid='stSelectbox']>div>div{background:#0f1f0f!important;}"
     "[data-testid='stSelectbox'] span{color:#e8e5dc!important;}"
     "[data-testid='stNumberInput'] label,[data-testid='stSelectbox'] label,"
-    "[data-testid='stTextInput'] label{color:#6a8a60!important;}"
+    "[data-testid='stTextInput'] label{color:#5a7a50!important;}"
+    ".stApp,.block-container{background:#0a160a!important;}"
 ) if _theme == "dark" else ""
 
 _ALL_CSS = "<style>" + _CHROME_CSS + _DESIGN_CSS + _DARK_CSS + "</style>"
@@ -1807,55 +1837,97 @@ if hasattr(st, "html"):
 else:
     st.markdown(_ALL_CSS, unsafe_allow_html=True)
 
-# ── 3. Chrome HTML (f-string only for dynamic active states) ──
+# ── 3. Chrome HTML ─────────────────────────────────────────────
 _ac_home = _ac("home"); _ac_cult = _ac("cultivation")
 _ac_diag = _ac("diagnostic"); _ac_dash = _ac("dashboard")
-_theme_href = f"?page={_page}&theme={_toggle_theme}"
-_theme_title = "Switch to dark mode" if _theme == "light" else "Switch to light mode"
+_tweaks_href = f"?page={_page}&theme={_theme}&accent={_accent}&tweaks={'0' if _tweaks=='1' else '1'}"
+_base_params = f"theme={_theme}&accent={_accent}"
+
+# Accent dot helpers
+def _adot(a_idx, a_color):
+    _sel = "selected" if _accent == str(a_idx) else ""
+    return (f'<a class="tweaks-dot {_sel}" href="?page={_page}&{_base_params.replace("accent="+_accent,"accent="+str(a_idx))}&tweaks=1" '
+            f'target="_self" style="background:{a_color};"></a>')
+
+_tweaks_panel = f"""
+<div class="tweaks-panel">
+  <div style="display:flex;justify-content:space-between;align-items:center;">
+    <span style="font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#14140f;font-weight:600;">TWEAKS</span>
+    <a href="?page={_page}&{_base_params}&tweaks=0" target="_self" style="font-size:18px;color:#8a8a78;text-decoration:none;line-height:1;">&times;</a>
+  </div>
+  <div class="tweaks-row">
+    <span class="tweaks-label">Accent</span>
+    <div class="tweaks-dots">
+      {_adot(0,"#5a8a3a")}{_adot(1,"#1a6aae")}{_adot(2,"#c44536")}{_adot(3,"#9ab830")}
+    </div>
+  </div>
+  <div class="tweaks-row">
+    <span class="tweaks-label">Theme</span>
+    <div class="tweaks-btns">
+      <a class="tweaks-btn {'active' if _theme=='light' else ''}" href="?page={_page}&theme=light&accent={_accent}&tweaks=1" target="_self">LIGHT</a>
+      <a class="tweaks-btn {'active' if _theme=='dark' else ''}" href="?page={_page}&theme=dark&accent={_accent}&tweaks=1" target="_self">DARK</a>
+    </div>
+  </div>
+  <div class="tweaks-row">
+    <span class="tweaks-label">Page</span>
+    <div class="tweaks-btns">
+      <a class="tweaks-btn {'active' if _page=='home' else ''}" href="?page=home&{_base_params}&tweaks=1" target="_self">HOME</a>
+      <a class="tweaks-btn {'active' if _page=='cultivation' else ''}" href="?page=cultivation&{_base_params}&tweaks=1" target="_self">CULT.</a>
+      <a class="tweaks-btn {'active' if _page=='diagnostic' else ''}" href="?page=diagnostic&{_base_params}&tweaks=1" target="_self">DIAG.</a>
+      <a class="tweaks-btn {'active' if _page=='dashboard' else ''}" href="?page=dashboard&{_base_params}&tweaks=1" target="_self">DASH.</a>
+    </div>
+  </div>
+</div>""" if _tweaks == "1" else ""
+
 st.markdown(f"""
-<aside class="rail" id="as-rail">
-  <div class="rail-logo" title="AgroSynapse AI">
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M4 20c0-9 7-16 16-16 0 9-7 16-16 16Z" fill="currentColor" fill-opacity="0.2"/><path d="M4 20 12 12"/>
+<aside id="as-rail" style="position:fixed;left:0;top:0;z-index:100;width:72px;height:100vh;
+  background:#0f2818;display:flex;flex-direction:column;align-items:center;padding:16px 0 20px;">
+  <div class="rail-logo" title="AgroSynapse" style="margin-bottom:20px;">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="{_ac_mid}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 20c0-9 7-16 16-16 0 9-7 16-16 16Z" fill="{_ac_mid}" fill-opacity="0.2"/><path d="M4 20 12 12" stroke="{_ac_mid}"/>
     </svg>
   </div>
-  <a class="rail-btn {_ac_home}" href="?page=home" target="_self" title="Home">
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-7h-6v7H4a1 1 0 0 1-1-1v-9.5Z"/></svg>
+  <a class="rail-btn {_ac_home}" href="?page=home&{_base_params}" target="_self" title="Home">
+    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-7h-6v7H4a1 1 0 0 1-1-1v-9.5Z"/></svg>
   </a>
-  <a class="rail-btn {_ac_cult}" href="?page=cultivation" target="_self" title="Cultivation">
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22V10"/><path d="M12 10c0-3 2-6 6-6 0 3-2 6-6 6Z"/><path d="M12 12c0-2.5-2-5-6-5 0 2.5 2 5 6 5Z"/></svg>
+  <a class="rail-btn {_ac_cult}" href="?page=cultivation&{_base_params}" target="_self" title="Cultivation">
+    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22V10"/><path d="M12 10c0-3 2-6 6-6 0 3-2 6-6 6Z"/><path d="M12 12c0-2.5-2-5-6-5 0 2.5 2 5 6 5Z"/></svg>
   </a>
-  <a class="rail-btn {_ac_diag}" href="?page=diagnostic" target="_self" title="Diagnostic">
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V4a1 1 0 0 1 1-1h3"/><path d="M17 3h3a1 1 0 0 1 1 1v3"/><path d="M21 17v3a1 1 0 0 1-1 1h-3"/><path d="M7 21H4a1 1 0 0 1-1-1v-3"/><path d="M3 12h18"/></svg>
+  <a class="rail-btn {_ac_diag}" href="?page=diagnostic&{_base_params}" target="_self" title="Diagnostic">
+    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V4a1 1 0 0 1 1-1h3"/><path d="M17 3h3a1 1 0 0 1 1 1v3"/><path d="M21 17v3a1 1 0 0 1-1 1h-3"/><path d="M7 21H4a1 1 0 0 1-1-1v-3"/><path d="M3 12h18"/></svg>
   </a>
-  <a class="rail-btn {_ac_dash}" href="?page=dashboard" target="_self" title="Dashboard">
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-6"/></svg>
+  <a class="rail-btn {_ac_dash}" href="?page=dashboard&{_base_params}" target="_self" title="Dashboard">
+    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-6"/></svg>
   </a>
   <div class="rail-spacer"></div>
-  <a class="rail-btn" href="{_theme_href}" target="_self" title="{_theme_title}">
-    {"<svg width='17' height='17' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'><path d='M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z'/></svg>" if _theme == "light" else "<svg width='17' height='17' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='5'/><path d='M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42'/></svg>"}
+  <a class="rail-btn" href="{_tweaks_href}" target="_self" title="Tweaks">
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
   </a>
   <div class="rail-user">MA</div>
 </aside>
-<header class="topbar" id="as-topbar">
-  <div class="topbar-crumb">
-    <span class="dot"></span>
+<header id="as-topbar">
+  <div class="topbar-crumb" style="display:flex;align-items:center;gap:8px;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#6b6b5e;">
+    <span style="width:6px;height:6px;border-radius:50%;background:{_ac_mid};display:inline-block;"></span>
     <span>AGROSYNAPSE{_crumb}</span>
   </div>
-  <div class="topbar-spacer" style="flex:1;"></div>
-  <nav class="topbar-nav">
-    <a class="{_ac_home}" href="?page=home" target="_self">Home</a>
-    <a class="{_ac_cult}" href="?page=cultivation" target="_self">Cultivation</a>
-    <a class="{_ac_diag}" href="?page=diagnostic" target="_self">Diagnostic</a>
-    <a class="{_ac_dash}" href="?page=dashboard" target="_self">Dashboard</a>
+  <div style="flex:1;"></div>
+  <nav class="topbar-nav" style="display:flex;gap:4px;">
+    <a class="{_ac_home}" href="?page=home&{_base_params}" target="_self">Home</a>
+    <a class="{_ac_cult}" href="?page=cultivation&{_base_params}" target="_self">Cultivation</a>
+    <a class="{_ac_diag}" href="?page=diagnostic&{_base_params}" target="_self">Diagnostic</a>
+    <a class="{_ac_dash}" href="?page=dashboard&{_base_params}" target="_self">Dashboard</a>
   </nav>
-  <a class="topbar-icon" href="{_theme_href}" target="_self" title="{_theme_title}">
-    {"<svg width='15' height='15' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'><path d='M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z'/></svg>" if _theme == "light" else "<svg width='15' height='15' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='5'/><path d='M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42'/></svg>"}
+  <a class="topbar-icon" href="javascript:void(0)" title="Search" style="margin-left:8px;">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
   </a>
   <a class="topbar-icon" href="javascript:void(0)" title="Notifications">
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10 21a2 2 0 0 0 4 0"/></svg>
   </a>
+  <a class="topbar-icon" href="{_tweaks_href}" target="_self" title="Tweaks / Settings">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="20" y2="12"/><line x1="12" y1="18" x2="20" y2="18"/></svg>
+  </a>
 </header>
+{_tweaks_panel}
 """, unsafe_allow_html=True)
 
 # ==============================================================
@@ -2071,47 +2143,47 @@ requestAnimationFrame(floatSVG);
 
     # ── Soil pipeline ──────────────────────────────────────────
     st.markdown("""
-<section class="pipeline pipeline-soil">
-  <div class="section-head">
-    <span class="eyebrow">Pipeline · soil to crop</span>
-    <h2 class="display section-title" style="color:#faf8f3;">From soil, a <em style="color:#7ba854;">crop.</em></h2>
-    <p class="pipeline-sub">Four stages of multimodal synthesis converge into a probability-ranked cultivation protocol.</p>
+<section style="background:#0f2818;padding:80px 48px;margin:0;border-top:1px solid rgba(250,248,243,0.06);">
+  <div style="margin-bottom:48px;">
+    <span style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:rgba(250,248,243,0.45);">Pipeline · soil to crop</span>
+    <h2 style="font-family:'Instrument Serif','Times New Roman',serif;font-size:clamp(36px,5vw,64px);font-weight:400;color:#faf8f3;margin:12px 0 0;line-height:1.05;">From soil, a <em style="color:#7ba854;">crop.</em></h2>
+    <p style="font-size:16px;line-height:1.55;color:rgba(250,248,243,0.65);margin-top:16px;max-width:600px;">Four stages of multimodal synthesis converge into a probability-ranked cultivation protocol.</p>
   </div>
-  <div class="pipeline-grid">
-    <div class="pipeline-step" style="position:relative;">
-      <div class="pipeline-step-head">
-        <div class="pipeline-step-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V4a1 1 0 0 1 1-1h3"/><path d="M17 3h3a1 1 0 0 1 1 1v3"/><path d="M21 17v3a1 1 0 0 1-1 1h-3"/><path d="M7 21H4a1 1 0 0 1-1-1v-3"/><path d="M3 12h18"/></svg></div>
-        <span class="pipeline-step-num">01</span>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:24px;">
+    <div style="position:relative;padding:28px 24px;background:rgba(250,248,243,0.07);border:1px solid rgba(250,248,243,0.12);border-radius:18px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;">
+        <div style="width:40px;height:40px;border-radius:12px;background:rgba(122,168,84,0.15);border:1px solid rgba(122,168,84,0.3);display:grid;place-items:center;color:#a8d080;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V4a1 1 0 0 1 1-1h3"/><path d="M17 3h3a1 1 0 0 1 1 1v3"/><path d="M21 17v3a1 1 0 0 1-1 1h-3"/><path d="M7 21H4a1 1 0 0 1-1-1v-3"/><path d="M3 12h18"/></svg></div>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.14em;color:rgba(250,248,243,0.35);">01</span>
       </div>
-      <h4 class="pipeline-step-title">Specimen vision</h4>
-      <p class="pipeline-step-desc">Upload soil imagery. Computer vision extracts texture, aggregation, color-moisture indices in under 400ms.</p>
-      <div class="pipeline-arrow"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg></div>
+      <h4 style="font-family:'Instrument Serif','Times New Roman',serif;font-size:18px;font-weight:400;color:#faf8f3;margin:0 0 10px;">Specimen vision</h4>
+      <p style="font-size:13.5px;line-height:1.55;color:rgba(250,248,243,0.65);margin:0 0 20px;">Upload soil imagery. Computer vision extracts texture, aggregation, color-moisture indices in under 400ms.</p>
+      <div style="width:28px;height:28px;border-radius:50%;background:rgba(250,248,243,0.08);border:1px solid rgba(250,248,243,0.15);display:grid;place-items:center;color:rgba(250,248,243,0.5);"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg></div>
     </div>
-    <div class="pipeline-step" style="position:relative;">
-      <div class="pipeline-step-head">
-        <div class="pipeline-step-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6"/><path d="M10 3v6L4.5 19a2 2 0 0 0 1.7 3h11.6a2 2 0 0 0 1.7-3L14 9V3"/></svg></div>
-        <span class="pipeline-step-num">02</span>
+    <div style="position:relative;padding:28px 24px;background:rgba(250,248,243,0.07);border:1px solid rgba(250,248,243,0.12);border-radius:18px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;">
+        <div style="width:40px;height:40px;border-radius:12px;background:rgba(122,168,84,0.15);border:1px solid rgba(122,168,84,0.3);display:grid;place-items:center;color:#a8d080;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6"/><path d="M10 3v6L4.5 19a2 2 0 0 0 1.7 3h11.6a2 2 0 0 0 1.7-3L14 9V3"/></svg></div>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.14em;color:rgba(250,248,243,0.35);">02</span>
       </div>
-      <h4 class="pipeline-step-title">Chemical profile</h4>
-      <p class="pipeline-step-desc">NPK + pH triangulated against optimal bands. Outliers flagged; dosages computed.</p>
-      <div class="pipeline-arrow"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg></div>
+      <h4 style="font-family:'Instrument Serif','Times New Roman',serif;font-size:18px;font-weight:400;color:#faf8f3;margin:0 0 10px;">Chemical profile</h4>
+      <p style="font-size:13.5px;line-height:1.55;color:rgba(250,248,243,0.65);margin:0 0 20px;">NPK + pH triangulated against optimal bands. Outliers flagged; dosages computed.</p>
+      <div style="width:28px;height:28px;border-radius:50%;background:rgba(250,248,243,0.08);border:1px solid rgba(250,248,243,0.15);display:grid;place-items:center;color:rgba(250,248,243,0.5);"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg></div>
     </div>
-    <div class="pipeline-step" style="position:relative;">
-      <div class="pipeline-step-head">
-        <div class="pipeline-step-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M17.7 7.7a2.5 2.5 0 1 1 1.8 4.3H2"/><path d="M9.6 4.6A2 2 0 1 1 11 8H2"/><path d="M12.6 19.4A2 2 0 1 0 14 16H2"/></svg></div>
-        <span class="pipeline-step-num">03</span>
+    <div style="position:relative;padding:28px 24px;background:rgba(250,248,243,0.07);border:1px solid rgba(250,248,243,0.12);border-radius:18px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;">
+        <div style="width:40px;height:40px;border-radius:12px;background:rgba(122,168,84,0.15);border:1px solid rgba(122,168,84,0.3);display:grid;place-items:center;color:#a8d080;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M17.7 7.7a2.5 2.5 0 1 1 1.8 4.3H2"/><path d="M9.6 4.6A2 2 0 1 1 11 8H2"/><path d="M12.6 19.4A2 2 0 1 0 14 16H2"/></svg></div>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.14em;color:rgba(250,248,243,0.35);">03</span>
       </div>
-      <h4 class="pipeline-step-title">Climate synthesis</h4>
-      <p class="pipeline-step-desc">Auto-fills 180+ district-grade weather, humidity, and rainfall vectors from geographic selection.</p>
-      <div class="pipeline-arrow"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg></div>
+      <h4 style="font-family:'Instrument Serif','Times New Roman',serif;font-size:18px;font-weight:400;color:#faf8f3;margin:0 0 10px;">Climate synthesis</h4>
+      <p style="font-size:13.5px;line-height:1.55;color:rgba(250,248,243,0.65);margin:0 0 20px;">Auto-fills 180+ district-grade weather, humidity, and rainfall vectors from geographic selection.</p>
+      <div style="width:28px;height:28px;border-radius:50%;background:rgba(250,248,243,0.08);border:1px solid rgba(250,248,243,0.15);display:grid;place-items:center;color:rgba(250,248,243,0.5);"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg></div>
     </div>
-    <div class="pipeline-step">
-      <div class="pipeline-step-head">
-        <div class="pipeline-step-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22V10"/><path d="M12 10c0-3 2-6 6-6 0 3-2 6-6 6Z"/><path d="M12 12c0-2.5-2-5-6-5 0 2.5 2 5 6 5Z"/></svg></div>
-        <span class="pipeline-step-num">04</span>
+    <div style="padding:28px 24px;background:rgba(250,248,243,0.07);border:1px solid rgba(250,248,243,0.12);border-radius:18px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;">
+        <div style="width:40px;height:40px;border-radius:12px;background:rgba(122,168,84,0.15);border:1px solid rgba(122,168,84,0.3);display:grid;place-items:center;color:#a8d080;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22V10"/><path d="M12 10c0-3 2-6 6-6 0 3-2 6-6 6Z"/><path d="M12 12c0-2.5-2-5-6-5 0 2.5 2 5 6 5Z"/></svg></div>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.14em;color:rgba(250,248,243,0.35);">04</span>
       </div>
-      <h4 class="pipeline-step-title">Crop recommendation</h4>
-      <p class="pipeline-step-desc">Multimodal fusion returns top-K crops with NPK protocol, timeline, and confidence ranking.</p>
+      <h4 style="font-family:'Instrument Serif','Times New Roman',serif;font-size:18px;font-weight:400;color:#faf8f3;margin:0 0 10px;">Crop recommendation</h4>
+      <p style="font-size:13.5px;line-height:1.55;color:rgba(250,248,243,0.65);margin:0;">Multimodal fusion returns top-K crops with NPK protocol, timeline, and confidence ranking.</p>
     </div>
   </div>
 </section>
@@ -2119,47 +2191,47 @@ requestAnimationFrame(floatSVG);
 
     # ── Leaf pipeline ──────────────────────────────────────────
     st.markdown("""
-<section class="pipeline pipeline-earth">
-  <div class="section-head">
-    <span class="eyebrow">Pipeline · leaf to cure</span>
-    <h2 class="display section-title">From leaf, a <em>cure.</em></h2>
-    <p class="pipeline-sub">A single forward pass resolves pathogen identity and returns a dosage-precise treatment plan.</p>
+<section style="background:#f2ede2;padding:80px 48px;margin:0;border-top:1px solid rgba(20,20,15,0.08);">
+  <div style="margin-bottom:48px;">
+    <span style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:#8a8a78;">Pipeline · leaf to cure</span>
+    <h2 style="font-family:'Instrument Serif','Times New Roman',serif;font-size:clamp(36px,5vw,64px);font-weight:400;color:#14140f;margin:12px 0 0;line-height:1.05;">From leaf, a <em style="color:#d4a373;">cure.</em></h2>
+    <p style="font-size:16px;line-height:1.55;color:#6b6b5e;margin-top:16px;max-width:600px;">A single forward pass resolves pathogen identity and returns a dosage-precise treatment plan.</p>
   </div>
-  <div class="pipeline-grid">
-    <div class="pipeline-step" style="position:relative;">
-      <div class="pipeline-step-head">
-        <div class="pipeline-step-icon" style="background:rgba(212,163,115,0.1);border:1px solid rgba(212,163,115,0.25);color:#b8884f;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4m0 0-4 4m4-4 4 4"/><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg></div>
-        <span class="pipeline-step-num" style="color:#a8a598;">01</span>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:24px;">
+    <div style="position:relative;padding:28px 24px;background:#faf8f3;border:1px solid rgba(20,20,15,0.1);border-radius:18px;box-shadow:0 2px 12px rgba(20,20,15,0.05);">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;">
+        <div style="width:40px;height:40px;border-radius:12px;background:rgba(212,163,115,0.1);border:1px solid rgba(212,163,115,0.25);display:grid;place-items:center;color:#b8884f;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4m0 0-4 4m4-4 4 4"/><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg></div>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.14em;color:#a8a598;">01</span>
       </div>
-      <h4 class="pipeline-step-title">Leaf specimen</h4>
-      <p class="pipeline-step-desc">Upload a close-up of a single leaf. Auto-validation checks framing, focus, and species ambiguity.</p>
-      <div class="pipeline-arrow" style="background:#f2ede2;border-color:rgba(20,20,15,0.12);color:#6b6b5e;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg></div>
+      <h4 style="font-family:'Instrument Serif','Times New Roman',serif;font-size:18px;font-weight:400;color:#14140f;margin:0 0 10px;">Leaf specimen</h4>
+      <p style="font-size:13.5px;line-height:1.55;color:#6b6b5e;margin:0 0 20px;">Upload a close-up of a single leaf. Auto-validation checks framing, focus, and species ambiguity.</p>
+      <div style="width:28px;height:28px;border-radius:50%;background:#f2ede2;border:1px solid rgba(20,20,15,0.12);display:grid;place-items:center;color:#6b6b5e;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg></div>
     </div>
-    <div class="pipeline-step" style="position:relative;">
-      <div class="pipeline-step-head">
-        <div class="pipeline-step-icon" style="background:rgba(212,163,115,0.1);border:1px solid rgba(212,163,115,0.25);color:#b8884f;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18h8"/><path d="M3 22h18"/><path d="M14 22a7 7 0 1 0 0-14h-1"/><path d="M9 14h2"/><path d="M9 12a2 2 0 0 1-2-2V6h4v4a2 2 0 0 1-2 2Z"/><path d="M12 6H6"/><path d="M10 2h4"/></svg></div>
-        <span class="pipeline-step-num" style="color:#a8a598;">02</span>
+    <div style="position:relative;padding:28px 24px;background:#faf8f3;border:1px solid rgba(20,20,15,0.1);border-radius:18px;box-shadow:0 2px 12px rgba(20,20,15,0.05);">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;">
+        <div style="width:40px;height:40px;border-radius:12px;background:rgba(212,163,115,0.1);border:1px solid rgba(212,163,115,0.25);display:grid;place-items:center;color:#b8884f;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18h8"/><path d="M3 22h18"/><path d="M14 22a7 7 0 1 0 0-14h-1"/><path d="M9 14h2"/><path d="M9 12a2 2 0 0 1-2-2V6h4v4a2 2 0 0 1-2 2Z"/><path d="M12 6H6"/><path d="M10 2h4"/></svg></div>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.14em;color:#a8a598;">02</span>
       </div>
-      <h4 class="pipeline-step-title">Neural pathology</h4>
-      <p class="pipeline-step-desc">Convolutional network scans lesions across 38 pathogen classes and one healthy baseline.</p>
-      <div class="pipeline-arrow" style="background:#f2ede2;border-color:rgba(20,20,15,0.12);color:#6b6b5e;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg></div>
+      <h4 style="font-family:'Instrument Serif','Times New Roman',serif;font-size:18px;font-weight:400;color:#14140f;margin:0 0 10px;">Neural pathology</h4>
+      <p style="font-size:13.5px;line-height:1.55;color:#6b6b5e;margin:0 0 20px;">Convolutional network scans lesions across 38 pathogen classes and one healthy baseline.</p>
+      <div style="width:28px;height:28px;border-radius:50%;background:#f2ede2;border:1px solid rgba(20,20,15,0.12);display:grid;place-items:center;color:#6b6b5e;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg></div>
     </div>
-    <div class="pipeline-step" style="position:relative;">
-      <div class="pipeline-step-head">
-        <div class="pipeline-step-icon" style="background:rgba(212,163,115,0.1);border:1px solid rgba(212,163,115,0.25);color:#b8884f;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6"/><path d="M10 3v6L4.5 19a2 2 0 0 0 1.7 3h11.6a2 2 0 0 0 1.7-3L14 9V3"/></svg></div>
-        <span class="pipeline-step-num" style="color:#a8a598;">03</span>
+    <div style="position:relative;padding:28px 24px;background:#faf8f3;border:1px solid rgba(20,20,15,0.1);border-radius:18px;box-shadow:0 2px 12px rgba(20,20,15,0.05);">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;">
+        <div style="width:40px;height:40px;border-radius:12px;background:rgba(212,163,115,0.1);border:1px solid rgba(212,163,115,0.25);display:grid;place-items:center;color:#b8884f;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6"/><path d="M10 3v6L4.5 19a2 2 0 0 0 1.7 3h11.6a2 2 0 0 0 1.7-3L14 9V3"/></svg></div>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.14em;color:#a8a598;">03</span>
       </div>
-      <h4 class="pipeline-step-title">Dosage synthesis</h4>
-      <p class="pipeline-step-desc">Confidence-weighted treatment plan: primary chemistry, fertilizer correction, cultural practices.</p>
-      <div class="pipeline-arrow" style="background:#f2ede2;border-color:rgba(20,20,15,0.12);color:#6b6b5e;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg></div>
+      <h4 style="font-family:'Instrument Serif','Times New Roman',serif;font-size:18px;font-weight:400;color:#14140f;margin:0 0 10px;">Dosage synthesis</h4>
+      <p style="font-size:13.5px;line-height:1.55;color:#6b6b5e;margin:0 0 20px;">Confidence-weighted treatment plan: primary chemistry, fertilizer correction, cultural practices.</p>
+      <div style="width:28px;height:28px;border-radius:50%;background:#f2ede2;border:1px solid rgba(20,20,15,0.12);display:grid;place-items:center;color:#6b6b5e;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg></div>
     </div>
-    <div class="pipeline-step">
-      <div class="pipeline-step-head">
-        <div class="pipeline-step-icon" style="background:rgba(212,163,115,0.1);border:1px solid rgba(212,163,115,0.25);color:#b8884f;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v12m0 0 4-4m-4 4-4-4"/><path d="M4 20h16"/></svg></div>
-        <span class="pipeline-step-num" style="color:#a8a598;">04</span>
+    <div style="padding:28px 24px;background:#faf8f3;border:1px solid rgba(20,20,15,0.1);border-radius:18px;box-shadow:0 2px 12px rgba(20,20,15,0.05);">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;">
+        <div style="width:40px;height:40px;border-radius:12px;background:rgba(212,163,115,0.1);border:1px solid rgba(212,163,115,0.25);display:grid;place-items:center;color:#b8884f;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v12m0 0 4-4m-4 4-4-4"/><path d="M4 20h16"/></svg></div>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.14em;color:#a8a598;">04</span>
       </div>
-      <h4 class="pipeline-step-title">Action report</h4>
-      <p class="pipeline-step-desc">Export-ready PDF with ranked predictions, intervals, and field-specific cultural recommendations.</p>
+      <h4 style="font-family:'Instrument Serif','Times New Roman',serif;font-size:18px;font-weight:400;color:#14140f;margin:0 0 10px;">Action report</h4>
+      <p style="font-size:13.5px;line-height:1.55;color:#6b6b5e;margin:0;">Export-ready PDF with ranked predictions, intervals, and field-specific cultural recommendations.</p>
     </div>
   </div>
 </section>
@@ -2243,18 +2315,25 @@ elif _page == "cultivation":
 </div>""", unsafe_allow_html=True)
             soil_img = st.file_uploader("Soil image", type=["jpg","jpeg","png"], key="soil_img_cult", label_visibility="collapsed")
             if soil_img:
-                st.markdown(f"""
-<div class="upload-preview" style="margin-top:12px;">
-  <div class="upload-meta">
-    <div class="upload-meta-file">
-      <div class="upload-meta-thumb"></div>
-      <div>
-        <div class="upload-meta-name">{soil_img.name}</div>
-        <div class="upload-meta-sub num">{soil_img.size/1024:.1f} KB</div>
-      </div>
-    </div>
-  </div>
-</div>""", unsafe_allow_html=True)
+                import base64 as _sb64
+                _sb = soil_img.getvalue()
+                _sb64str = _sb64.b64encode(_sb).decode()
+                _smime = "image/png" if soil_img.name.lower().endswith(".png") else "image/jpeg"
+                st.markdown(
+                    '<div style="margin:12px 0;border-radius:12px;overflow:hidden;background:#1a3010;">'
+                    '<img src="data:' + _smime + ';base64,' + _sb64str + '" '
+                    'style="width:100%;max-height:260px;object-fit:cover;border-radius:12px;display:block;"/>'
+                    '</div>',
+                    unsafe_allow_html=True,
+                )
+                st.markdown(
+                    '<div style="display:inline-flex;align-items:center;gap:8px;padding:6px 12px;'
+                    'background:rgba(90,138,58,0.1);border-radius:999px;font-size:11px;'
+                    'color:#5a8a3a;font-family:\'JetBrains Mono\',monospace;margin-top:4px;">'
+                    '&#10003; ' + soil_img.name + ' · ' + f'{soil_img.size/1024:.1f}' + ' KB'
+                    '</div>',
+                    unsafe_allow_html=True,
+                )
 
         with c2:
             st.markdown("""
@@ -2272,6 +2351,49 @@ elif _page == "cultivation":
             with cc2:
                 p_val = st.number_input("Phosphorus (P) — mg/kg", min_value=0.0, max_value=100.0, value=35.0, step=1.0, key="p_val")
                 ph_val = st.number_input("Soil pH", min_value=3.0, max_value=10.0, value=6.5, step=0.1, key="ph_val")
+            # Animated NPK range bars
+            _bars_html = ""
+            for _nb_spec in [
+                ("N", n_val, 0.0, 200.0, 60.0, 140.0, "mg/kg"),
+                ("P", p_val, 0.0, 100.0, 20.0, 60.0, "mg/kg"),
+                ("K", k_val, 0.0, 200.0, 40.0, 100.0, "mg/kg"),
+                ("pH", ph_val, 3.0, 10.0, 5.5, 7.5, "units"),
+            ]:
+                _nbl, _nbv, _nbmn, _nbmx, _nblo, _nbhi, _nbu = _nb_spec
+                _nbpct = min(100.0, max(0.0, (_nbv - _nbmn) / (_nbmx - _nbmn) * 100))
+                _nblopct = round((_nblo - _nbmn) / (_nbmx - _nbmn) * 100, 1)
+                _nbhipct = round((_nbhi - _nbmn) / (_nbmx - _nbmn) * 100, 1)
+                _nbin = _nblo <= _nbv <= _nbhi
+                _nbclr = "#5a8a3a" if _nbin else ("#e8c989" if abs(_nbv - (_nblo + _nbhi) / 2) < (_nbhi - _nblo) else "#c44536")
+                _nbhint = "Optimal" if _nbin else "Outside range"
+                _bars_html += "".join([
+                    "<div style='margin:6px 0 14px;'>",
+                    "<div style='display:flex;justify-content:space-between;margin-bottom:5px;'>",
+                    "<span style='font-family:JetBrains Mono,monospace;font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:#8a8a78;'>",
+                    _nbl,
+                    "</span>",
+                    "<span style='font-family:JetBrains Mono,monospace;font-size:9px;color:",
+                    _nbclr,
+                    ";'>",
+                    _nbhint,
+                    "</span></div>",
+                    "<div style='height:5px;background:rgba(20,20,15,0.08);border-radius:3px;position:relative;overflow:hidden;'>",
+                    "<div style='position:absolute;left:",
+                    str(_nblopct),
+                    "%;width:",
+                    str(round(_nbhipct - _nblopct, 1)),
+                    "%;height:100%;background:rgba(90,138,58,0.18);border-radius:2px;'></div>",
+                    "<div style='position:absolute;left:0;top:0;height:100%;width:",
+                    str(round(_nbpct, 1)),
+                    "%;background:",
+                    _nbclr,
+                    ";border-radius:3px;transition:width 0.8s cubic-bezier(0.2,0.8,0.2,1);'></div>",
+                    "</div>",
+                    "<div style='font-family:JetBrains Mono,monospace;font-size:9px;color:#a8a598;margin-top:4px;'>",
+                    "Opt: " + str(int(_nblo)) + "\u2013" + str(int(_nbhi)) + " " + _nbu,
+                    "</div></div>",
+                ])
+            st.markdown(_bars_html, unsafe_allow_html=True)
             st.markdown('</div></div>', unsafe_allow_html=True)
 
         # ROW 2: Climate Synthesis (wide) + Farm Context
@@ -2596,11 +2718,68 @@ else:  # dashboard
     <h1 class="display tool-page-title">Synthesis complete.</h1>
     <p class="tool-page-sub">Generated """ + datetime.now().strftime("%b %d, %Y · %H:%M") + """ IST. Output verified across 4 model heads; confidence-weighted with historical yield prior.</p>
   </div>
-  <div class="dash-header-actions">
-    <button class="btn btn-ghost">&#8595; Export PDF</button>
-    <a class="btn btn-primary" href="?page=cultivation" target="_self" style="text-decoration:none;">&#8593; New analysis</a>
-  </div>
 </div>""", unsafe_allow_html=True)
+
+    # Header action buttons — Export PDF + New Analysis
+    _hcol1, _hcol2, _hcol3 = st.columns([1, 1, 5])
+    with _hcol1:
+        _res_for_dl = st.session_state.get("last_result")
+        if _res_for_dl:
+            _dl_soil = _res_for_dl.get("soil_name","Unknown")
+            _dl_crop = (_res_for_dl.get("crop_recs") or [{"name":"—"}])[0].get("name","—")
+            _dl_npk  = (_res_for_dl.get("crop_recs") or [{"npk":"—"}])[0].get("npk","—")
+            _dl_conf = round(_res_for_dl.get("confidence", 0))
+            _dl_n    = _res_for_dl.get("n",0); _dl_p = _res_for_dl.get("p",0)
+            _dl_k    = _res_for_dl.get("k",0); _dl_ph = _res_for_dl.get("ph",0)
+            _dl_t    = _res_for_dl.get("temp",0); _dl_h = _res_for_dl.get("hum",0)
+            _dl_r    = _res_for_dl.get("rain",0); _dl_s = _res_for_dl.get("season","—")
+            _report_html = (
+                "<!doctype html><html><head><meta charset='utf-8'>"
+                "<title>AgroSynapse Report</title>"
+                "<style>body{font-family:Georgia,serif;max-width:760px;margin:48px auto;color:#14140f;line-height:1.6;}"
+                "h1{font-size:36px;margin-bottom:4px;}h2{font-size:20px;margin:32px 0 8px;border-bottom:1px solid #ddd;padding-bottom:4px;}"
+                "table{width:100%;border-collapse:collapse;margin-top:12px;}"
+                "td,th{padding:10px 14px;border:1px solid #e0ddd4;text-align:left;}"
+                "th{background:#f5f0e8;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;}"
+                ".badge{display:inline-block;padding:4px 12px;background:#0f2818;color:#faf8f3;border-radius:999px;font-size:13px;}"
+                "</style></head><body>"
+                "<h1>AgroSynapse Analysis Report</h1>"
+                "<p style='color:#6b6b5e;font-size:14px;'>Generated " + datetime.now().strftime("%B %d, %Y at %H:%M") + " IST &nbsp;·&nbsp; AgroSynapse AI v0.4</p>"
+                "<h2>Primary Recommendation</h2>"
+                "<p><span class='badge'>" + _dl_crop + "</span> &nbsp; Confidence: <strong>" + str(_dl_conf) + "%</strong></p>"
+                "<table><tr><th>Parameter</th><th>Value</th></tr>"
+                "<tr><td>Soil Type</td><td>" + _dl_soil + "</td></tr>"
+                "<tr><td>NPK Protocol (kg/ha)</td><td>" + _dl_npk + "</td></tr>"
+                "<tr><td>Season</td><td>" + _dl_s + "</td></tr>"
+                "</table>"
+                "<h2>Soil Chemical Profile</h2>"
+                "<table><tr><th>Nutrient</th><th>Measured</th><th>Optimal Range</th></tr>"
+                "<tr><td>Nitrogen (N)</td><td>" + str(_dl_n) + " mg/kg</td><td>60–140 mg/kg</td></tr>"
+                "<tr><td>Phosphorus (P)</td><td>" + str(_dl_p) + " mg/kg</td><td>20–60 mg/kg</td></tr>"
+                "<tr><td>Potassium (K)</td><td>" + str(_dl_k) + " mg/kg</td><td>40–100 mg/kg</td></tr>"
+                "<tr><td>Soil pH</td><td>" + str(_dl_ph) + "</td><td>5.5–7.5</td></tr>"
+                "</table>"
+                "<h2>Climate Vectors</h2>"
+                "<table><tr><th>Parameter</th><th>Value</th></tr>"
+                "<tr><td>Temperature</td><td>" + str(_dl_t) + " °C</td></tr>"
+                "<tr><td>Humidity</td><td>" + str(_dl_h) + " %</td></tr>"
+                "<tr><td>Annual Rainfall</td><td>" + str(int(_dl_r)) + " mm</td></tr>"
+                "</table>"
+                "<p style='margin-top:48px;font-size:12px;color:#a8a598;'>This report is generated by AgroSynapse AI. For certified agronomic advice, consult a licensed professional.</p>"
+                "</body></html>"
+            )
+            st.download_button(
+                label="↓ Export PDF",
+                data=_report_html.encode("utf-8"),
+                file_name="agrosynapse_report.html",
+                mime="text/html",
+                key="dl_report_btn",
+            )
+    with _hcol2:
+        if st.button("↑ New analysis", key="new_analysis_btn"):
+            st.session_state.page = "cultivation"
+            st.query_params["page"] = "cultivation"
+            st.rerun()
 
     if _res:
         _soil  = _res.get("soil_name", "Unknown")
@@ -2626,10 +2805,25 @@ else:  # dashboard
         }
         _crop_emoji = _CROP_EMOJI.get(_crop_name, "🌱")
 
+        # Soil type → color mapping for card background
+        _SOIL_BG = {
+            "Red Soil":      ("linear-gradient(135deg,#6b1a00,#3a0a00)", "linear-gradient(135deg,#8b2500,#5a1200)"),
+            "Black Soil":    ("linear-gradient(135deg,#1a1a28,#0a0a14)", "linear-gradient(135deg,#252538,#111120)"),
+            "Alluvial Soil": ("linear-gradient(135deg,#0f2030,#050f18)", "linear-gradient(135deg,#1a3048,#0a1a28)"),
+            "Sandy Soil":    ("linear-gradient(135deg,#5a3a0a,#3a2000)", "linear-gradient(135deg,#7a5020,#4a2c00)"),
+            "Loamy Soil":    ("linear-gradient(135deg,#1e3a14,#0a1808)", "linear-gradient(135deg,#2a4a1e,#121e0a)"),
+            "Clay Soil":     ("linear-gradient(135deg,#3a2a1a,#201408)", "linear-gradient(135deg,#4a3828,#281a08)"),
+            "Laterite Soil": ("linear-gradient(135deg,#5a2800,#300a00)", "linear-gradient(135deg,#7a3800,#401000)"),
+        }
+        _card_icon_bg, _card_main_bg = _SOIL_BG.get(_soil, (
+            "linear-gradient(135deg,#1e3a14,#0a1808)",
+            "linear-gradient(135deg,#0f2818,#050e08)"
+        ))
+
         # Primary crop card
         st.markdown(f"""
-<div class="rec-crop" style="display:grid;grid-template-columns:180px 1fr 180px;min-height:240px;background:#0f2818;border-radius:16px;overflow:hidden;margin-bottom:32px;">
-  <div class="rec-crop-img" style="background:linear-gradient(135deg,#1e3a14,#0a1808);display:grid;place-items:center;font-size:68px;border-right:1px solid rgba(250,248,243,0.06);">
+<div class="rec-crop" style="display:grid;grid-template-columns:180px 1fr 180px;min-height:240px;background:{_card_main_bg};border-radius:16px;overflow:hidden;margin-bottom:32px;">
+  <div class="rec-crop-img" style="background:{_card_icon_bg};display:grid;place-items:center;font-size:68px;border-right:1px solid rgba(250,248,243,0.06);">
     {_crop_emoji}
   </div>
   <div class="rec-crop-body" style="padding:28px 32px;color:#faf8f3;overflow:hidden;">
@@ -2666,27 +2860,75 @@ else:  # dashboard
   <div class="probs-head">
     <div><span class="eyebrow">Soil probability breakdown</span>
       <h3 class="display probs-title">Synaptic confidence, per soil.</h3></div>
-    <div class="seg"><button class="active">Soil</button><button>Climate</button><button>Combined</button></div>
-  </div>
-  <div class="probs-chart">""", unsafe_allow_html=True)
-            _colors = ["var(--sage)","var(--earth)","var(--earth-2)","var(--ink-4)","var(--ink-4)","var(--ink-4)"]
-            for _bi, (_bk, _bv) in enumerate(_bars[:7]):
-                _bc = _colors[min(_bi, len(_colors)-1)]
-                st.markdown(f"""<div class="prob-row"><div class="prob-k">{_bk}</div>
-<div class="prob-track"><div class="prob-fill" style="width:{_bv}%;background:{_bc};animation-delay:{_bi*80}ms;"></div></div>
-<div class="prob-v num">{_bv:.1f}%</div></div>""", unsafe_allow_html=True)
-            st.markdown('</div></div>', unsafe_allow_html=True)
+  </div>""", unsafe_allow_html=True)
+            _dash_tab = st.radio("View", ["Soil", "Climate"], horizontal=True, key="dash_view_tab", label_visibility="collapsed")
+            if _dash_tab == "Soil":
+                st.markdown('<div class="probs-chart">', unsafe_allow_html=True)
+                _colors = ["#5a8a3a","#d4a373","#b8884f","#a8a598","#a8a598","#a8a598","#a8a598"]
+                for _bi, (_bk, _bv) in enumerate(_bars[:7]):
+                    _bc = _colors[min(_bi, len(_colors)-1)]
+                    st.markdown(
+                        '<div class="prob-row"><div class="prob-k">' + _bk + '</div>'
+                        '<div class="prob-track"><div class="prob-fill" style="width:' + f'{_bv:.1f}' + '%;background:' + _bc + ';animation-delay:' + str(_bi*80) + 'ms;"></div></div>'
+                        '<div class="prob-v num">' + f'{_bv:.1f}' + '%</div></div>',
+                        unsafe_allow_html=True
+                    )
+                st.markdown('</div>', unsafe_allow_html=True)
+            else:
+                # Climate chart
+                _t_v = _res.get("temp", 27.2)
+                _h_v = _res.get("hum", 75.3)
+                _r_v = _res.get("rain", 1302.0)
+                _t_pct = min(100, _t_v / 50 * 100)
+                _h_pct = min(100, _h_v)
+                _r_pct = min(100, _r_v / 3000 * 100)
+                st.markdown(
+                    '<div style="padding:20px 0;">'
+                    '<div style="margin-bottom:20px;">'
+                    '<div style="display:flex;justify-content:space-between;margin-bottom:8px;">'
+                    '<span style="font-family:\'JetBrains Mono\',monospace;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#6b6b5e;">Temperature</span>'
+                    '<span style="font-family:\'JetBrains Mono\',monospace;font-size:13px;color:#c44536;font-weight:500;">' + str(_t_v) + ' °C</span>'
+                    '</div>'
+                    '<div style="height:8px;background:rgba(20,20,15,0.07);border-radius:4px;overflow:hidden;">'
+                    '<div style="height:100%;width:' + f'{_t_pct:.1f}' + '%;background:linear-gradient(90deg,#e87048,#c44536);border-radius:4px;transition:width 1s cubic-bezier(0.2,0.8,0.2,1);"></div>'
+                    '</div><div style="font-size:10px;color:#a8a598;margin-top:4px;font-family:\'JetBrains Mono\',monospace;">Range: 0–50 °C · Optimal for most crops: 20–35 °C</div>'
+                    '</div>'
+                    '<div style="margin-bottom:20px;">'
+                    '<div style="display:flex;justify-content:space-between;margin-bottom:8px;">'
+                    '<span style="font-family:\'JetBrains Mono\',monospace;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#6b6b5e;">Humidity</span>'
+                    '<span style="font-family:\'JetBrains Mono\',monospace;font-size:13px;color:#5a8a3a;font-weight:500;">' + str(_h_v) + ' %</span>'
+                    '</div>'
+                    '<div style="height:8px;background:rgba(20,20,15,0.07);border-radius:4px;overflow:hidden;">'
+                    '<div style="height:100%;width:' + f'{_h_pct:.1f}' + '%;background:linear-gradient(90deg,#7ba854,#5a8a3a);border-radius:4px;transition:width 1s cubic-bezier(0.2,0.8,0.2,1);"></div>'
+                    '</div><div style="font-size:10px;color:#a8a598;margin-top:4px;font-family:\'JetBrains Mono\',monospace;">Optimal for most crops: 50–80 %</div>'
+                    '</div>'
+                    '<div style="margin-bottom:20px;">'
+                    '<div style="display:flex;justify-content:space-between;margin-bottom:8px;">'
+                    '<span style="font-family:\'JetBrains Mono\',monospace;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#6b6b5e;">Annual Rainfall</span>'
+                    '<span style="font-family:\'JetBrains Mono\',monospace;font-size:13px;color:#d4a373;font-weight:500;">' + str(int(_r_v)) + ' mm</span>'
+                    '</div>'
+                    '<div style="height:8px;background:rgba(20,20,15,0.07);border-radius:4px;overflow:hidden;">'
+                    '<div style="height:100%;width:' + f'{_r_pct:.1f}' + '%;background:linear-gradient(90deg,#e8c989,#d4a373);border-radius:4px;transition:width 1s cubic-bezier(0.2,0.8,0.2,1);"></div>'
+                    '</div><div style="font-size:10px;color:#a8a598;margin-top:4px;font-family:\'JetBrains Mono\',monospace;">Scale: 0–3000 mm/yr · Optimal: 600–2000 mm</div>'
+                    '</div>'
+                    '</div>',
+                    unsafe_allow_html=True
+                )
+            st.markdown('</div>', unsafe_allow_html=True)
 
         with dg2:
-            st.markdown("""<div class="alts">
-<div class="alts-head"><span class="eyebrow">Alternative crops</span><span class="label">Ranked K=2–4</span></div>""", unsafe_allow_html=True)
+            st.markdown('<div class="alts"><div class="alts-head"><span class="eyebrow">Alternative crops</span><span class="label">Ranked K=2–4</span></div>', unsafe_allow_html=True)
             for _ai, _cr in enumerate(_crops[1:4], start=2):
                 _ascore = round(_cr.get("suitability", 0.5) * 100)
-                st.markdown(f"""<div class="alt">
-<div class="alt-rank num">{str(_ai).zfill(2)}</div>
-<div class="alt-body"><div class="alt-name">{_cr['name']}</div>
-<div class="alt-meta"><span class="num">{_cr.get('npk','—')}</span></div></div>
-<div class="alt-score num">{_ascore}%</div></div>""", unsafe_allow_html=True)
+                _aemoji = _CROP_EMOJI.get(_cr.get("name",""), "🌱")
+                st.markdown(
+                    '<div class="alt">'
+                    '<div style="font-size:26px;line-height:1;margin-right:4px;">' + _aemoji + '</div>'
+                    '<div class="alt-body"><div class="alt-name">' + _cr['name'] + '</div>'
+                    '<div class="alt-meta"><span class="num">' + _cr.get('npk','—') + '</span></div></div>'
+                    '<div class="alt-score num">' + str(_ascore) + '%</div></div>',
+                    unsafe_allow_html=True
+                )
             st.markdown('</div>', unsafe_allow_html=True)
 
         # Timeline
