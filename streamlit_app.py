@@ -1,4 +1,4 @@
-﻿# streamlit_app.py â€” Multimodal Soil & Crop Recommendation System
+# streamlit_app.py — Multimodal Soil & Crop Recommendation System
 # ResNet-50 + XGBoost + TSACA Fusion + GRN  |  Accuracy: 98.67%
 # Run: streamlit run streamlit_app.py
 
@@ -19,10 +19,10 @@ try:
 except Exception as _imp_err:
     _IMPORT_ERROR = _imp_err
 
-# â”€â”€ Page config â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ── Page config ────────────────────────────────────────────────
 st.set_page_config(
     page_title="AgroSynapse AI",
-    page_icon="ðŸŒ¿",
+    page_icon="🌿",
     layout="wide",
     initial_sidebar_state="collapsed",
 )
@@ -124,11 +124,11 @@ else:
 }
 </style>"""
 
-# â”€â”€ Paths â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ── Paths ──────────────────────────────────────────────────────
 BASE = os.path.dirname(os.path.abspath(__file__))
 def mpath(n): return os.path.join(BASE, n)
 
-# â”€â”€ Model file verification (runs at startup, visible in logs) â”€â”€
+# ── Model file verification (runs at startup, visible in logs) ──
 _MODEL_FILES = [
     "img_model.pt", "fusion_model.pt",
     "tab_projector.pt", "xgb_model.json", "scaler.pkl",
@@ -141,9 +141,9 @@ for _f in _MODEL_FILES:
     _file_status[_f] = {"exists": _exists, "mb": round(_size / 1024 / 1024, 1)}
     print(f"{_f}: exists={_exists}, size={_size/1024/1024:.1f}MB")
 
-# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-# MODEL DEFINITIONS â€” identical to training
-# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# ══════════════════════════════════════════════════════════════
+# MODEL DEFINITIONS — identical to training
+# ══════════════════════════════════════════════════════════════
 
 class ResNet50Classifier(nn.Module):
     def __init__(self, nc, fd=512):
@@ -255,17 +255,17 @@ class FusionGRNModel(nn.Module):
         return self.grn(self.tsaca(img_f, tab_f))
 
 
-# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-# MODEL LOADING â€” cached per session, loads once
-# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# ══════════════════════════════════════════════════════════════
+# MODEL LOADING — cached per session, loads once
+# ══════════════════════════════════════════════════════════════
 
-@st.cache_resource(show_spinner="Loading AI modelsâ€¦")
+@st.cache_resource(show_spinner="Loading AI models…")
 def load_all_models():
     """Load and cache all models once per session.
     Raises a clear error if any model file is missing or too small
     (which happens when Git LFS pointers aren't resolved on the server).
     """
-    # â”€â”€ Validate model files before loading â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # ── Validate model files before loading ────────────────────
     MIN_SIZES = {
         "img_model.pt":     25,   # fp16 shrinked
         "fusion_model.pt":  10,
@@ -278,7 +278,7 @@ def load_all_models():
                 f"{fname} not found. Check repository LFS setup.")
         if info["mb"] < min_mb:
             raise ValueError(
-                f"{fname} is only {info['mb']:.1f} MB â€” "
+                f"{fname} is only {info['mb']:.1f} MB — "
                 f"expected >{min_mb} MB. "
                 f"Git LFS pointers may not have been resolved on this server. "
                 f"Run: git lfs pull")
@@ -323,13 +323,13 @@ def load_all_models():
     with open(mpath("scaler.pkl"), "rb") as fh:
         scaler = pickle.load(fh)
 
-    # Explicit eval() â€” essential for BatchNorm/Dropout at inference
+    # Explicit eval() — essential for BatchNorm/Dropout at inference
     img_m.eval(); tab_p.eval(); fusion.eval()
 
     return img_m, tab_p, fusion, xgb_clf, scaler, cls, num_cols
 
 
-# â”€â”€ Lookup maps â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ── Lookup maps ────────────────────────────────────────────────
 SEASON_MAP = {"Kharif": 0, "Rabi": 1, "Zaid": 2}
 IRRIG_MAP  = {"Canal": 0, "Drip": 1, "Rainfed": 2, "Sprinkler": 3}
 PREV_MAP   = {"Cotton": 0, "Maize": 1, "Potato": 2, "Rice": 3,
@@ -497,29 +497,29 @@ def _fertilizer_for_crop(crop, n, p, k):
     }
 
 
-# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# ══════════════════════════════════════════════════════════════
 # INFERENCE
-# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# ══════════════════════════════════════════════════════════════
 
 def run_inference(img_model, tab_proj, fusion, xgb_clf, scaler,
                   class_names, num_cols,
                   img_bytes, n, p, k, temp, hum, rain, ph, yld, fert,
                   season, irrig, prev, region):
 
-    # â”€â”€ Transform created fresh every call (never cached) â”€â”€â”€â”€â”€â”€
+    # ── Transform created fresh every call (never cached) ──────
     tf = transforms.Compose([
         transforms.Resize((224, 224)),
         transforms.ToTensor(),
         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
     ])
 
-    # â”€â”€ Image: always decode from raw bytes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # ── Image: always decode from raw bytes ────────────────────
     # UploadedFile stream is consumed by st.image(); using saved bytes
     # guarantees a correct, fresh tensor regardless of Streamlit rerenders.
     pil_img = Image.open(io.BytesIO(img_bytes)).convert("RGB")
     img_t   = tf(pil_img).unsqueeze(0)           # (1, 3, 224, 224)
 
-    # â”€â”€ Tabular features â”€â”€
+    # ── Tabular features ──
     num_raw     = np.array([[n, p, k, temp, hum, rain, ph, yld, fert]])
     num_sc      = scaler.transform(pd.DataFrame(num_raw, columns=num_cols))
     cat_enc     = np.array([[SEASON_MAP[season], IRRIG_MAP[irrig],
@@ -530,14 +530,14 @@ def run_inference(img_model, tab_proj, fusion, xgb_clf, scaler,
     tab_raw   = np.concatenate([xgb_probs, xgb_input], axis=1).astype(np.float32)
     tab_t     = torch.tensor(tab_raw, dtype=torch.float32)             # (1, 19)
 
-    # â”€â”€ Inference â€” explicit eval() + no_grad every call â”€â”€â”€â”€â”€â”€
+    # ── Inference — explicit eval() + no_grad every call ──────
     img_model.eval(); tab_proj.eval(); fusion.eval()
     with torch.no_grad():
         img_feat  = img_model(img_t, return_features=True)
         tab_feat  = tab_proj(tab_t)
         logits, _ = fusion(img_feat, tab_feat)
 
-    # Clean prediction â€” raw softmax only, no blending or manipulation
+    # Clean prediction — raw softmax only, no blending or manipulation
     probs      = torch.softmax(logits, dim=-1)[0].cpu().numpy()        # (6,)
     pred_idx   = int(np.argmax(probs))
     soil_name  = class_names[pred_idx]
@@ -595,7 +595,7 @@ def run_inference(img_model, tab_proj, fusion, xgb_clf, scaler,
     return soil_name, confidence, all_probs, soil_fert, crop_recs, debug
 
 
-# â”€â”€ Load models (once per session) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ── Load models (once per session) ───────────────────────────
 try:
     img_model, tab_proj, fusion, xgb_clf, scaler, CLASS_NAMES, NUMERIC_COLS = load_all_models()
     _models_ok = True
@@ -609,13 +609,13 @@ except Exception as _load_err:
     for _fn, _info in _file_status.items():
         _ok  = _info["exists"] and _info["mb"] > 0.1
         _ico = "OK" if _ok else "MISSING / TOO SMALL"
-        st.write(f"- `{_fn}`: {_info['mb']:.1f} MB â€” {_ico}")
+        st.write(f"- `{_fn}`: {_info['mb']:.1f} MB — {_ico}")
     st.stop()
 
 
-# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# ══════════════════════════════════════════════════════════════
 # SOIL IMAGE VALIDATOR
-# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# ══════════════════════════════════════════════════════════════
 
 @st.cache_resource
 def load_validator():
@@ -649,9 +649,9 @@ def is_soil_image(pil_img):
     return soil_prob > 0.60
 
 
-# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# ══════════════════════════════════════════════════════════════
 # LEAF IMAGE VALIDATOR
-# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# ══════════════════════════════════════════════════════════════
 
 @st.cache_resource
 def load_leaf_validator():
@@ -674,7 +674,7 @@ def load_leaf_validator():
 def is_leaf_image(pil_img):
     """Return True if the image likely contains a plant leaf.
 
-    Uses leaf_validator.pt (trained binary classifier) when available â€”
+    Uses leaf_validator.pt (trained binary classifier) when available —
     same approach as soil_validator.pt which handles random objects,
     colored balls, faces, cars, etc. reliably.
     Falls back to HSV heuristic only if the model file is missing.
@@ -695,7 +695,7 @@ def is_leaf_image(pil_img):
             prob = torch.softmax(out, dim=-1)[0]
         return prob[0].item() > 0.55  # leaf=0 (alphabetically leaf < not_leaf)
 
-    # â”€â”€ Fallback: HSV hue-based green detection â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # ── Fallback: HSV hue-based green detection ──────────────────────────
     arr = np.array(pil_img.resize((224, 224)).convert("RGB"), dtype=np.float32) / 255.0
     r, g, b = arr[:, :, 0], arr[:, :, 1], arr[:, :, 2]
     cmax  = np.maximum(np.maximum(r, g), b)
@@ -712,9 +712,9 @@ def is_leaf_image(pil_img):
     return float(green_mask.mean()) > 0.10
 
 
-# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-# LEAF DISEASE MODEL â€” Universal PlantVillage ResNet-50
-# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# ══════════════════════════════════════════════════════════════
+# LEAF DISEASE MODEL — Universal PlantVillage ResNet-50
+# ══════════════════════════════════════════════════════════════
 
 LEAF_CLASS_NAMES = [
     "Apple___Apple_scab", "Apple___Black_rot", "Apple___Cedar_apple_rust",
@@ -820,7 +820,7 @@ def _build_leaf_classifier(keras, img_size, num_classes, architecture="MobileNet
 
 @st.cache_resource(show_spinner="Loading Leaf Disease Model...")
 def load_leaf_model():
-    """Load the AgroFusion Universal v2 leaf disease model (Keras MobileNetV2, 128Ã—128).
+    """Load the AgroFusion Universal v2 leaf disease model (Keras MobileNetV2, 128×128).
     pkl structure: model_bytes (Keras ZIP), class_labels, fertilizer_dict, img_size.
     Returns (keras_model, class_labels_list, fertilizer_dict) or (None, fallback, fallback).
     """
@@ -849,14 +849,14 @@ def load_leaf_model():
             return False
 
     if not os.path.exists(pkl_path) or os.path.getsize(pkl_path) < min_bytes:
-        print("[WARN] agrofusion_universal_v5.pkl missing or too small â€” attempting download.")
+        print("[WARN] agrofusion_universal_v5.pkl missing or too small — attempting download.")
         if not _download_leaf_model(pkl_path):
-            print("[WARN] agrofusion_universal_v5.pkl not available â€” leaf model unavailable.")
+            print("[WARN] agrofusion_universal_v5.pkl not available — leaf model unavailable.")
             st.session_state.leaf_model_error = "agrofusion_universal_v5.pkl is missing and download failed."
             return None, LEAF_CLASS_NAMES, LEAF_TREATMENT_MAP
     try:
         import tempfile
-        # â”€â”€ Load payload â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        # ── Load payload ──────────────────────────────────────
         with open(pkl_path, "rb") as fh:
             payload = pickle.load(fh)
 
@@ -866,7 +866,7 @@ def load_leaf_model():
         metadata   = payload.get("metadata", {}) or {}
         architecture = metadata.get("architecture", "MobileNetV2")
 
-        # â”€â”€ Load Keras model from bytes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        # ── Load Keras model from bytes ────────────────────────
         model_bytes = payload.get("model_bytes")
         if model_bytes is None:
             st.session_state.leaf_model_error = "agrofusion_universal_v5.pkl payload missing model_bytes."
@@ -984,12 +984,12 @@ def run_leaf_inference(model, class_labels, img_bytes):
     return pred_cls, conf, top5
 
 
-# Leaf model loaded lazily â€” only when the leaf page is visited (saves RAM)
+# Leaf model loaded lazily — only when the leaf page is visited (saves RAM)
 
 
-# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# ══════════════════════════════════════════════════════════════
 # CLIMATE DATA FETCHER
-# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+# ══════════════════════════════════════════════════════════════
 
 DISTRICT_COORDS = {
     ("Telangana", "Adilabad"): (19.6641, 78.5320),
@@ -1586,13 +1586,13 @@ def get_climate_data(village, district, state):
                 india_results = [r for r in results if r.get("country_code", "").upper() == "IN"]
                 state_results = [r for r in india_results if state.lower() in r.get("admin1", "").lower()]
                 # Only accept a result that matches the selected state.
-                # Do NOT fall back to india_results[0] â€” that picks same-named
+                # Do NOT fall back to india_results[0] — that picks same-named
                 # villages in other states (e.g. Bheemavaram in AP vs Telangana).
                 if state_results:
                     lat = state_results[0]["latitude"]
                     lon = state_results[0]["longitude"]
                     location_label = f"{village}, {district}, {state}"
-                    note = "Village location found âœ“"
+                    note = "Village location found ✓"
                 else:
                     location_label = f"{village}, {district}, {state}"
                     note = f"Using {district} district coordinates"
@@ -1653,12 +1653,12 @@ def get_climate_data(village, district, state):
 # ==============================================================
 
 # ==============================================================
-# UI â€” AgroSynapse Redesign (exact match to AgroSynapse Redesign.html)
+# UI — AgroSynapse Redesign (exact match to AgroSynapse Redesign.html)
 # ==============================================================
 
 import streamlit.components.v1 as components
 
-# â”€â”€ Page routing â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ── Page routing ──────────────────────────────────────────────
 _qp = st.query_params.get("page", None)
 if _qp and _qp in ("home", "cultivation", "diagnostic", "dashboard"):
     st.session_state.page = _qp
@@ -1677,7 +1677,7 @@ _ACCENT_MAP = {
 }
 _ac_base, _ac_mid, _ac_alpha = _ACCENT_MAP.get(_accent, _ACCENT_MAP["0"])
 
-# â”€â”€ Read design CSS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ── Read design CSS ───────────────────────────────────────────
 def _read_design_css():
     _dir = os.path.join(BASE, "app")
     _parts = []
@@ -1690,7 +1690,7 @@ def _read_design_css():
 
 _DESIGN_CSS = _read_design_css()
 
-# â”€â”€ Active class helper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ── Active class helper ───────────────────────────────────────
 def _ac(p): return "active" if _page == p else ""
 
 
@@ -1725,14 +1725,14 @@ _crumb = {
     "dashboard":   " - ANALYTICS DASHBOARD",
 }.get(_page, "")
 
-# â”€â”€ 1. Fonts â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ── 1. Fonts ──────────────────────────────────────────────────
 st.markdown(
     '<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1'
     '&family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">',
     unsafe_allow_html=True,
 )
 
-# â”€â”€ 2. CSS â€” dynamic accent + static chrome â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ── 2. CSS — dynamic accent + static chrome ───────────────────
 _CHROME_CSS = (
     "[data-testid='stSidebar'],[data-testid='stSidebarNav'],"
     "#MainMenu,footer,header.stAppHeader,.stDeployButton,"
@@ -1855,6 +1855,12 @@ _CHROME_CSS = (
     "div[data-testid='stVerticalBlock']:has(#diag-specimen-card){background:#fdfbf6;border:1px solid rgba(20,20,15,0.12);border-radius:20px;padding:24px;box-shadow:0 10px 28px rgba(15,40,24,0.06);}" 
     "div[data-testid='stVerticalBlock']:has(#diag-specimen-card) [data-testid='stFileUploaderDropzone']{background:#efeeea!important;border:1px solid rgba(20,20,15,0.08)!important;border-radius:12px!important;}"
     "div[data-testid='stVerticalBlock']:has(#diag-specimen-card) [data-testid='stImage'] img{border-radius:12px;max-height:360px;width:auto!important;object-fit:contain;display:block;margin:0 auto;}"
+    "div[data-testid='stVerticalBlock']:has(#cult-soil-card),div[data-testid='stVerticalBlock']:has(#cult-chem-card),div[data-testid='stVerticalBlock']:has(#cult-climate-card),div[data-testid='stVerticalBlock']:has(#cult-farm-card){background:#fdfbf6;border:1px solid rgba(20,20,15,0.12);border-radius:20px;padding:22px;box-shadow:0 10px 24px rgba(15,40,24,0.05);}"
+    "div[data-testid='stVerticalBlock']:has(#cult-soil-card) [data-testid='stFileUploaderDropzone']{background:#efeeea!important;border:1px solid rgba(20,20,15,0.08)!important;border-radius:12px!important;}"
+    "div[data-testid='stVerticalBlock']:has(#ready-synth-card){background:linear-gradient(135deg,#0f2818 0%,#355f3b 52%,#5a8a3a 100%);border:1px solid rgba(42,74,47,0.5);border-radius:22px;padding:20px 24px;box-shadow:0 14px 36px rgba(15,40,24,0.24);margin-top:10px;}"
+    "div[data-testid='stVerticalBlock']:has(#ready-synth-card) [data-testid='stMarkdownContainer'] h3,div[data-testid='stVerticalBlock']:has(#ready-synth-card) [data-testid='stMarkdownContainer'] p{color:#f6f4ee!important;}"
+    "div[data-testid='stVerticalBlock']:has(#ready-synth-card) [data-testid='stButton']>button{background:#f6f4ee!important;color:#0f2818!important;border:0!important;font-weight:700!important;}"
+    "div[data-testid='stVerticalBlock']:has(#ready-synth-card) [data-testid='stButton']>button:hover{background:#ffffff!important;color:#0f2818!important;}"
 )
 
 _DARK_CSS = (
@@ -1878,7 +1884,7 @@ if hasattr(st, "html"):
 else:
     st.markdown(_ALL_CSS, unsafe_allow_html=True)
 
-# â”€â”€ 3. Chrome HTML â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ── 3. Chrome HTML ─────────────────────────────────────────────
 _ac_home = _ac("home"); _ac_cult = _ac("cultivation")
 _ac_diag = _ac("diagnostic"); _ac_dash = _ac("dashboard")
 _tweaks_href = f"?page={_page}&theme={_theme}&accent={_accent}&tweaks={'0' if _tweaks=='1' else '1'}"
@@ -1976,7 +1982,7 @@ st.markdown(f"""
 # ==============================================================
 if _page == "home":
 
-    # â”€â”€ Animated hero section via components.html â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # ── Animated hero section via components.html ──────────────
     _HERO = """<!doctype html><html><head><meta charset="utf-8">
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -2124,11 +2130,11 @@ requestAnimationFrame(floatSVG);
 </body></html>"""
     components.html(_HERO, height=680, scrolling=False)
 
-    # â”€â”€ Module cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # ── Module cards ───────────────────────────────────────────
     st.markdown("""
 <section class="modules" style="padding-top:28px;">
   <div class="section-head" style="margin-bottom:26px;">
-    <span class="eyebrow">Modules Â· active</span>
+    <span class="eyebrow">Modules · active</span>
     <h2 class="display section-title">Two instruments, <em>calibrated</em> for your land.</h2>
   </div>
   <div class="modules-grid">
@@ -2137,7 +2143,7 @@ requestAnimationFrame(floatSVG);
         <div class="module-icon">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22V10"/><path d="M12 10c0-3 2-6 6-6 0 3-2 6-6 6Z"/><path d="M12 12c0-2.5-2-5-6-5 0 2.5 2 5 6 5Z"/></svg>
         </div>
-        <span class="eyebrow">Agricultural Â· core</span>
+        <span class="eyebrow">Agricultural · core</span>
       </div>
       <h3 class="module-title display">Predictive Cultivation</h3>
       <p class="module-desc">Multimodal soil-to-crop fusion. Fuses specimen imagery, chemical profile, climate vectors, and farm history to return top-K crops with protocol.</p>
@@ -2153,7 +2159,7 @@ requestAnimationFrame(floatSVG);
         <div class="module-icon">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18h8"/><path d="M3 22h18"/><path d="M14 22a7 7 0 1 0 0-14h-1"/><path d="M9 14h2"/><path d="M9 12a2 2 0 0 1-2-2V6h4v4a2 2 0 0 1-2 2Z"/><path d="M12 6H6"/><path d="M10 2h4"/></svg>
         </div>
-        <span class="eyebrow">Neural Â· vision</span>
+        <span class="eyebrow">Neural · vision</span>
       </div>
       <h3 class="module-title display">Phyto-Diagnostic Suite</h3>
       <p class="module-desc">Leaf-to-cure vision. Convolutional pathology engine trained across 38 classes, resolving pathogen identity and treatment dosage in a single pass.</p>
@@ -2168,11 +2174,11 @@ requestAnimationFrame(floatSVG);
 </section>
 """, unsafe_allow_html=True)
 
-    # â”€â”€ Soil pipeline â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # ── Soil pipeline ──────────────────────────────────────────
     st.markdown("""
 <section style="background:#0f2818;padding:80px 48px;margin:0;border-top:1px solid rgba(250,248,243,0.06);">
   <div style="margin-bottom:48px;">
-    <span style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:rgba(250,248,243,0.45);">Pipeline Â· soil to crop</span>
+    <span style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:rgba(250,248,243,0.45);">Pipeline · soil to crop</span>
     <h2 style="font-family:'Instrument Serif','Times New Roman',serif;font-size:clamp(36px,5vw,64px);font-weight:400;color:#faf8f3;margin:12px 0 0;line-height:1.05;">From soil, a <em style="color:#7ba854;">crop.</em></h2>
     <p style="font-size:16px;line-height:1.55;color:rgba(250,248,243,0.65);margin-top:16px;max-width:600px;">Four stages of multimodal synthesis converge into a probability-ranked cultivation protocol.</p>
   </div>
@@ -2216,11 +2222,11 @@ requestAnimationFrame(floatSVG);
 </section>
 """, unsafe_allow_html=True)
 
-    # â”€â”€ Leaf pipeline â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # ── Leaf pipeline ──────────────────────────────────────────
     st.markdown("""
 <section style="background:#0f2818;padding:80px 48px;margin:0;border-top:1px solid rgba(250,248,243,0.08);">
   <div style="margin-bottom:48px;">
-    <span style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:rgba(250,248,243,0.45);">Pipeline Â· leaf to cure</span>
+    <span style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:rgba(250,248,243,0.45);">Pipeline · leaf to cure</span>
     <h2 style="font-family:'Instrument Serif','Times New Roman',serif;font-size:clamp(36px,5vw,64px);font-weight:400;color:#faf8f3;margin:12px 0 0;line-height:1.05;">From leaf, a <em style="color:#d4a373;">cure.</em></h2>
     <p style="font-size:16px;line-height:1.55;color:rgba(250,248,243,0.65);margin-top:16px;max-width:600px;">A single forward pass resolves pathogen identity and returns a dosage-precise treatment plan.</p>
   </div>
@@ -2264,7 +2270,7 @@ requestAnimationFrame(floatSVG);
 </section>
 """, unsafe_allow_html=True)
 
-    # â”€â”€ CTA block â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # ── CTA block ──────────────────────────────────────────────
     st.markdown("""
 <section class="cta-block">
   <div class="cta-inner">
@@ -2279,12 +2285,12 @@ requestAnimationFrame(floatSVG);
 <footer class="site-footer">
   <div class="footer-row">
     <div class="footer-brand">
-      <span class="eyebrow">AgroSynapse AI Â· 2026</span>
+      <span class="eyebrow">AgroSynapse AI · 2026</span>
       <p>Synaptic agronomy, built by Manoj Anumolu. Academic project; not a replacement for certified agronomist advice.</p>
     </div>
     <div class="footer-meta">
-      <span class="label">v0.4 Â· Alpha</span>
-      <span class="label">Models: SoilNet-v3 Â· PhytoNet-v2</span>
+      <span class="label">v0.4 · Alpha</span>
+      <span class="label">Models: SoilNet-v3 · PhytoNet-v2</span>
     </div>
   </div>
 </footer>
@@ -2296,14 +2302,13 @@ requestAnimationFrame(floatSVG);
 # ==============================================================
 elif _page == "cultivation":
 
-    # â”€â”€ Header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     st.markdown("""
 <div class="page-tool">
 <div class="tool-header">
   <div>
-    <span class="eyebrow">Module Â· Agricultural Core</span>
+    <span class="eyebrow">Module - Agricultural Core</span>
     <h1 class="display tool-page-title">Predictive Cultivation</h1>
-    <p class="tool-page-sub">Synthesize soil specimen, chemical profile, climate vectors, and farm history into laboratory-grade crop recommendations â€” probability-ranked, protocol-complete.</p>
+    <p class="tool-page-sub">Synthesize soil specimen, chemical profile, climate vectors, and farm history into laboratory-grade crop recommendations - probability-ranked, protocol-complete.</p>
   </div>
   <aside class="unit-guide">
     <div class="unit-guide-head">
@@ -2313,110 +2318,111 @@ elif _page == "cultivation":
     <div class="unit-guide-body">
       <div class="ug-row"><span>Yield</span><span class="num">t/ha</span></div>
       <div class="ug-row"><span>NPK</span><span class="num">mg/kg</span></div>
-      <div class="ug-row"><span>Area</span><span class="num">1 acre â‰ˆ 0.4 ha</span></div>
-      <div class="ug-row"><span>Temp</span><span class="num">Â°C</span></div>
+      <div class="ug-row"><span>Area</span><span class="num">1 acre ~ 0.4 ha</span></div>
+      <div class="ug-row"><span>Temp</span><span class="num">deg C</span></div>
       <div class="ug-row"><span>Rainfall</span><span class="num">mm/yr</span></div>
     </div>
     <div class="unit-guide-foot">
       <span class="label">Need help?</span>
-      <span class="unit-guide-link">Open glossary â†’</span>
+      <span class="unit-guide-link">Open glossary -></span>
     </div>
   </aside>
 </div>""", unsafe_allow_html=True)
 
-    with st.form("cultivation_form"):
-        # â”€â”€ Tool grid â”€â”€
-        st.markdown('<div class="tool-grid">', unsafe_allow_html=True)
-        soil_img_bytes = None
+    st.markdown('<div class="tool-grid">', unsafe_allow_html=True)
+    soil_img_bytes = None
 
-        # ROW 1: Soil Specimen + Chemical Profile
-        c1, c2 = st.columns(2)
+    c1, c2 = st.columns(2)
 
-        with c1:
-            st.markdown("""
+    with c1:
+        st.markdown('<span id="cult-soil-card"></span>', unsafe_allow_html=True)
+        st.markdown("""
 <div class="tool-block tight">
 <div class="tool-block-head">
   <h3 class="display tool-block-title">Soil Specimen</h3>
   <span class="pill live">Vision ready</span>
 </div>
 <p class="tool-block-sub">Upload a clear close-up of the soil sample. Avoid leaves, hands, or moisture artifacts.</p>""", unsafe_allow_html=True)
-            soil_img = st.file_uploader("Soil image", type=["jpg","jpeg","png"], key="soil_img_cult", label_visibility="collapsed")
-            if soil_img:
-                soil_img_bytes = soil_img.getvalue()
-                st.image(soil_img_bytes, use_container_width=True, output_format="auto")
-                st.markdown(
-                    '<div class="upload-meta" style="margin-top:12px;">'
-                    '<div class="upload-meta-file"><div class="upload-meta-thumb"></div>'
-                    '<div><div class="upload-meta-name">' + soil_img.name + '</div>'
-                    '<div class="upload-meta-sub num">' + f'{soil_img.size/1024:.1f}' + ' KB</div></div></div>'
-                    '<div class="upload-preview-chip-static"><span>&#10003; Valid specimen ready for synthesis</span></div>'
-                    '</div>',
-                    unsafe_allow_html=True,
-                )
-            st.markdown('</div>', unsafe_allow_html=True)
+        soil_img = st.file_uploader("Soil image", type=["jpg", "jpeg", "png"], key="soil_img_cult", label_visibility="collapsed")
+        if soil_img:
+            soil_img_bytes = soil_img.getvalue()
+            st.image(soil_img_bytes, use_container_width=True, output_format="auto")
+            st.markdown(
+                '<div class="upload-meta" style="margin-top:12px;">'
+                '<div class="upload-meta-file"><div class="upload-meta-thumb"></div>'
+                '<div><div class="upload-meta-name">' + soil_img.name + '</div>'
+                '<div class="upload-meta-sub num">' + f'{soil_img.size/1024:.1f}' + ' KB</div></div></div>'
+                '<div class="upload-preview-chip-static"><span>&#10003; Valid specimen ready for synthesis</span></div>'
+                '</div>',
+                unsafe_allow_html=True,
+            )
+        st.markdown('</div>', unsafe_allow_html=True)
 
-        with c2:
-            st.markdown("""
+    with c2:
+        st.markdown('<span id="cult-chem-card"></span>', unsafe_allow_html=True)
+        st.markdown("""
 <div class="tool-block tight">
 <div class="tool-block-head">
   <h3 class="display tool-block-title">Chemical Profile</h3>
-  <span class="pill">NPK Â· pH</span>
+  <span class="pill">NPK - pH</span>
 </div>
 <p class="tool-block-sub">Known values from lab report, or estimates from field tests.</p>
 <div class="chem-grid">""", unsafe_allow_html=True)
-            cc1, cc2 = st.columns(2)
-            with cc1:
-                n_val = st.number_input("Nitrogen (N) â€” mg/kg", min_value=0.0, max_value=200.0, value=90.0, step=1.0, key="n_val")
-                st.markdown(_metric_range_html("N", n_val, 0.0, 200.0, 60.0, 140.0, "mg/kg"), unsafe_allow_html=True)
-                k_val = st.number_input("Potassium (K) â€” mg/kg", min_value=0.0, max_value=200.0, value=54.0, step=1.0, key="k_val")
-                st.markdown(_metric_range_html("K", k_val, 0.0, 200.0, 30.0, 120.0, "mg/kg"), unsafe_allow_html=True)
-            with cc2:
-                p_val = st.number_input("Phosphorus (P) â€” mg/kg", min_value=0.0, max_value=100.0, value=35.0, step=1.0, key="p_val")
-                st.markdown(_metric_range_html("P", p_val, 0.0, 100.0, 20.0, 60.0, "mg/kg"), unsafe_allow_html=True)
-                ph_val = st.number_input("Soil pH", min_value=3.0, max_value=10.0, value=6.5, step=0.1, key="ph_val")
-                st.markdown(_metric_range_html("PH", ph_val, 3.0, 10.0, 6.0, 7.2, "units"), unsafe_allow_html=True)
-            st.markdown('</div></div>', unsafe_allow_html=True)
+        cc1, cc2 = st.columns(2)
+        with cc1:
+            n_val = st.number_input("Nitrogen (N) - mg/kg", min_value=0.0, max_value=200.0, value=90.0, step=1.0, key="n_val")
+            st.markdown(_metric_range_html("N", n_val, 0.0, 200.0, 60.0, 140.0, "mg/kg"), unsafe_allow_html=True)
+            k_val = st.number_input("Potassium (K) - mg/kg", min_value=0.0, max_value=200.0, value=54.0, step=1.0, key="k_val")
+            st.markdown(_metric_range_html("K", k_val, 0.0, 200.0, 30.0, 120.0, "mg/kg"), unsafe_allow_html=True)
+        with cc2:
+            p_val = st.number_input("Phosphorus (P) - mg/kg", min_value=0.0, max_value=100.0, value=35.0, step=1.0, key="p_val")
+            st.markdown(_metric_range_html("P", p_val, 0.0, 100.0, 20.0, 60.0, "mg/kg"), unsafe_allow_html=True)
+            ph_val = st.number_input("Soil pH", min_value=3.0, max_value=10.0, value=6.5, step=0.1, key="ph_val")
+            st.markdown(_metric_range_html("PH", ph_val, 3.0, 10.0, 6.0, 7.2, "units"), unsafe_allow_html=True)
+        st.markdown('</div></div>', unsafe_allow_html=True)
 
-        # ROW 2: Climate Synthesis + Farm Context
-        lc1, lc2 = st.columns(2)
+    lc1, lc2 = st.columns(2)
 
-        with lc1:
-            st.markdown("""
+    with lc1:
+        st.markdown('<span id="cult-climate-card"></span>', unsafe_allow_html=True)
+        st.markdown("""
 <div class="tool-block">
 <div class="tool-block-head">
   <h3 class="display tool-block-title">Climate Synthesis</h3>
   <span class="pill live">Auto-filled</span>
 </div>
 <p class="tool-block-sub">District-grade vectors pulled from 12-year IMD historical series.</p>""", unsafe_allow_html=True)
-            clc1, clc2, clc3 = st.columns(3)
-            with clc1:
-                state_val = st.selectbox("State", ["Andhra Pradesh","Telangana","Karnataka","Tamil Nadu","Maharashtra","Gujarat","Rajasthan","Punjab","Haryana","Uttar Pradesh","Madhya Pradesh","Bihar","West Bengal","Odisha","Kerala"], key="state_val")
-            with clc2:
-                district_val = st.selectbox("District", ["Guntur","Krishna","Nellore","Kurnool","Chittoor","Hyderabad","Warangal","Bengaluru","Chennai","Mumbai"], key="district_val")
-            with clc3:
-                village_val = st.text_input("Village / Town", value="Rawada", key="village_val")
+        clc1, clc2, clc3 = st.columns(3)
+        with clc1:
+            state_val = st.selectbox("State", ["Andhra Pradesh", "Telangana", "Karnataka", "Tamil Nadu", "Maharashtra", "Gujarat", "Rajasthan", "Punjab", "Haryana", "Uttar Pradesh", "Madhya Pradesh", "Bihar", "West Bengal", "Odisha", "Kerala"], key="state_val")
+        with clc2:
+            district_val = st.selectbox("District", ["Guntur", "Krishna", "Nellore", "Kurnool", "Chittoor", "Hyderabad", "Warangal", "Bengaluru", "Chennai", "Mumbai"], key="district_val")
+        with clc3:
+            village_val = st.text_input("Village / Town", value="Rawada", key="village_val")
 
-            st.markdown('<div class="climate-action-row">', unsafe_allow_html=True)
-            _climate_btn_spacer, _climate_btn_col = st.columns([2.2, 1])
-            with _climate_btn_col:
-                fetch_climate = st.form_submit_button("Fetch climate vectors", use_container_width=True)
-            st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown('<div class="climate-action-row">', unsafe_allow_html=True)
+        _climate_btn_spacer, _climate_btn_col = st.columns([2.2, 1])
+        with _climate_btn_col:
+            fetch_climate = st.button("Fetch climate vectors", key="fetch_climate_btn", use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
 
-            if fetch_climate:
-                with st.spinner("Fetching climate dataâ€¦"):
-                    _clm, _clm_err = get_climate_data(village_val, district_val, state_val)
-                if _clm:
-                    st.session_state.auto_temp  = _clm.get("temperature", 27.2)
-                    st.session_state.auto_hum   = _clm.get("humidity",    75.3)
-                    st.session_state.auto_rain  = _clm.get("rainfall",    1302.0)
-                    st.session_state.location_name = _clm.get("location","")
+        if fetch_climate:
+            with st.spinner("Fetching climate data..."):
+                _clm, _clm_err = get_climate_data(village_val, district_val, state_val)
+            if _clm:
+                st.session_state.auto_temp = _clm.get("temperature", 27.2)
+                st.session_state.auto_hum = _clm.get("humidity", 75.3)
+                st.session_state.auto_rain = _clm.get("rainfall", 1302.0)
+                st.session_state.location_name = _clm.get("location", "")
 
-            _t = st.session_state.auto_temp; _h = st.session_state.auto_hum; _r = st.session_state.auto_rain
-            st.markdown(f"""
+        _t = st.session_state.auto_temp
+        _h = st.session_state.auto_hum
+        _r = st.session_state.auto_rain
+        st.markdown(f"""
 <div class="climate-tiles">
   <div class="climate-tile">
     <div class="climate-tile-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4 4 0 1 0 5 0Z"/></svg></div>
-    <div class="climate-tile-body"><div class="label">Temperature</div><div class="climate-tile-value">{_t}<small>Â°C</small></div></div>
+    <div class="climate-tile-body"><div class="label">Temperature</div><div class="climate-tile-value">{_t}<small>deg C</small></div></div>
     <div class="climate-tile-spark"><svg viewBox="0 0 60 20"><polyline points="0,14 10,10 20,12 30,6 40,8 50,4 60,7" fill="none" stroke="#c44536" stroke-width="1.5"/></svg></div>
   </div>
   <div class="climate-tile">
@@ -2430,45 +2436,46 @@ elif _page == "cultivation":
     <div class="climate-tile-spark"><svg viewBox="0 0 60 20"><polyline points="0,16 10,12 20,14 30,8 40,10 50,5 60,9" fill="none" stroke="#d4a373" stroke-width="1.5"/></svg></div>
   </div>
 </div>""", unsafe_allow_html=True)
-            st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
 
-        with lc2:
-            st.markdown("""
+    with lc2:
+        st.markdown('<span id="cult-farm-card"></span>', unsafe_allow_html=True)
+        st.markdown("""
 <div class="tool-block">
 <div class="tool-block-head">
   <h3 class="display tool-block-title">Farm Context</h3>
-  <span class="pill earth">History Â· systems</span>
+  <span class="pill earth">History - systems</span>
 </div>
 <p class="tool-block-sub">Historical yield + cultivation system. Used to weight output probability.</p>""", unsafe_allow_html=True)
 
-            fc1, fc2 = st.columns(2)
-            with fc1:
-                yield_val = st.number_input("Yield â€” last season (kg/ha)", min_value=0.0, max_value=10000.0, value=2083.0, step=10.0, key="yield_val")
-                st.markdown(_metric_range_html("Yield", yield_val, 0.0, 5000.0, 1800.0, 3500.0, "kg/ha", accent="earth"), unsafe_allow_html=True)
-                season_val = st.selectbox("Current season", ["Kharif","Rabi","Zaid"], key="season_val")
-                prev_crop_val = st.selectbox("Previous crop", ["Cotton","Maize","Potato","Rice","Sugarcane","Tomato","Wheat"], key="prev_crop_val")
-            with fc2:
-                fert_val = st.number_input("Fertilizer used (kg/ha)", min_value=0.0, max_value=400.0, value=118.0, step=1.0, key="fert_val")
-                st.markdown(_metric_range_html("Fertilizer", fert_val, 0.0, 400.0, 60.0, 200.0, "kg/ha", accent="earth"), unsafe_allow_html=True)
-                irrig_val = st.selectbox("Irrigation system", ["Canal","Drip","Rainfed","Sprinkler"], key="irrig_val")
-                region_val = st.selectbox("Geographic zone", ["Central","East","North","South","West"], key="region_val")
+        fc1, fc2 = st.columns(2)
+        with fc1:
+            yield_val = st.number_input("Yield - last season (kg/ha)", min_value=0.0, max_value=10000.0, value=2083.0, step=10.0, key="yield_val")
+            st.markdown(_metric_range_html("Yield", yield_val, 0.0, 5000.0, 1800.0, 3500.0, "kg/ha", accent="earth"), unsafe_allow_html=True)
+            season_val = st.selectbox("Current season", ["Kharif", "Rabi", "Zaid"], key="season_val")
+            prev_crop_val = st.selectbox("Previous crop", ["Cotton", "Maize", "Potato", "Rice", "Sugarcane", "Tomato", "Wheat"], key="prev_crop_val")
+        with fc2:
+            fert_val = st.number_input("Fertilizer used (kg/ha)", min_value=0.0, max_value=400.0, value=118.0, step=1.0, key="fert_val")
+            st.markdown(_metric_range_html("Fertilizer", fert_val, 0.0, 400.0, 60.0, 200.0, "kg/ha", accent="earth"), unsafe_allow_html=True)
+            irrig_val = st.selectbox("Irrigation system", ["Canal", "Drip", "Rainfed", "Sprinkler"], key="irrig_val")
+            region_val = st.selectbox("Geographic zone", ["Central", "East", "North", "South", "West"], key="region_val")
 
-            st.markdown('</div>', unsafe_allow_html=True)
-        st.markdown('<div class="tool-analyze">', unsafe_allow_html=True)
-        _an1, _an2 = st.columns([3.8, 1.25])
-        with _an1:
-            st.markdown("""
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    st.markdown('<div class="tool-analyze"><span id="ready-synth-card"></span>', unsafe_allow_html=True)
+    _an1, _an2 = st.columns([3.8, 1.25])
+    with _an1:
+        st.markdown("""
 <div class="tool-analyze-copy">
   <h3 class="display tool-analyze-title">Ready to synthesize.</h3>
   <p class="tool-analyze-sub">All four vectors complete. Expected synthesis time: ~2.4 seconds.</p>
 </div>""", unsafe_allow_html=True)
-        with _an2:
-            st.markdown('<div class="tool-analyze-btn-wrap">', unsafe_allow_html=True)
-            analyze_btn = st.form_submit_button("Analyze and predict crop", use_container_width=True)
-            st.markdown('</div>', unsafe_allow_html=True)
+    with _an2:
+        st.markdown('<div class="tool-analyze-btn-wrap">', unsafe_allow_html=True)
+        analyze_btn = st.button("Analyze and predict crop", key="analyze_predict_btn", use_container_width=True, type="primary")
         st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
-    # â”€â”€ Run inference â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     if analyze_btn and soil_img is not None and _models_ok:
         _img_bytes = soil_img_bytes or soil_img.getvalue()
         _pil = Image.open(io.BytesIO(_img_bytes)).convert("RGB")
@@ -2476,7 +2483,7 @@ elif _page == "cultivation":
         if not _valid:
             st.error("No soil detected in this image. Please upload a clear close-up soil photo.")
         else:
-            with st.spinner("Synthesizing â€” cross-attention fusion runningâ€¦"):
+            with st.spinner("Synthesizing - cross-attention fusion running..."):
                 try:
                     (soil_name, confidence, all_probs, soil_fert, crop_recs, debug) = run_inference(
                         img_model, tab_proj, fusion, xgb_clf, scaler,
@@ -2537,7 +2544,7 @@ elif _page == "diagnostic":
   </div>
 </div>""", unsafe_allow_html=True)
 
-    # â”€â”€ Leaf specimen block â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # ── Leaf specimen block ────────────────────────────────────
     d1, d2 = st.columns([3, 2])
 
     with d1:
@@ -2636,7 +2643,7 @@ elif _page == "diagnostic":
   <p style="font-size:14px;color:var(--ink-3);margin-top:16px;">Upload a leaf image and run diagnosis to see results here.</p>
 </div>""", unsafe_allow_html=True)
 
-    # â”€â”€ Run diagnosis button â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    # ── Run diagnosis button ───────────────────────────────────
     st.markdown('<div class="diag-actions">', unsafe_allow_html=True)
     run_diag = st.button("Run neural diagnosis ->", key="run_diag_btn", type="primary")
     st.markdown('</div>', unsafe_allow_html=True)
@@ -2767,16 +2774,16 @@ else:  # dashboard
         _ring_off = _ring_c * (1 - _conf_pct / 100)
 
         _CROP_EMOJI = {
-            "Rice":"ðŸŒ¾","Wheat":"ðŸŒ¾","Maize":"ðŸŒ½","Cotton":"ðŸŒ¸","Groundnut":"ðŸ¥œ",
-            "Sugarcane":"ðŸŽ‹","Jute":"ðŸŒ¿","Mungbean":"ðŸ«˜","Blackgram":"ðŸ«˜",
-            "Lentil":"ðŸ«˜","Pomegranate":"ðŸŽ","Banana":"ðŸŒ","Mango":"ðŸ¥­",
-            "Grapes":"ðŸ‡","Watermelon":"ðŸ‰","Muskmelon":"ðŸˆ","Apple":"ðŸŽ",
-            "Orange":"ðŸŠ","Papaya":"ðŸˆ","Coconut":"ðŸ¥¥","Coffee":"â˜•",
-            "Chickpea":"ðŸ«˜","Kidneybeans":"ðŸ«˜","Pigeonpeas":"ðŸ«˜","Mothbeans":"ðŸ«˜",
+            "Rice":"🌾","Wheat":"🌾","Maize":"🌽","Cotton":"🌸","Groundnut":"🥜",
+            "Sugarcane":"🎋","Jute":"🌿","Mungbean":"🫘","Blackgram":"🫘",
+            "Lentil":"🫘","Pomegranate":"🍎","Banana":"🍌","Mango":"🥭",
+            "Grapes":"🍇","Watermelon":"🍉","Muskmelon":"🍈","Apple":"🍎",
+            "Orange":"🍊","Papaya":"🍈","Coconut":"🥥","Coffee":"☕",
+            "Chickpea":"🫘","Kidneybeans":"🫘","Pigeonpeas":"🫘","Mothbeans":"🫘",
         }
-        _crop_emoji = _CROP_EMOJI.get(_crop_name, "ðŸŒ±")
+        _crop_emoji = _CROP_EMOJI.get(_crop_name, "🌱")
 
-        # Soil type â†’ color mapping for card background
+        # Soil type → color mapping for card background
         _SOIL_BG = {
             "Red Soil":      ("linear-gradient(135deg,#6b1a00,#3a0a00)", "linear-gradient(135deg,#8b2500,#5a1200)"),
             "Black Soil":    ("linear-gradient(135deg,#1a1a28,#0a0a14)", "linear-gradient(135deg,#252538,#111120)"),
@@ -2858,11 +2865,11 @@ else:  # dashboard
                     '<div style="margin-bottom:20px;">'
                     '<div style="display:flex;justify-content:space-between;margin-bottom:8px;">'
                     '<span style="font-family:\'JetBrains Mono\',monospace;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#6b6b5e;">Temperature</span>'
-                    '<span style="font-family:\'JetBrains Mono\',monospace;font-size:13px;color:#c44536;font-weight:500;">' + str(_t_v) + ' Â°C</span>'
+                    '<span style="font-family:\'JetBrains Mono\',monospace;font-size:13px;color:#c44536;font-weight:500;">' + str(_t_v) + ' °C</span>'
                     '</div>'
                     '<div style="height:8px;background:rgba(20,20,15,0.07);border-radius:4px;overflow:hidden;">'
                     '<div style="height:100%;width:' + f'{_t_pct:.1f}' + '%;background:linear-gradient(90deg,#e87048,#c44536);border-radius:4px;transition:width 1s cubic-bezier(0.2,0.8,0.2,1);"></div>'
-                    '</div><div style="font-size:10px;color:#a8a598;margin-top:4px;font-family:\'JetBrains Mono\',monospace;">Range: 0â€“50 Â°C Â· Optimal for most crops: 20â€“35 Â°C</div>'
+                    '</div><div style="font-size:10px;color:#a8a598;margin-top:4px;font-family:\'JetBrains Mono\',monospace;">Range: 0–50 °C · Optimal for most crops: 20–35 °C</div>'
                     '</div>'
                     '<div style="margin-bottom:20px;">'
                     '<div style="display:flex;justify-content:space-between;margin-bottom:8px;">'
@@ -2871,7 +2878,7 @@ else:  # dashboard
                     '</div>'
                     '<div style="height:8px;background:rgba(20,20,15,0.07);border-radius:4px;overflow:hidden;">'
                     '<div style="height:100%;width:' + f'{_h_pct:.1f}' + '%;background:linear-gradient(90deg,#7ba854,#5a8a3a);border-radius:4px;transition:width 1s cubic-bezier(0.2,0.8,0.2,1);"></div>'
-                    '</div><div style="font-size:10px;color:#a8a598;margin-top:4px;font-family:\'JetBrains Mono\',monospace;">Optimal for most crops: 50â€“80 %</div>'
+                    '</div><div style="font-size:10px;color:#a8a598;margin-top:4px;font-family:\'JetBrains Mono\',monospace;">Optimal for most crops: 50–80 %</div>'
                     '</div>'
                     '<div style="margin-bottom:20px;">'
                     '<div style="display:flex;justify-content:space-between;margin-bottom:8px;">'
@@ -2880,7 +2887,7 @@ else:  # dashboard
                     '</div>'
                     '<div style="height:8px;background:rgba(20,20,15,0.07);border-radius:4px;overflow:hidden;">'
                     '<div style="height:100%;width:' + f'{_r_pct:.1f}' + '%;background:linear-gradient(90deg,#e8c989,#d4a373);border-radius:4px;transition:width 1s cubic-bezier(0.2,0.8,0.2,1);"></div>'
-                    '</div><div style="font-size:10px;color:#a8a598;margin-top:4px;font-family:\'JetBrains Mono\',monospace;">Scale: 0â€“3000 mm/yr Â· Optimal: 600â€“2000 mm</div>'
+                    '</div><div style="font-size:10px;color:#a8a598;margin-top:4px;font-family:\'JetBrains Mono\',monospace;">Scale: 0–3000 mm/yr · Optimal: 600–2000 mm</div>'
                     '</div>'
                     '</div>',
                     unsafe_allow_html=True
@@ -2888,15 +2895,15 @@ else:  # dashboard
             st.markdown('</div>', unsafe_allow_html=True)
 
         with dg2:
-            st.markdown('<div class="alts"><div class="alts-head"><span class="eyebrow">Alternative crops</span><span class="label">Ranked K=2â€“4</span></div>', unsafe_allow_html=True)
+            st.markdown('<div class="alts"><div class="alts-head"><span class="eyebrow">Alternative crops</span><span class="label">Ranked K=2–4</span></div>', unsafe_allow_html=True)
             for _ai, _cr in enumerate(_crops[1:4], start=2):
                 _ascore = round(_cr.get("suitability", 0.5) * 100)
-                _aemoji = _CROP_EMOJI.get(_cr.get("name",""), "ðŸŒ±")
+                _aemoji = _CROP_EMOJI.get(_cr.get("name",""), "🌱")
                 st.markdown(
                     '<div class="alt">'
                     '<div style="font-size:26px;line-height:1;margin-right:4px;">' + _aemoji + '</div>'
                     '<div class="alt-body"><div class="alt-name">' + _cr['name'] + '</div>'
-                    '<div class="alt-meta"><span class="num">' + _cr.get('npk','â€”') + '</span></div></div>'
+                    '<div class="alt-meta"><span class="num">' + _cr.get('npk','—') + '</span></div></div>'
                     '<div class="alt-score num">' + str(_ascore) + '%</div></div>',
                     unsafe_allow_html=True
                 )
@@ -2906,7 +2913,7 @@ else:  # dashboard
         st.markdown(f"""
 <div class="timeline">
   <div class="timeline-head">
-    <span class="eyebrow">Cultivation timeline Â· 8 months</span>
+    <span class="eyebrow">Cultivation timeline · 8 months</span>
     <span class="pill earth">{_season} 2026</span>
   </div>
   <div class="timeline-months">
@@ -2935,17 +2942,17 @@ else:  # dashboard
         st.markdown(f"""
 <div class="dash-insights">
   <div class="section-head">
-    <span class="eyebrow">Advisory Â· notes</span>
+    <span class="eyebrow">Advisory · notes</span>
     <h2 class="display section-title">What the model <em>noticed.</em></h2>
   </div>
   <div class="insights-grid">
     <div class="insight">
       <div class="insight-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3s7 8 7 13a7 7 0 1 1-14 0c0-5 7-13 7-13Z"/></svg></div>
-      <div><div class="insight-k">Soil moisture</div><p class="insight-v">Humidity at {_h}%. {'Above optimal â€” reduce next irrigation cycle.' if _h > 70 else 'Within optimal range.'}</p></div>
+      <div><div class="insight-k">Soil moisture</div><p class="insight-v">Humidity at {_h}%. {'Above optimal — reduce next irrigation cycle.' if _h > 70 else 'Within optimal range.'}</p></div>
     </div>
     <div class="insight">
       <div class="insight-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6"/><path d="M10 3v6L4.5 19a2 2 0 0 0 1.7 3h11.6a2 2 0 0 0 1.7-3L14 9V3"/></svg></div>
-      <div><div class="insight-k">Nitrogen status</div><p class="insight-v">N at {_n} mg/kg. {'Within optimal band â€” maintain current dosage.' if 60<=_n<=140 else 'Outside optimal range (60â€“140).'}</p></div>
+      <div><div class="insight-k">Nitrogen status</div><p class="insight-v">N at {_n} mg/kg. {'Within optimal band — maintain current dosage.' if 60<=_n<=140 else 'Outside optimal range (60–140).'}</p></div>
     </div>
     <div class="insight">
       <div class="insight-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M17.7 7.7a2.5 2.5 0 1 1 1.8 4.3H2"/><path d="M9.6 4.6A2 2 0 1 1 11 8H2"/><path d="M12.6 19.4A2 2 0 1 0 14 16H2"/></svg></div>
@@ -2953,7 +2960,7 @@ else:  # dashboard
     </div>
     <div class="insight">
       <div class="insight-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18h8"/><path d="M3 22h18"/><path d="M14 22a7 7 0 1 0 0-14h-1"/><path d="M9 14h2"/><path d="M9 12a2 2 0 0 1-2-2V6h4v4a2 2 0 0 1-2 2Z"/><path d="M12 6H6"/><path d="M10 2h4"/></svg></div>
-      <div><div class="insight-k">Fungal risk window</div><p class="insight-v">{'Monitor humidity â€” conditions favour fungal stress in weeks 6â€“8.' if _h > 65 else 'Low fungal risk under current conditions.'}</p></div>
+      <div><div class="insight-k">Fungal risk window</div><p class="insight-v">{'Monitor humidity — conditions favour fungal stress in weeks 6–8.' if _h > 65 else 'Low fungal risk under current conditions.'}</p></div>
     </div>
   </div>
 </div>""", unsafe_allow_html=True)
