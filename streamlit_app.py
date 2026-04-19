@@ -1695,7 +1695,7 @@ def _ac(p): return "active" if _page == p else ""
 
 
 def _metric_range_html(name, value, min_v, max_v, opt_lo, opt_hi, unit, accent="sage"):
-    _pct = min(100.0, max(0.0, (value / opt_hi) * 100 if opt_hi else 0.0))
+    _pct = min(100.0, max(0.0, ((value - min_v) / (opt_hi - min_v)) * 100 if opt_hi > min_v else 0.0))
     _opt_left = round((opt_lo - min_v) / (max_v - min_v) * 100, 1)
     _opt_width = round((opt_hi - opt_lo) / (max_v - min_v) * 100, 1)
     _in_range = opt_lo <= value <= opt_hi
@@ -2053,8 +2053,6 @@ body{background:#faf8f3;font-family:"Inter Tight",-apple-system,sans-serif;overf
   </h1>
   <p class="hero-lede">Fusing soil vision, climate synthesis, and phyto-diagnostic neural nets into a single recommendation engine — tuned for your field, not the average of everyone else&#8217;s.</p>
   <div class="hero-badges">
-    <span class="hero-badge">&#127807; Predictive Cultivation</span>
-    <span class="hero-badge">&#128301; Phyto-Diagnostic</span>
     <span class="hero-badge">&#128202; AI Dashboard</span>
   </div>
 </div>
@@ -2339,26 +2337,14 @@ elif _page == "cultivation":
 <p class="tool-block-sub">Upload a clear close-up of the soil sample. Avoid leaves, hands, or moisture artifacts.</p>""", unsafe_allow_html=True)
             soil_img = st.file_uploader("Soil image", type=["jpg","jpeg","png"], key="soil_img_cult", label_visibility="collapsed")
             if soil_img:
-                import base64 as _sb64
                 soil_img_bytes = soil_img.getvalue()
-                _sb64str = _sb64.b64encode(soil_img_bytes).decode()
-                _smime = "image/png" if soil_img.name.lower().endswith(".png") else "image/jpeg"
+                st.image(soil_img_bytes, use_container_width=True, output_format="auto")
                 st.markdown(
-                    '<div class="upload-preview" style="margin-top:12px;">'
-                    '<div class="upload-preview-img">'
-                    '<img src="data:' + _smime + ';base64,' + _sb64str + '" '
-                    'class="upload-live-image" />'
-                    '</div>',
-                    unsafe_allow_html=True,
-                )
-                st.markdown(
-                    '<div class="upload-preview-chip">'
-                    '<span>&#10003; Valid specimen · ready for synthesis</span>'
-                    '</div></div>'
-                    '<div class="upload-meta">'
+                    '<div class="upload-meta" style="margin-top:12px;">'
                     '<div class="upload-meta-file"><div class="upload-meta-thumb"></div>'
                     '<div><div class="upload-meta-name">' + soil_img.name + '</div>'
                     '<div class="upload-meta-sub num">' + f'{soil_img.size/1024:.1f}' + ' KB</div></div></div>'
+                    '<div class="upload-preview-chip-static"><span>&#10003; Valid specimen ready for synthesis</span></div>'
                     '</div>',
                     unsafe_allow_html=True,
                 )
@@ -2406,7 +2392,9 @@ elif _page == "cultivation":
                 village_val = st.text_input("Village / Town", value="Rawada", key="village_val")
 
             st.markdown('<div class="climate-action-row">', unsafe_allow_html=True)
-            fetch_climate = st.form_submit_button("✦ Fetch climate vectors", use_container_width=False)
+            _climate_btn_spacer, _climate_btn_col = st.columns([2.2, 1])
+            with _climate_btn_col:
+                fetch_climate = st.form_submit_button("Fetch climate vectors", use_container_width=True)
             st.markdown('</div>', unsafe_allow_html=True)
 
             if fetch_climate:
@@ -2461,19 +2449,19 @@ elif _page == "cultivation":
                 region_val = st.selectbox("Geographic zone", ["Central","East","North","South","West"], key="region_val")
 
             st.markdown('</div>', unsafe_allow_html=True)
-
-        # ── Analyze bar ────────────────────────────────────────
-        st.markdown("""
-<div class="tool-analyze">
-  <div class="tool-analyze-inner">
-    <div>
-      <h3 class="display tool-analyze-title">Ready to synthesize.</h3>
-      <p class="tool-analyze-sub">All four vectors complete. Expected synthesis time: ~2.4 seconds.</p>
-    </div>
-    <div class="tool-analyze-action">
-""", unsafe_allow_html=True)
-        analyze_btn = st.form_submit_button("✦ Analyze & predict crop →", use_container_width=False)
-        st.markdown('</div></div></div>', unsafe_allow_html=True)
+        st.markdown('<div class="tool-analyze">', unsafe_allow_html=True)
+        _an1, _an2 = st.columns([3.8, 1.25])
+        with _an1:
+            st.markdown("""
+<div class="tool-analyze-copy">
+  <h3 class="display tool-analyze-title">Ready to synthesize.</h3>
+  <p class="tool-analyze-sub">All four vectors complete. Expected synthesis time: ~2.4 seconds.</p>
+</div>""", unsafe_allow_html=True)
+        with _an2:
+            st.markdown('<div class="tool-analyze-btn-wrap">', unsafe_allow_html=True)
+            analyze_btn = st.form_submit_button("Analyze and predict crop", use_container_width=True)
+            st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
 
     # ── Run inference ──────────────────────────────────────────
     if analyze_btn and soil_img is not None and _models_ok:
@@ -2554,26 +2542,14 @@ elif _page == "diagnostic":
         if leaf_img:
             _leaf_bytes = leaf_img.getvalue()
             st.session_state.leaf_img_bytes = _leaf_bytes
-            # Show the actual uploaded image
-            import base64 as _b64
-            _lb64 = _b64.b64encode(_leaf_bytes).decode()
-            _mime = "image/png" if leaf_img.name.lower().endswith(".png") else "image/jpeg"
-            st.markdown(
-                f'<div class="upload-preview" style="margin-top:12px;">'
-                f'<div class="upload-preview-img leaf">'
-                f'<img src="data:{_mime};base64,{_lb64}" '
-                f'class="upload-live-image leaf" />'
-                f'</div>',
-                unsafe_allow_html=True,
-            )
+            st.image(_leaf_bytes, use_container_width=True, output_format="auto")
             _pil_leaf = Image.open(io.BytesIO(_leaf_bytes)).convert("RGB")
             st.session_state.leaf_valid = None
             st.markdown(
-                '<div class="upload-preview-chip"><span>Preview ready · run diagnosis</span></div></div>'
-                '<div class="upload-meta"><div class="upload-meta-file"><div class="upload-meta-thumb leaf"></div><div>'
+                '<div class="upload-meta" style="margin-top:12px;"><div class="upload-meta-file"><div class="upload-meta-thumb leaf"></div><div>'
                 '<div class="upload-meta-name">' + leaf_img.name + '</div>'
                 '<div class="upload-meta-sub num">' + f'{leaf_img.size/1024:.1f}' + ' KB</div>'
-                '</div></div></div>',
+                '</div></div><div class="upload-preview-chip-static"><span>Preview ready run diagnosis</span></div></div>',
                 unsafe_allow_html=True,
             )
         else:
@@ -2686,31 +2662,26 @@ else:  # dashboard
     _res = st.session_state.get("last_result")
     _now = _now_ist()
     components.html("<script>window.parent.scrollTo({top: 0, behavior: 'auto'});</script>", height=0)
-    st.markdown('<div class="page-dashboard">', unsafe_allow_html=True)
-    dh1, dh2 = st.columns([4, 1.2])
+    dh1, dh2 = st.columns([4, 1.35])
     with dh1:
         st.markdown("""
 <div class="dash-title-wrap">
-  <span class="eyebrow">Result analysis · field T-047</span>
+  <span class="eyebrow">Result analysis - field T-047</span>
   <h1 class="display tool-page-title">Synthesis complete.</h1>
-  <p class="tool-page-sub">Generated """ + _now.strftime("%b %d, %Y · %H:%M") + """ IST. Output verified across 4 model heads; confidence-weighted with historical yield prior.</p>
+  <p class="tool-page-sub">Generated """ + _now.strftime("%b %d, %Y - %H:%M") + """ IST. Output verified across 4 model heads; confidence-weighted with historical yield prior.</p>
 </div>""", unsafe_allow_html=True)
     with dh2:
-        st.markdown('<div class="dash-header-actions" style="justify-content:flex-end;padding-top:54px;">', unsafe_allow_html=True)
-
-    # Header action buttons — Export PDF + New Analysis
-    _hcol1, _hcol2 = dh2.columns([1, 1])
-    with _hcol1:
+        st.markdown('<div class="dash-header-actions">', unsafe_allow_html=True)
         _res_for_dl = st.session_state.get("last_result")
         if _res_for_dl:
-            _dl_soil = _res_for_dl.get("soil_name","Unknown")
-            _dl_crop = (_res_for_dl.get("crop_recs") or [{"name":"—"}])[0].get("name","—")
-            _dl_npk  = (_res_for_dl.get("crop_recs") or [{"npk":"—"}])[0].get("npk","—")
+            _dl_soil = _res_for_dl.get("soil_name", "Unknown")
+            _dl_crop = (_res_for_dl.get("crop_recs") or [{"name": "-"}])[0].get("name", "-")
+            _dl_npk = (_res_for_dl.get("crop_recs") or [{"npk": "-"}])[0].get("npk", "-")
             _dl_conf = round(_res_for_dl.get("confidence", 0))
-            _dl_n    = _res_for_dl.get("n",0); _dl_p = _res_for_dl.get("p",0)
-            _dl_k    = _res_for_dl.get("k",0); _dl_ph = _res_for_dl.get("ph",0)
-            _dl_t    = _res_for_dl.get("temp",0); _dl_h = _res_for_dl.get("hum",0)
-            _dl_r    = _res_for_dl.get("rain",0); _dl_s = _res_for_dl.get("season","—")
+            _dl_n = _res_for_dl.get("n", 0); _dl_p = _res_for_dl.get("p", 0)
+            _dl_k = _res_for_dl.get("k", 0); _dl_ph = _res_for_dl.get("ph", 0)
+            _dl_t = _res_for_dl.get("temp", 0); _dl_h = _res_for_dl.get("hum", 0)
+            _dl_r = _res_for_dl.get("rain", 0); _dl_s = _res_for_dl.get("season", "-")
             _report_html = (
                 "<!doctype html><html><head><meta charset='utf-8'>"
                 "<title>AgroSynapse Report</title>"
@@ -2722,7 +2693,7 @@ else:  # dashboard
                 ".badge{display:inline-block;padding:4px 12px;background:#0f2818;color:#faf8f3;border-radius:999px;font-size:13px;}"
                 "</style></head><body>"
                 "<h1>AgroSynapse Analysis Report</h1>"
-                "<p style='color:#6b6b5e;font-size:14px;'>Generated " + _now.strftime("%B %d, %Y at %H:%M") + " IST &nbsp;·&nbsp; AgroSynapse AI v0.4</p>"
+                "<p style='color:#6b6b5e;font-size:14px;'>Generated " + _now.strftime("%B %d, %Y at %H:%M") + " IST | AgroSynapse AI v0.4</p>"
                 "<h2>Primary Recommendation</h2>"
                 "<p><span class='badge'>" + _dl_crop + "</span> &nbsp; Confidence: <strong>" + str(_dl_conf) + "%</strong></p>"
                 "<table><tr><th>Parameter</th><th>Value</th></tr>"
@@ -2732,14 +2703,14 @@ else:  # dashboard
                 "</table>"
                 "<h2>Soil Chemical Profile</h2>"
                 "<table><tr><th>Nutrient</th><th>Measured</th><th>Optimal Range</th></tr>"
-                "<tr><td>Nitrogen (N)</td><td>" + str(_dl_n) + " mg/kg</td><td>60–140 mg/kg</td></tr>"
-                "<tr><td>Phosphorus (P)</td><td>" + str(_dl_p) + " mg/kg</td><td>20–60 mg/kg</td></tr>"
-                "<tr><td>Potassium (K)</td><td>" + str(_dl_k) + " mg/kg</td><td>40–100 mg/kg</td></tr>"
-                "<tr><td>Soil pH</td><td>" + str(_dl_ph) + "</td><td>5.5–7.5</td></tr>"
+                "<tr><td>Nitrogen (N)</td><td>" + str(_dl_n) + " mg/kg</td><td>60-140 mg/kg</td></tr>"
+                "<tr><td>Phosphorus (P)</td><td>" + str(_dl_p) + " mg/kg</td><td>20-60 mg/kg</td></tr>"
+                "<tr><td>Potassium (K)</td><td>" + str(_dl_k) + " mg/kg</td><td>40-100 mg/kg</td></tr>"
+                "<tr><td>Soil pH</td><td>" + str(_dl_ph) + "</td><td>5.5-7.5</td></tr>"
                 "</table>"
                 "<h2>Climate Vectors</h2>"
                 "<table><tr><th>Parameter</th><th>Value</th></tr>"
-                "<tr><td>Temperature</td><td>" + str(_dl_t) + " °C</td></tr>"
+                "<tr><td>Temperature</td><td>" + str(_dl_t) + " C</td></tr>"
                 "<tr><td>Humidity</td><td>" + str(_dl_h) + " %</td></tr>"
                 "<tr><td>Annual Rainfall</td><td>" + str(int(_dl_r)) + " mm</td></tr>"
                 "</table>"
@@ -2752,13 +2723,14 @@ else:  # dashboard
                 file_name="agrosynapse_report.html",
                 mime="text/html",
                 key="dl_report_btn",
+                use_container_width=True,
             )
-    with _hcol2:
-        if st.button("New analysis", key="new_analysis_btn"):
+        st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown('<div class="dash-header-actions">', unsafe_allow_html=True)
+        if st.button("New analysis", key="new_analysis_btn", use_container_width=True):
             st.session_state.page = "cultivation"
             st.query_params["page"] = "cultivation"
             st.rerun()
-    with dh2:
         st.markdown('</div>', unsafe_allow_html=True)
 
     if _res:
