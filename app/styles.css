@@ -275,12 +275,12 @@ body { overflow-x: hidden; }
 .hover-lift:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
 
 /* ---------- Scroll reveal ---------- */
-.reveal { opacity: 0; transform: translateY(12px); transition: opacity 0.35s var(--ease-out), transform 0.35s var(--ease-out); }
-.reveal.in { opacity: 1; transform: translateY(0); }
+.reveal { transform: translateY(10px); transition: transform 0.4s var(--ease-out); }
+.reveal.in { transform: translateY(0); }
 
 /* ---------- Page transition ---------- */
-.page-enter { animation: pageEnter 0.2s ease-out both; }
-@keyframes pageEnter { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.page-enter { animation: pageEnter 0.18s ease-out both; }
+@keyframes pageEnter { from { transform: translateY(6px); } to { transform: translateY(0); } }
 
 .reveal-mask { overflow: hidden; display: inline-block; vertical-align: top; }
 .reveal-mask > span { display: inline-block; transform: translateY(110%); transition: transform 0.4s var(--ease-out); will-change: transform; }

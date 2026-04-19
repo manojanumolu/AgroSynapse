@@ -56,8 +56,8 @@
 .tool-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 24px;
-  align-items: start;
+  gap: 16px;
+  align-items: stretch;
 }
 
 .tool-block {
@@ -109,23 +109,25 @@
 
 .upload-preview { display: flex; flex-direction: column; gap: 12px; }
 .upload-preview-img {
+  width: 100%;
   aspect-ratio: 4 / 3;
   border-radius: 14px;
   overflow: hidden;
   position: relative;
   background: #2a1608;
+  display: block;
 }
 .upload-preview-img svg { width: 100%; height: 100%; display: block; }
 .upload-preview-img img { width: 100%; height: 100%; display: block; object-fit: cover; }
 .upload-preview-img.leaf { background: #14240f; }
 .upload-preview-img.leaf-square {
+  width: 100%;
   aspect-ratio: 1 / 1;
   border-radius: 14px;
   overflow: hidden;
   position: relative;
   background: #14240f;
-  max-width: 480px;
-  width: 100%;
+  display: block;
 }
 .upload-preview-chip {
   position: absolute; bottom: 12px; left: 12px;
@@ -211,7 +213,13 @@
 }
 
 /* Numeric field */
-.numeric-field { display: flex; flex-direction: column; gap: 10px; }
+.numeric-field {
+  display: flex; flex-direction: column; gap: 10px;
+  background: var(--paper-2);
+  border: 1px solid var(--line-2);
+  border-radius: 14px;
+  padding: 14px 16px;
+}
 .field-range {
   margin: 10px 0 18px;
 }
@@ -245,7 +253,7 @@
 .chem-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 24px;
+  gap: 12px;
 }
 
 /* Climate */
