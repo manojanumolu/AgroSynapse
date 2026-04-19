@@ -2052,9 +2052,6 @@ body{background:#faf8f3;font-family:"Inter Tight",-apple-system,sans-serif;overf
     Laboratory-grade<br>agronomy, delivered<br>to every <em>acre.</em>
   </h1>
   <p class="hero-lede">Fusing soil vision, climate synthesis, and phyto-diagnostic neural nets into a single recommendation engine — tuned for your field, not the average of everyone else&#8217;s.</p>
-  <div class="hero-badges">
-    <span class="hero-badge">&#128202; AI Dashboard</span>
-  </div>
 </div>
 </div>
 <div class="hero-tick"><span>SCROLL</span><span>&#8595;</span></div>
@@ -2515,6 +2512,14 @@ elif _page == "cultivation":
 # ==============================================================
 elif _page == "diagnostic":
 
+  # Warm up and cache leaf model once so diagnosis click latency stays low.
+  if "leaf_model_ready" not in st.session_state:
+    _leaf_model, _leaf_labels, _leaf_ferts = load_leaf_model()
+    st.session_state.leaf_model_ready = _leaf_model is not None
+    st.session_state.leaf_model_cached = _leaf_model
+    st.session_state.leaf_labels_cached = _leaf_labels
+    st.session_state.leaf_ferts_cached = _leaf_ferts
+
     st.markdown("""
 <div class="page-tool">
 <div class="tool-header">
@@ -2542,7 +2547,9 @@ elif _page == "diagnostic":
         if leaf_img:
             _leaf_bytes = leaf_img.getvalue()
             st.session_state.leaf_img_bytes = _leaf_bytes
-            st.image(_leaf_bytes, use_container_width=True, output_format="auto")
+          _img_col_l, _img_col_c, _img_col_r = st.columns([1.2, 3.6, 1.2])
+          with _img_col_c:
+            st.image(_leaf_bytes, width=420, output_format="auto")
             _pil_leaf = Image.open(io.BytesIO(_leaf_bytes)).convert("RGB")
             st.session_state.leaf_valid = None
             st.markdown(
@@ -2641,7 +2648,13 @@ Upload a leaf image to preview the exact specimen here.
             else:
                 with st.spinner("Running PhytoNet-v2 inference…"):
                     try:
-                        leaf_model, leaf_labels, leaf_ferts = load_leaf_model()
+                    leaf_model = st.session_state.get("leaf_model_cached")
+                    leaf_labels = st.session_state.get("leaf_labels_cached")
+                    if leaf_model is None or leaf_labels is None:
+                      leaf_model, leaf_labels, leaf_ferts = load_leaf_model()
+                      st.session_state.leaf_model_cached = leaf_model
+                      st.session_state.leaf_labels_cached = leaf_labels
+                      st.session_state.leaf_ferts_cached = leaf_ferts
                         if leaf_model is None:
                             st.error("Leaf model unavailable. Please check model files.")
                         else:
