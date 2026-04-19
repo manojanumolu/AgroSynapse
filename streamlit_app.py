@@ -1856,11 +1856,7 @@ _CHROME_CSS = (
     "div[data-testid='stVerticalBlock']:has(#diag-specimen-card) [data-testid='stFileUploaderDropzone']{background:#efeeea!important;border:1px solid rgba(20,20,15,0.08)!important;border-radius:12px!important;}"
     "div[data-testid='stVerticalBlock']:has(#diag-specimen-card) [data-testid='stImage'] img{border-radius:12px;max-height:360px;width:auto!important;object-fit:contain;display:block;margin:0 auto;}"
     "div[data-testid='stVerticalBlock']:has(#cult-soil-card),div[data-testid='stVerticalBlock']:has(#cult-chem-card),div[data-testid='stVerticalBlock']:has(#cult-climate-card),div[data-testid='stVerticalBlock']:has(#cult-farm-card){background:#fdfbf6;border:1px solid rgba(20,20,15,0.12);border-radius:20px;padding:22px;box-shadow:0 10px 24px rgba(15,40,24,0.05);}"
-    "div[data-testid='stVerticalBlock']:has(#cult-soil-card) [data-testid='stFileUploaderDropzone']{background:#efeeea!important;border:1px solid rgba(20,20,15,0.08)!important;border-radius:12px!important;}"
-    "div[data-testid='stVerticalBlock']:has(#ready-synth-card){background:linear-gradient(135deg,#0f2818 0%,#355f3b 52%,#5a8a3a 100%);border:1px solid rgba(42,74,47,0.5);border-radius:22px;padding:20px 24px;box-shadow:0 14px 36px rgba(15,40,24,0.24);margin-top:10px;}"
-    "div[data-testid='stVerticalBlock']:has(#ready-synth-card) [data-testid='stMarkdownContainer'] h3,div[data-testid='stVerticalBlock']:has(#ready-synth-card) [data-testid='stMarkdownContainer'] p{color:#f6f4ee!important;}"
-    "div[data-testid='stVerticalBlock']:has(#ready-synth-card) [data-testid='stButton']>button{background:#f6f4ee!important;color:#0f2818!important;border:0!important;font-weight:700!important;}"
-    "div[data-testid='stVerticalBlock']:has(#ready-synth-card) [data-testid='stButton']>button:hover{background:#ffffff!important;color:#0f2818!important;}"
+    "div[data-testid='stVerticalBlock']:has(#cult-soil-card) [data-testid='stFileUploaderDropzone']{background:#efeeea!important;border:1px solid rgba(20,20,15,0.08)!important;border-radius:12px!important;min-height:120px!important;padding:10px 14px!important;}"
 )
 
 _DARK_CSS = (
@@ -2462,7 +2458,7 @@ elif _page == "cultivation":
 
         st.markdown('</div>', unsafe_allow_html=True)
 
-    st.markdown('<div class="tool-analyze"><span id="ready-synth-card"></span>', unsafe_allow_html=True)
+    st.markdown('<div class="tool-analyze">', unsafe_allow_html=True)
     _an1, _an2 = st.columns([3.8, 1.25])
     with _an1:
         st.markdown("""
