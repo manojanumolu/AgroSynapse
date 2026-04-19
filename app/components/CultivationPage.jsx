@@ -147,7 +147,7 @@ const ClimateBlock = () => {
   const [filled, setFilled] = React.useState(true);
 
   return (
-    <div className="tool-block wide">
+    <div className="tool-block">
       <div className="tool-block-head">
         <h3 className="display tool-block-title">Climate Synthesis</h3>
         <span className={"pill " + (filled ? "live" : "")}>{filled ? "Auto-filled" : "Pending"}</span>
@@ -293,7 +293,7 @@ const CultivationPage = ({ setPage }) => {
     setTimeout(() => {
       setAnalyzing(false);
       setPage("dashboard");
-    }, 2400);
+    }, 1800);
   };
 
   return (

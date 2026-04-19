@@ -71,7 +71,7 @@ const App = () => {
     if (s) { s.style.opacity = "0"; setTimeout(() => s.remove(), 260); }
   }, []);
   React.useEffect(() => { applyTweaks(tweaks); }, [tweaks]);
-  React.useEffect(() => { localStorage.setItem("as_page", page); window.scrollTo({ top: 0, behavior: "instant" }); }, [page]);
+  React.useEffect(() => { localStorage.setItem("as_page", page); window.scrollTo({ top: 0, behavior: "auto" }); }, [page]);
   React.useEffect(() => { window.__setPage = setPage; }, [setPage]);
 
   React.useEffect(() => {
@@ -109,7 +109,7 @@ const App = () => {
       <Rail page={page} setPage={setPage} />
       <main className="main">
         <TopBar page={page} setPage={setPage} onTweaks={() => setTweaksOpen(o => !o)} />
-        <div key={page} className="page-enter">
+        <div className="page-enter">
           {page === "home" && <HomePage setPage={setPage} />}
           {page === "cultivation" && <CultivationPage setPage={setPage} />}
           {page === "diagnostic" && <DiagnosticPage />}

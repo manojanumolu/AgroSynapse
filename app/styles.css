@@ -279,8 +279,11 @@ body { overflow-x: hidden; }
 .reveal.in { transform: translateY(0); }
 
 /* ---------- Page transition ---------- */
-.page-enter { animation: pageEnter 0.18s ease-out both; }
-@keyframes pageEnter { from { transform: translateY(6px); } to { transform: translateY(0); } }
+.page-enter { animation: pageEnter 0.2s ease-out both; }
+@keyframes pageEnter {
+  from { opacity: 0.92; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 
 .reveal-mask { overflow: hidden; display: inline-block; vertical-align: top; }
 .reveal-mask > span { display: inline-block; transform: translateY(110%); transition: transform 0.4s var(--ease-out); will-change: transform; }
@@ -451,6 +454,28 @@ body { overflow-x: hidden; }
 .tweaks .row:last-child { border-bottom: 0; }
 .tweaks .row .name { font-size: 12px; color: var(--ink-2); }
 .tweaks .row .val { display: flex; gap: 4px; }
+.tweaks .seg {
+  display: inline-flex;
+  background: transparent;
+  border-radius: 10px;
+  padding: 0;
+  gap: 6px;
+}
+.tweaks .seg button {
+  border: 1px solid var(--line-2);
+  background: var(--paper-2);
+  padding: 5px 10px;
+  border-radius: 8px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--forest);
+  cursor: pointer;
+  text-decoration: none;
+  font-weight: 600;
+}
+.tweaks .seg button.active { background: var(--forest); color: var(--paper); border-color: transparent; }
 .tweaks .swatch {
   width: 22px; height: 22px; border-radius: 50%;
   border: 2px solid transparent;

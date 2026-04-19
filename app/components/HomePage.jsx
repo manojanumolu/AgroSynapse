@@ -32,16 +32,8 @@ const MaskLine = ({ children, delay = 0 }) => {
 };
 
 const HeroVisual = () => {
-  // Animated cinematic SVG "landscape" — layered organic shapes with subtle parallax
-  const [t, setT] = React.useState(0);
-  React.useEffect(() => {
-    let raf;
-    const tick = (now) => { setT(now / 1000); raf = requestAnimationFrame(tick); };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, []);
-
-  const sway = (amp, period, phase = 0) => Math.sin(t / period + phase) * amp;
+  // Keep hero motion CSS-driven to avoid expensive full React rerenders every frame.
+  const sway = (amp, period, phase = 0) => Math.sin(phase / period) * amp;
 
   return (
     <div className="hero-visual">
@@ -328,7 +320,7 @@ const HomePage = ({ setPage }) => {
             <Reveal delay={900}>
               <div className="hero-badges">
                 <div className="hero-badge"><Icon name="seedling" size={13}/><span>Predictive Cultivation</span></div>
-                <div className="hero-badge"><Icon name="microscope" size={13}/><span>Phyto-Diagnostic</span></div>
+                <div className="hero-badge"><Icon name="microscope" size={13}/><span>Phyto-Diagnostic Suite</span></div>
               </div>
             </Reveal>
           </div>

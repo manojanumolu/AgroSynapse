@@ -34,8 +34,8 @@ const LeafUpload = ({ imgUrl, fileName, fileSize, onFile, onClear }) => {
         ) : (
           <div className="upload-preview">
             <div className="upload-preview-img leaf-square">
-              <img src={imgUrl} alt="Leaf specimen"
-                style={{width:"100%",height:"100%",objectFit:"cover",display:"block",imageRendering:"high-quality"}} />
+              <img src={imgUrl} alt="Leaf specimen" loading="eager" decoding="sync"
+                style={{width:"100%",height:"100%",objectFit:"contain",display:"block",imageRendering:"auto"}} />
               <div className="upload-preview-chip">
                 <Icon name="check" size={12} />
                 <span>Valid leaf detected · ready for diagnosis</span>
@@ -163,7 +163,7 @@ const DiagnosticPage = () => {
   const runDiagnosis = () => {
     if (!imgUrl || running) return;
     setRunning(true); setDone(false);
-    setTimeout(() => { setRunning(false); setDone(true); }, 2400);
+    setTimeout(() => { setRunning(false); setDone(true); }, 1800);
   };
 
   return (
