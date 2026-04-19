@@ -1855,8 +1855,12 @@ _CHROME_CSS = (
     "div[data-testid='stVerticalBlock']:has(#diag-specimen-card){background:#fdfbf6;border:1px solid rgba(20,20,15,0.12);border-radius:20px;padding:24px;box-shadow:0 10px 28px rgba(15,40,24,0.06);}" 
     "div[data-testid='stVerticalBlock']:has(#diag-specimen-card) [data-testid='stFileUploaderDropzone']{background:#efeeea!important;border:1px solid rgba(20,20,15,0.08)!important;border-radius:12px!important;}"
     "div[data-testid='stVerticalBlock']:has(#diag-specimen-card) [data-testid='stImage'] img{border-radius:12px;max-height:360px;width:auto!important;object-fit:contain;display:block;margin:0 auto;}"
-    "div[data-testid='stVerticalBlock']:has(#cult-soil-card),div[data-testid='stVerticalBlock']:has(#cult-chem-card),div[data-testid='stVerticalBlock']:has(#cult-climate-card),div[data-testid='stVerticalBlock']:has(#cult-farm-card){background:#fdfbf6;border:1px solid rgba(20,20,15,0.12);border-radius:20px;padding:22px;box-shadow:0 10px 24px rgba(15,40,24,0.05);}"
-    "div[data-testid='stVerticalBlock']:has(#cult-soil-card) [data-testid='stFileUploaderDropzone']{background:#efeeea!important;border:1px solid rgba(20,20,15,0.08)!important;border-radius:12px!important;min-height:120px!important;padding:10px 14px!important;}"
+    "div[data-testid='column']:has(#cult-soil-card)>div[data-testid='stVerticalBlock'],div[data-testid='column']:has(#cult-chem-card)>div[data-testid='stVerticalBlock'],div[data-testid='column']:has(#cult-climate-card)>div[data-testid='stVerticalBlock'],div[data-testid='column']:has(#cult-farm-card)>div[data-testid='stVerticalBlock']{background:#fdfbf6;border:1px solid rgba(20,20,15,0.12);border-radius:20px;padding:22px;box-shadow:0 10px 24px rgba(15,40,24,0.05);}"
+    "div[data-testid='column']:has(#cult-soil-card) [data-testid='stFileUploaderDropzone']{background:#efeeea!important;border:1px solid rgba(20,20,15,0.08)!important;border-radius:12px!important;min-height:120px!important;padding:10px 14px!important;}"
+    "div[data-testid='stVerticalBlock']:has(>div[data-testid='stElementContainer'] #ready-synth-card){background:linear-gradient(135deg,#062515 0%,#0f2818 62%,#173b24 100%);border-radius:20px;padding:26px 28px;border:1px solid rgba(250,248,243,0.12);box-shadow:0 14px 32px rgba(15,40,24,0.2);margin-top:10px;}"
+    "div[data-testid='stVerticalBlock']:has(>div[data-testid='stElementContainer'] #ready-synth-card) [data-testid='stMarkdownContainer'] h3,div[data-testid='stVerticalBlock']:has(>div[data-testid='stElementContainer'] #ready-synth-card) [data-testid='stMarkdownContainer'] p{color:#faf8f3!important;}"
+    "div[data-testid='stVerticalBlock']:has(>div[data-testid='stElementContainer'] #ready-synth-card) [data-testid='stButton']>button{background:#5a8a3a!important;color:#faf8f3!important;border:0!important;font-weight:700!important;}"
+    "div[data-testid='stVerticalBlock']:has(>div[data-testid='stElementContainer'] #ready-synth-card) [data-testid='stButton']>button:hover{background:#6a9a46!important;color:#faf8f3!important;}"
 )
 
 _DARK_CSS = (
@@ -2388,19 +2392,16 @@ elif _page == "cultivation":
   <span class="pill live">Auto-filled</span>
 </div>
 <p class="tool-block-sub">District-grade vectors pulled from 12-year IMD historical series.</p>""", unsafe_allow_html=True)
-        clc1, clc2, clc3 = st.columns(3)
+        clc1, clc2, clc3, clc4 = st.columns([1, 1, 1, 0.64])
         with clc1:
             state_val = st.selectbox("State", ["Andhra Pradesh", "Telangana", "Karnataka", "Tamil Nadu", "Maharashtra", "Gujarat", "Rajasthan", "Punjab", "Haryana", "Uttar Pradesh", "Madhya Pradesh", "Bihar", "West Bengal", "Odisha", "Kerala"], key="state_val")
         with clc2:
             district_val = st.selectbox("District", ["Guntur", "Krishna", "Nellore", "Kurnool", "Chittoor", "Hyderabad", "Warangal", "Bengaluru", "Chennai", "Mumbai"], key="district_val")
         with clc3:
             village_val = st.text_input("Village / Town", value="Rawada", key="village_val")
-
-        st.markdown('<div class="climate-action-row">', unsafe_allow_html=True)
-        _climate_btn_spacer, _climate_btn_col = st.columns([2.2, 1])
-        with _climate_btn_col:
+        with clc4:
+            st.markdown('<div style="height:28px;"></div>', unsafe_allow_html=True)
             fetch_climate = st.button("Fetch climate vectors", key="fetch_climate_btn", use_container_width=True)
-        st.markdown('</div>', unsafe_allow_html=True)
 
         if fetch_climate:
             with st.spinner("Fetching climate data..."):
@@ -2458,6 +2459,7 @@ elif _page == "cultivation":
 
         st.markdown('</div>', unsafe_allow_html=True)
 
+    st.markdown('<span id="ready-synth-card"></span>', unsafe_allow_html=True)
     st.markdown('<div class="tool-analyze">', unsafe_allow_html=True)
     _an1, _an2 = st.columns([3.8, 1.25])
     with _an1:
