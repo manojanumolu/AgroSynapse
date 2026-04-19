@@ -122,6 +122,7 @@
 .upload-preview-img.leaf { background: #14240f; }
 .upload-preview-img.leaf-square {
   width: 100%;
+  max-width: 460px;
   aspect-ratio: 1 / 1;
   border-radius: 14px;
   overflow: hidden;

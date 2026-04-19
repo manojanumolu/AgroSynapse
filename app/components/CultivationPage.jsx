@@ -49,8 +49,8 @@ const SoilUpload = () => {
           </div>
         ) : (
           <div className="upload-preview">
-            <div className="upload-preview-img" style={{width:"100%",aspectRatio:"4/3",minHeight:"180px"}}>
-              <img src={imgUrl} alt="Soil specimen" style={{position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"cover",display:"block"}} />
+            <div className="upload-preview-img">
+              <img src={imgUrl} alt="Soil specimen" />
               <div className="upload-preview-chip">
                 <Icon name="check" size={12} />
                 <span>Valid specimen · ready for synthesis</span>
