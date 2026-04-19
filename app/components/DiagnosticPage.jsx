@@ -1,69 +1,58 @@
 /* Phyto-Diagnostic Suite */
 
-const LeafUpload = () => {
+const LeafUpload = ({ imgUrl, fileName, fileSize, onFile, onClear }) => {
+  const inputRef = React.useRef(null);
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    onFile(e.dataTransfer.files[0]);
+  };
+
   return (
     <div className="tool-block">
       <div className="tool-block-head">
         <h3 className="display tool-block-title">Plant Specimen</h3>
-        <span className="pill live">PhytoNet · ready</span>
+        <span className={"pill " + (imgUrl ? "live" : "")}>
+          {imgUrl ? "PhytoNet · ready" : "Awaiting upload"}
+        </span>
       </div>
       <p className="tool-block-sub">Upload a close-up of a single leaf. Avoid multiple species in frame.</p>
 
+      <input ref={inputRef} type="file" accept="image/*" style={{display:"none"}}
+        onChange={e => onFile(e.target.files[0])} />
+
       <div className="upload-area">
-        <div className="upload-preview">
-          <div className="upload-preview-img leaf">
-            <svg viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice">
-              <defs>
-                <radialGradient id="leafG" cx="0.5" cy="0.5" r="0.7">
-                  <stop offset="0%" stopColor="#5a8a3a" />
-                  <stop offset="60%" stopColor="#2d4a2b" />
-                  <stop offset="100%" stopColor="#14240f" />
-                </radialGradient>
-                <filter id="leafTex">
-                  <feTurbulence baseFrequency="0.4" numOctaves="3" seed="2" />
-                  <feColorMatrix values="0 0 0 0 0.2  0 0 0 0 0.3  0 0 0 0 0.15  0 0 0 0.4 0" />
-                  <feComposite in2="SourceGraphic" operator="in" />
-                </filter>
-              </defs>
-              <rect width="400" height="300" fill="url(#leafG)" />
-              <ellipse cx="200" cy="150" rx="140" ry="95" fill="#4a7a2a" />
-              <ellipse cx="200" cy="150" rx="140" ry="95" fill="url(#leafTex)" />
-              <path d="M 60 150 Q 200 140 340 150" stroke="#2a4a1a" strokeWidth="1" fill="none" />
-              {Array.from({length: 8}).map((_, i) => (
-                <path key={i} d={`M 200 150 Q ${120 + i * 25} ${100 + (i%2)*100} ${80 + i * 35} ${110 + (i%2)*80}`}
-                  stroke="#2a4a1a" strokeWidth="0.8" fill="none" opacity="0.6"/>
-              ))}
-              {/* Disease spots */}
-              {[[140,120,8],[220,160,10],[170,180,6],[260,130,7],[190,210,5]].map(([x,y,r], i) => (
-                <g key={i}>
-                  <circle cx={x} cy={y} r={r} fill="#3a2014" opacity="0.8"/>
-                  <circle cx={x} cy={y} r={r-2} fill="#5a3a20" opacity="0.6"/>
-                </g>
-              ))}
-              {/* Detection annotation */}
-              <g>
-                <rect x="120" y="95" width="60" height="40" fill="none" stroke="#e8c989" strokeWidth="1.2" strokeDasharray="3 3"/>
-                <text x="184" y="110" fill="#e8c989" fontSize="9" fontFamily="monospace">Lesion · 0.91</text>
-                <rect x="215" y="150" width="55" height="35" fill="none" stroke="#e8c989" strokeWidth="1.2" strokeDasharray="3 3"/>
-                <text x="275" y="165" fill="#e8c989" fontSize="9" fontFamily="monospace">Lesion · 0.88</text>
-              </g>
-            </svg>
-            <div className="upload-preview-chip">
-              <Icon name="check" size={12} />
-              <span>Valid leaf detected · ready for diagnosis</span>
-            </div>
+        {!imgUrl ? (
+          <div className="upload-drop"
+            onClick={() => inputRef.current.click()}
+            onDragOver={e => e.preventDefault()}
+            onDrop={handleDrop}>
+            <Icon name="upload" size={24} />
+            <div className="upload-drop-main">Drop leaf image · or click to browse</div>
+            <div className="upload-drop-sub">PNG, JPG up to 10MB</div>
           </div>
-          <div className="upload-meta">
-            <div className="upload-meta-file">
-              <div className="upload-meta-thumb leaf"></div>
-              <div>
-                <div className="upload-meta-name">apple_leaf_sample.jpg</div>
-                <div className="upload-meta-sub num">1.8 MB · 2048×1536</div>
+        ) : (
+          <div className="upload-preview">
+            <div className="upload-preview-img leaf-square">
+              <img src={imgUrl} alt="Leaf specimen"
+                style={{width:"100%",height:"100%",objectFit:"cover",display:"block",imageRendering:"high-quality"}} />
+              <div className="upload-preview-chip">
+                <Icon name="check" size={12} />
+                <span>Valid leaf detected · ready for diagnosis</span>
               </div>
             </div>
-            <button className="topbar-icon"><Icon name="x" size={13} /></button>
+            <div className="upload-meta">
+              <div className="upload-meta-file">
+                <div className="upload-meta-thumb leaf"></div>
+                <div>
+                  <div className="upload-meta-name">{fileName}</div>
+                  <div className="upload-meta-sub num">{fileSize}</div>
+                </div>
+              </div>
+              <button className="topbar-icon" onClick={onClear}><Icon name="x" size={13} /></button>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
@@ -151,15 +140,41 @@ const TopPredictions = () => {
 };
 
 const DiagnosticPage = () => {
+  const [imgUrl, setImgUrl] = React.useState(null);
+  const [fileName, setFileName] = React.useState("");
+  const [fileSize, setFileSize] = React.useState("");
+  const [running, setRunning] = React.useState(false);
+  const [done, setDone] = React.useState(false);
+
+  const handleFile = (file) => {
+    if (!file || !file.type.startsWith("image/")) return;
+    if (imgUrl) URL.revokeObjectURL(imgUrl);
+    setImgUrl(URL.createObjectURL(file));
+    setFileName(file.name);
+    setFileSize((file.size / 1024).toFixed(1) + " KB");
+    setDone(false);
+  };
+
+  const clearFile = () => {
+    if (imgUrl) URL.revokeObjectURL(imgUrl);
+    setImgUrl(null); setFileName(""); setFileSize(""); setDone(false);
+  };
+
+  const runDiagnosis = () => {
+    if (!imgUrl || running) return;
+    setRunning(true); setDone(false);
+    setTimeout(() => { setRunning(false); setDone(true); }, 2400);
+  };
+
   return (
     <div className="page-tool" data-screen-label="03 Phyto-Diagnostic Suite">
       <div className="tool-header">
         <div>
           <Reveal><span className="eyebrow">Module · Neural Vision</span></Reveal>
-          <Reveal delay={80}>
+          <Reveal delay={60}>
             <h1 className="display tool-page-title">Phyto-Diagnostic Suite</h1>
           </Reveal>
-          <Reveal delay={160}>
+          <Reveal delay={120}>
             <p className="tool-page-sub">
               Upload a leaf photograph. PhytoNet-v2 resolves pathogen identity across 38 classes
               and returns a precision treatment protocol in a single forward pass.
@@ -169,23 +184,48 @@ const DiagnosticPage = () => {
       </div>
 
       <div className="diag-grid">
-        <Reveal><LeafUpload /></Reveal>
-        <Reveal delay={100}>
+        <Reveal>
+          <LeafUpload imgUrl={imgUrl} fileName={fileName} fileSize={fileSize}
+            onFile={handleFile} onClear={clearFile} />
+        </Reveal>
+        <Reveal delay={80}>
           <div className="diag-right">
-            <DetectionResult />
-            <TreatmentPlan />
-            <TopPredictions />
+            {done ? (
+              <>
+                <DetectionResult />
+                <TreatmentPlan />
+                <TopPredictions />
+              </>
+            ) : (
+              <div className="detect-result">
+                <div className="detect-result-head">
+                  <span className="eyebrow">Detection result</span>
+                  <span className="pill">{running ? "Running…" : "Awaiting specimen"}</span>
+                </div>
+                <p style={{fontSize:"13px",color:"var(--ink-3)",marginTop:"12px"}}>
+                  {imgUrl
+                    ? (running ? "PhytoNet-v2 inference in progress…" : "Preview ready · run diagnosis to see results here.")
+                    : "Upload a leaf image and run diagnosis to see results here."}
+                </p>
+                {running && <div className="tool-analyze-bar" style={{marginTop:"20px",borderRadius:"999px",overflow:"hidden"}}><div /></div>}
+              </div>
+            )}
           </div>
         </Reveal>
       </div>
 
       <div className="diag-actions">
-        <button className="btn btn-sage btn-large">
-          <Icon name="microscope" size={15} /> Run neural diagnosis <Icon name="arrowRight" size={14} className="arrow" />
+        <button className={"btn btn-large " + (done ? "btn-ghost" : "btn-sage") + (running ? " analyzing" : "")}
+          onClick={runDiagnosis} disabled={!imgUrl || running}>
+          {running
+            ? <><span className="spinner" /> Running PhytoNet-v2…</>
+            : <><Icon name="microscope" size={15} /> Run neural diagnosis <Icon name="arrowRight" size={14} className="arrow" /></>}
         </button>
-        <button className="btn btn-ghost">
-          <Icon name="download" size={14} /> Export report
-        </button>
+        {done && (
+          <button className="btn btn-ghost">
+            <Icon name="download" size={14} /> Export report
+          </button>
+        )}
       </div>
     </div>
   );

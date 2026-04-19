@@ -329,7 +329,6 @@ const HomePage = ({ setPage }) => {
               <div className="hero-badges">
                 <div className="hero-badge"><Icon name="seedling" size={13}/><span>Predictive Cultivation</span></div>
                 <div className="hero-badge"><Icon name="microscope" size={13}/><span>Phyto-Diagnostic</span></div>
-                <div className="hero-badge"><Icon name="chart" size={13}/><span>AI Dashboard</span></div>
               </div>
             </Reveal>
           </div>

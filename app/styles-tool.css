@@ -116,8 +116,17 @@
   background: #2a1608;
 }
 .upload-preview-img svg { width: 100%; height: 100%; display: block; }
-.upload-preview-img img { width: 100%; height: 100%; display: block; object-fit: contain; }
+.upload-preview-img img { width: 100%; height: 100%; display: block; object-fit: cover; }
 .upload-preview-img.leaf { background: #14240f; }
+.upload-preview-img.leaf-square {
+  aspect-ratio: 1 / 1;
+  border-radius: 14px;
+  overflow: hidden;
+  position: relative;
+  background: #14240f;
+  max-width: 480px;
+  width: 100%;
+}
 .upload-preview-chip {
   position: absolute; bottom: 12px; left: 12px;
   display: inline-flex; align-items: center; gap: 8px;

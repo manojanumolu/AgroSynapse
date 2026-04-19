@@ -54,7 +54,7 @@ const TopBar = ({ page, setPage, onTweaks }) => {
       <div className="topbar-spacer" />
       <nav className="topbar-nav">
         {items.map(it => (
-          <a key={it.key} className={page === it.key ? "active" : ""} onClick={() => setPage(it.key)}>{it.label}</a>
+          <button key={it.key} className={page === it.key ? "active" : ""} onClick={() => setPage(it.key)}>{it.label}</button>
         ))}
       </nav>
       <button className="topbar-icon" title="Search"><Icon name="search" size={15} /></button>

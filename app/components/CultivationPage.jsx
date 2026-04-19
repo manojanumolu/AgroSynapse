@@ -1,66 +1,56 @@
 /* Predictive Cultivation — the main tool */
 
 const SoilUpload = () => {
-  const [uploaded, setUploaded] = React.useState(true);
+  const [imgUrl, setImgUrl] = React.useState(null);
+  const [fileName, setFileName] = React.useState("");
+  const [fileSize, setFileSize] = React.useState("");
+  const inputRef = React.useRef(null);
+
+  const handleFile = (file) => {
+    if (!file || !file.type.startsWith("image/")) return;
+    if (imgUrl) URL.revokeObjectURL(imgUrl);
+    setImgUrl(URL.createObjectURL(file));
+    setFileName(file.name);
+    setFileSize((file.size / 1024).toFixed(0) + " KB");
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    handleFile(e.dataTransfer.files[0]);
+  };
+
+  const clear = () => {
+    if (imgUrl) URL.revokeObjectURL(imgUrl);
+    setImgUrl(null); setFileName(""); setFileSize("");
+  };
+
   return (
     <div className="tool-block">
       <div className="tool-block-head">
         <h3 className="display tool-block-title">Soil Specimen</h3>
-        <span className="pill live">Vision ready</span>
+        <span className={"pill " + (imgUrl ? "live" : "")}>
+          {imgUrl ? "Vision ready" : "Awaiting upload"}
+        </span>
       </div>
       <p className="tool-block-sub">Upload a clear close-up of the soil sample. Avoid leaves, hands, or moisture artifacts.</p>
 
+      <input ref={inputRef} type="file" accept="image/*" style={{display:"none"}}
+        onChange={e => handleFile(e.target.files[0])} />
+
       <div className="upload-area">
-        {!uploaded ? (
-          <div className="upload-drop" onClick={() => setUploaded(true)}>
+        {!imgUrl ? (
+          <div className="upload-drop"
+            onClick={() => inputRef.current.click()}
+            onDragOver={e => e.preventDefault()}
+            onDrop={handleDrop}>
             <Icon name="upload" size={24} />
             <div className="upload-drop-main">Drop image · or click to browse</div>
             <div className="upload-drop-sub">PNG, JPG up to 10MB</div>
           </div>
         ) : (
           <div className="upload-preview">
-            <div className="upload-preview-img">
-              {/* Stylized soil photograph placeholder — radial noise gradient */}
-              <svg viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice">
-                <defs>
-                  <radialGradient id="soilG" cx="0.5" cy="0.5" r="0.7">
-                    <stop offset="0%" stopColor="#6b3a1a" />
-                    <stop offset="60%" stopColor="#4a2510" />
-                    <stop offset="100%" stopColor="#2a1608" />
-                  </radialGradient>
-                  <filter id="soilTex">
-                    <feTurbulence baseFrequency="0.9" numOctaves="3" seed="3" />
-                    <feColorMatrix values="0 0 0 0 0.35  0 0 0 0 0.2  0 0 0 0 0.1  0 0 0 0.6 0" />
-                    <feComposite in2="SourceGraphic" operator="in" />
-                  </filter>
-                </defs>
-                <rect width="400" height="300" fill="url(#soilG)" />
-                <rect width="400" height="300" filter="url(#soilTex)" />
-                {/* scattered particles */}
-                {Array.from({ length: 50 }).map((_, i) => (
-                  <circle key={i}
-                    cx={Math.random() * 400} cy={Math.random() * 300}
-                    r={Math.random() * 3 + 0.5}
-                    fill={["#8b5a2e", "#3a2010", "#6b3a1a"][i % 3]}
-                    opacity={Math.random() * 0.6 + 0.2}
-                  />
-                ))}
-                {/* analysis overlay */}
-                <g className="analysis-grid" opacity="0.5">
-                  {Array.from({ length: 6 }).map((_, i) => (
-                    <line key={"v" + i} x1={i * 80} y1="0" x2={i * 80} y2="300" stroke="#7ba854" strokeWidth="0.5" strokeDasharray="2 4" />
-                  ))}
-                  {Array.from({ length: 4 }).map((_, i) => (
-                    <line key={"h" + i} x1="0" y1={i * 80} x2="400" y2={i * 80} stroke="#7ba854" strokeWidth="0.5" strokeDasharray="2 4" />
-                  ))}
-                </g>
-                <g>
-                  <circle cx="140" cy="120" r="20" fill="none" stroke="#7ba854" strokeWidth="1.2" />
-                  <text x="168" y="125" fill="#c5e6a0" fontSize="9" fontFamily="monospace">TEX · Sandy-loam</text>
-                  <circle cx="260" cy="190" r="16" fill="none" stroke="#7ba854" strokeWidth="1.2" />
-                  <text x="280" y="195" fill="#c5e6a0" fontSize="9" fontFamily="monospace">AGG · 0.82</text>
-                </g>
-              </svg>
+            <div className="upload-preview-img" style={{aspectRatio:"4/3"}}>
+              <img src={imgUrl} alt="Soil specimen" style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}} />
               <div className="upload-preview-chip">
                 <Icon name="check" size={12} />
                 <span>Valid specimen · ready for synthesis</span>
@@ -70,11 +60,11 @@ const SoilUpload = () => {
               <div className="upload-meta-file">
                 <div className="upload-meta-thumb"></div>
                 <div>
-                  <div className="upload-meta-name">specimen_T047.jpg</div>
-                  <div className="upload-meta-sub num">2.4 MB · 3024×4032</div>
+                  <div className="upload-meta-name">{fileName}</div>
+                  <div className="upload-meta-sub num">{fileSize}</div>
                 </div>
               </div>
-              <button className="topbar-icon" title="Remove"><Icon name="x" size={13} /></button>
+              <button className="topbar-icon" title="Remove" onClick={clear}><Icon name="x" size={13} /></button>
             </div>
           </div>
         )}

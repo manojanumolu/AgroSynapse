@@ -98,14 +98,19 @@ const App = () => {
       <Rail page={page} setPage={setPage} />
       <main className="main">
         <TopBar page={page} setPage={setPage} onTweaks={() => setTweaksOpen(o => !o)} />
-        {page === "home" && <HomePage setPage={setPage} />}
-        {page === "cultivation" && <CultivationPage setPage={setPage} />}
-        {page === "diagnostic" && <DiagnosticPage />}
-        {page === "dashboard" && <DashboardPage />}
+        <div key={page} className="page-enter">
+          {page === "home" && <HomePage setPage={setPage} />}
+          {page === "cultivation" && <CultivationPage setPage={setPage} />}
+          {page === "diagnostic" && <DiagnosticPage />}
+          {page === "dashboard" && <DashboardPage />}
+        </div>
       </main>
 
       <div className={"tweaks " + (tweaksOpen ? "open" : "")}>
-        <h4>Tweaks</h4>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"14px"}}>
+          <h4 style={{margin:0}}>Tweaks</h4>
+          <button onClick={() => setTweaksOpen(false)} style={{border:0,background:"transparent",cursor:"pointer",color:"var(--ink-3)",fontSize:"16px",lineHeight:1,padding:"2px 4px"}}>×</button>
+        </div>
         <div className="row">
           <span className="name">Accent</span>
           <div className="val">

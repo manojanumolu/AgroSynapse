@@ -950,3 +950,31 @@
   .footer-meta { align-items: flex-start; }
   .cta-title { font-size: clamp(40px, 10vw, 64px); }
 }
+
+/* ── Conflict fixes: restore pipeline-soil dark background ── */
+.pipeline-soil { background: var(--forest) !important; }
+.pipeline-soil .section-title { color: var(--paper); }
+.pipeline-soil .eyebrow { color: rgba(250,248,243,0.55); }
+.pipeline-soil .pipeline-sub { color: rgba(250,248,243,0.7); }
+.pipeline-soil .pipeline-step {
+  background: rgba(250,248,243,0.07) !important;
+  border: 1px solid rgba(250,248,243,0.12);
+  color: var(--paper);
+}
+.pipeline-soil .pipeline-step-title { color: var(--paper); }
+.pipeline-soil .pipeline-step-desc { color: rgba(250,248,243,0.65); }
+.pipeline-soil .pipeline-step-icon {
+  background: rgba(122,168,84,0.15);
+  border: 1px solid rgba(122,168,84,0.3);
+  color: #a8d080;
+}
+.pipeline-soil .pipeline-arrow {
+  background: rgba(250,248,243,0.08);
+  border-color: rgba(250,248,243,0.15);
+  color: rgba(250,248,243,0.5);
+}
+
+/* Module card titles — explicit green on dark background */
+.module-card .module-title { color: #a8d080; }
+.module-card .module-cta { color: var(--sage-2); }
+.module-card:hover .module-cta-icon { background: var(--sage-2); color: var(--forest); }
