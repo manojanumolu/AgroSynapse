@@ -1929,9 +1929,10 @@ _CHROME_CSS = (
     ".page-tool,.page-dashboard{padding:20px 12px 80px!important;}"
     ".diag-grid{grid-template-columns:1fr!important;}"
     ".rec-crop{grid-template-columns:1fr!important;min-height:auto!important;}"
-    ".rec-crop .rec-crop-body{order:1!important;padding:16px 18px!important;overflow:visible!important;}"
-    ".rec-crop .rec-crop-img,.rec-crop-img{order:2!important;min-height:72px!important;font-size:44px!important;border-right:0!important;border-top:1px solid rgba(250,248,243,0.06)!important;border-bottom:0!important;}"
+    ".rec-crop .rec-crop-body{padding:16px 18px!important;overflow:visible!important;}"
+    ".rec-crop .rec-crop-img,.rec-crop-img{display:none!important;}"
     ".rec-crop>div:nth-child(3){display:none!important;}"
+    ".rec-crop-emoji-inline{display:inline!important;}"
     "div[data-testid='stHorizontalBlock']:has(#diag-specimen-card){flex-direction:column!important;}"
     "div[data-testid='stHorizontalBlock']:has(#diag-specimen-card)>[data-testid='stColumn']{width:100%!important;flex:1 1 100%!important;min-width:100%!important;}"
     ".upload-preview-chip-static{white-space:nowrap!important;font-size:11px!important;padding:6px 10px!important;}"
@@ -2883,6 +2884,9 @@ else:  # dashboard
             "Grapes":"🍇","Watermelon":"🍉","Muskmelon":"🍈","Apple":"🍎",
             "Orange":"🍊","Papaya":"🍈","Coconut":"🥥","Coffee":"☕",
             "Chickpea":"🫘","Kidneybeans":"🫘","Pigeonpeas":"🫘","Mothbeans":"🫘",
+            "Sorghum":"🌾","Soybean":"🫘","Sunflower":"🌻","Tomato":"🍅",
+            "Potato":"🥔","Onion":"🧅","Garlic":"🧄","Pea":"🫛","Barley":"🌾",
+            "Oats":"🌾","Mustard":"🌼","Sesame":"🌿","Turmeric":"🌿","Ginger":"🌿",
         }
         _crop_emoji = _CROP_EMOJI.get(_crop_name, "🌱")
 
@@ -2909,7 +2913,7 @@ else:  # dashboard
   </div>
   <div class="rec-crop-body" style="padding:28px 32px;color:#faf8f3;overflow:hidden;">
     <span class="eyebrow" style="color:rgba(250,248,243,0.5);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;display:block;margin-bottom:8px;">Primary recommendation</span>
-    <h2 style="font-family:'Instrument Serif','Times New Roman',serif;font-size:clamp(28px,3vw,44px);font-weight:400;color:#faf8f3;margin:0 0 10px;line-height:1.1;">{_crop_name}</h2>
+    <h2 style="font-family:'Instrument Serif','Times New Roman',serif;font-size:clamp(28px,3vw,44px);font-weight:400;color:#faf8f3;margin:0 0 10px;line-height:1.1;display:flex;align-items:center;gap:12px;"><span class="rec-crop-emoji-inline" style="font-size:0.75em;display:none;">{_crop_emoji}</span>{_crop_name}</h2>
     <p style="font-size:13px;color:rgba(250,248,243,0.6);line-height:1.5;margin:0 0 20px;max-width:480px;">Synaptic triangulation indicates {_crop_name} as the optimal rotation for the upcoming {_season} season. Soil type: <strong style="color:rgba(250,248,243,0.85);">{_soil}</strong>. Aligned with 14,200 validated training pairs.</p>
     <div style="border-top:1px solid rgba(250,248,243,0.1);padding-top:16px;display:flex;gap:32px;flex-wrap:wrap;">
       <div><div style="font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(250,248,243,0.4);margin-bottom:4px;font-family:'JetBrains Mono',monospace;">NPK Protocol</div><div style="font-family:'Instrument Serif','Times New Roman',serif;font-size:22px;color:#e8c989;">{_npk} <small style="font-size:12px;color:rgba(250,248,243,0.4);">kg/ha</small></div></div>
@@ -3000,7 +3004,8 @@ else:  # dashboard
         with dg2:
             st.markdown('<div class="alts"><div class="alts-head"><span class="eyebrow">Alternative crops</span><span class="label">Ranked K=2–4</span></div>', unsafe_allow_html=True)
             for _ai, _cr in enumerate(_crops[1:4], start=2):
-                _ascore = round(_cr.get("suitability", 0.5) * 100)
+                _raw_suit = _cr.get("suitability", 0.5)
+                _ascore = round(min(_raw_suit * 100, 100) if _raw_suit <= 1.0 else min(_raw_suit, 100))
                 _aemoji = _CROP_EMOJI.get(_cr.get("name",""), "🌱")
                 st.markdown(
                     '<div class="alt">'
