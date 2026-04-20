@@ -1869,6 +1869,23 @@ _CHROME_CSS = (
     "div[data-testid='stElementContainer']:has(#ready-synth-card) ~ div[data-testid='stColumns'] [data-testid='stMarkdownContainer'] p{font-size:14px!important;color:rgba(250,248,243,0.72)!important;margin-top:6px!important;}"
     "div[data-testid='stElementContainer']:has(#ready-synth-card) ~ div[data-testid='stColumns'] [data-testid='stButton']>button{background:#5a8a3a!important;color:#faf8f3!important;border:0!important;font-weight:600!important;padding:14px 28px!important;font-size:14px!important;border-radius:999px!important;}"
     "div[data-testid='stElementContainer']:has(#ready-synth-card) ~ div[data-testid='stColumns'] [data-testid='stButton']>button:hover{background:#6a9a46!important;}"
+    ".as-hamburger{display:none;width:36px;height:36px;border-radius:8px;background:transparent;border:0;cursor:pointer;place-items:center;color:#3a3a32;transition:all 0.2s;flex-shrink:0;margin-right:4px;padding:0;}"
+    ".as-hamburger:hover{background:rgba(20,20,15,0.07);}"
+    "#as-rail-backdrop{display:none;position:fixed;inset:0;background:rgba(10,20,10,0.45);z-index:150;cursor:pointer;-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px);}"
+    "@media(max-width:768px){"
+    "#as-rail{transform:translateX(-100%)!important;transition:transform 0.28s cubic-bezier(0.2,0.8,0.2,1)!important;z-index:200!important;width:200px!important;align-items:flex-start!important;padding:16px 0 20px 14px!important;}"
+    "#as-rail.as-open{transform:translateX(0)!important;}"
+    "#as-rail-backdrop.as-open{display:block!important;}"
+    "#as-topbar{left:0!important;padding:0 16px!important;}"
+    "section[data-testid='stMain']{padding-left:0!important;}"
+    ".topbar-nav{display:none!important;}"
+    ".topbar-icon{display:none!important;}"
+    ".as-hamburger{display:grid!important;}"
+    ".topbar-crumb{font-size:10px!important;letter-spacing:0.08em!important;}"
+    "a.rail-btn{width:100%!important;justify-content:flex-start!important;gap:12px;padding:0 8px!important;border-radius:8px!important;}"
+    ".rail-logo{align-self:flex-start!important;margin-left:2px!important;}"
+    ".rail-user{align-self:flex-start!important;margin-left:6px!important;}"
+    "}"
 )
 
 _DARK_CSS = (
@@ -1884,6 +1901,8 @@ _DARK_CSS = (
     "[data-testid='stNumberInput'] label,[data-testid='stSelectbox'] label,"
     "[data-testid='stTextInput'] label{color:#5a7a50!important;}"
     ".stApp,.block-container{background:#0a160a!important;}"
+    ".as-hamburger{color:rgba(250,248,243,0.75)!important;}"
+    ".as-hamburger:hover{background:rgba(250,248,243,0.08)!important;}"
 ) if _theme == "dark" else ""
 
 _ALL_CSS = "<style>" + _CHROME_CSS + _DESIGN_CSS + _DARK_CSS + "</style>"
@@ -1935,6 +1954,7 @@ _tweaks_panel = f"""
 </div>""" if _tweaks == "1" else ""
 
 st.markdown(f"""
+<div id="as-rail-backdrop" onclick="asToggleRail()"></div>
 <aside id="as-rail" style="position:fixed;left:0;top:0;z-index:100;width:72px;height:100vh;
   background:#0f2818;display:flex;flex-direction:column;align-items:center;padding:16px 0 20px;">
   <div class="rail-logo" title="AgroSynapse" style="margin-bottom:20px;">
@@ -1961,6 +1981,9 @@ st.markdown(f"""
   <div class="rail-user">MA</div>
 </aside>
 <header id="as-topbar">
+  <button class="as-hamburger" onclick="asToggleRail()" aria-label="Open navigation">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+  </button>
   <div class="topbar-crumb" style="display:flex;align-items:center;gap:8px;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#6b6b5e;">
     <span style="width:6px;height:6px;border-radius:50%;background:{_ac_mid};display:inline-block;"></span>
     <span>AGROSYNAPSE{_crumb}</span>
@@ -1983,6 +2006,12 @@ st.markdown(f"""
   </a>
 </header>
 {_tweaks_panel}
+<script>
+function asToggleRail(){{
+  document.getElementById('as-rail').classList.toggle('as-open');
+  document.getElementById('as-rail-backdrop').classList.toggle('as-open');
+}}
+</script>
 """, unsafe_allow_html=True)
 
 # ==============================================================
