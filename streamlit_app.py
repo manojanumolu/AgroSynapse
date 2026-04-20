@@ -1872,19 +1872,31 @@ _CHROME_CSS = (
     ".as-hamburger{display:none;width:36px;height:36px;border-radius:8px;background:transparent;border:0;cursor:pointer;place-items:center;color:#3a3a32;transition:all 0.2s;flex-shrink:0;margin-right:4px;padding:0;}"
     ".as-hamburger:hover{background:rgba(20,20,15,0.07);}"
     "#as-rail-backdrop{display:none;position:fixed;inset:0;background:rgba(10,20,10,0.45);z-index:150;cursor:pointer;-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px);}"
+    ".rail-label{display:none;font-size:12px;font-family:'Inter Tight',-apple-system,sans-serif;color:rgba(250,248,243,0.65);letter-spacing:0.02em;white-space:nowrap;}"
+    "a.rail-btn.active .rail-label{color:rgba(250,248,243,1);}"
     "@media(max-width:768px){"
-    "#as-rail{transform:translateX(-100%)!important;transition:transform 0.28s cubic-bezier(0.2,0.8,0.2,1)!important;z-index:200!important;width:200px!important;align-items:flex-start!important;padding:16px 0 20px 14px!important;}"
+    "#as-rail{transform:translateX(-100%)!important;transition:transform 0.28s cubic-bezier(0.2,0.8,0.2,1)!important;z-index:200!important;width:220px!important;align-items:flex-start!important;padding:20px 0 20px 12px!important;}"
     "#as-rail.as-open{transform:translateX(0)!important;}"
     "#as-rail-backdrop.as-open{display:block!important;}"
-    "#as-topbar{left:0!important;padding:0 16px!important;}"
+    "#as-topbar{left:0!important;padding:0 12px!important;}"
     "section[data-testid='stMain']{padding-left:0!important;}"
     ".topbar-nav{display:none!important;}"
     ".topbar-icon{display:none!important;}"
     ".as-hamburger{display:grid!important;}"
-    ".topbar-crumb{font-size:10px!important;letter-spacing:0.08em!important;}"
-    "a.rail-btn{width:100%!important;justify-content:flex-start!important;gap:12px;padding:0 8px!important;border-radius:8px!important;}"
-    ".rail-logo{align-self:flex-start!important;margin-left:2px!important;}"
-    ".rail-user{align-self:flex-start!important;margin-left:6px!important;}"
+    ".topbar-crumb{overflow:hidden!important;max-width:calc(100vw - 80px)!important;}"
+    ".topbar-crumb span:last-child{overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;display:block!important;font-size:10px!important;letter-spacing:0.06em!important;}"
+    "a.rail-btn{width:100%!important;justify-content:flex-start!important;gap:12px!important;padding:0 10px!important;border-radius:8px!important;height:44px!important;}"
+    ".rail-label{display:block!important;}"
+    ".rail-logo{align-self:flex-start!important;margin-left:4px!important;margin-bottom:12px!important;}"
+    ".rail-user{align-self:flex-start!important;margin-left:8px!important;}"
+    "div[style*='repeat(4,1fr)']{grid-template-columns:1fr 1fr!important;}"
+    "section[style*='padding:80px 48px']{padding:40px 16px!important;}"
+    "h3.tool-block-title[style*='46px']{font-size:24px!important;line-height:1.2!important;}"
+    "div[data-testid='stElementContainer']:has(#ready-synth-card)~div[data-testid='stColumns']{padding:20px 18px!important;}"
+    "div[data-testid='stElementContainer']:has(#ready-synth-card)~div[data-testid='stColumns'] [data-testid='stButton']>button{width:100%!important;justify-content:center!important;padding:14px!important;}"
+    ".tool-block{padding:16px!important;border-radius:14px!important;}"
+    ".page-tool,.page-dashboard{padding:20px 12px 80px!important;}"
+    ".diag-grid{grid-template-columns:1fr!important;}"
     "}"
 )
 
@@ -1964,15 +1976,19 @@ st.markdown(f"""
   </div>
   <a class="rail-btn {_ac_home}" href="?page=home&{_base_params}" target="_self" title="Home">
     <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-7h-6v7H4a1 1 0 0 1-1-1v-9.5Z"/></svg>
+    <span class="rail-label">Home</span>
   </a>
   <a class="rail-btn {_ac_cult}" href="?page=cultivation&{_base_params}" target="_self" title="Cultivation">
     <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22V10"/><path d="M12 10c0-3 2-6 6-6 0 3-2 6-6 6Z"/><path d="M12 12c0-2.5-2-5-6-5 0 2.5 2 5 6 5Z"/></svg>
+    <span class="rail-label">Cultivation</span>
   </a>
   <a class="rail-btn {_ac_diag}" href="?page=diagnostic&{_base_params}" target="_self" title="Diagnostic">
     <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V4a1 1 0 0 1 1-1h3"/><path d="M17 3h3a1 1 0 0 1 1 1v3"/><path d="M21 17v3a1 1 0 0 1-1 1h-3"/><path d="M7 21H4a1 1 0 0 1-1-1v-3"/><path d="M3 12h18"/></svg>
+    <span class="rail-label">Diagnostic</span>
   </a>
   <a class="rail-btn {_ac_dash}" href="?page=dashboard&{_base_params}" target="_self" title="Dashboard">
     <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-6"/></svg>
+    <span class="rail-label">Dashboard</span>
   </a>
   <div class="rail-spacer"></div>
   <a class="rail-btn" href="{_tweaks_href}" target="_self" title="Tweaks">
@@ -2006,13 +2022,16 @@ st.markdown(f"""
   </a>
 </header>
 {_tweaks_panel}
-<script>
-function asToggleRail(){{
+""", unsafe_allow_html=True)
+try:
+    st.html("""<script>
+function asToggleRail(){
   document.getElementById('as-rail').classList.toggle('as-open');
   document.getElementById('as-rail-backdrop').classList.toggle('as-open');
-}}
-</script>
-""", unsafe_allow_html=True)
+}
+</script>""")
+except Exception:
+    pass
 
 # ==============================================================
 # HOME PAGE
@@ -2431,7 +2450,7 @@ elif _page == "cultivation":
         st.markdown('<div class="climate-action-row">', unsafe_allow_html=True)
         _climate_btn_spacer, _climate_btn_col = st.columns([2.2, 1])
         with _climate_btn_col:
-            fetch_climate = st.button("Fetch climate vectors", key="fetch_climate_btn", use_container_width=True)
+            fetch_climate = st.button("Fetch climate vectors", key="fetch_climate_btn", use_container_width=True, type="primary")
         st.markdown('</div>', unsafe_allow_html=True)
 
         if fetch_climate:
