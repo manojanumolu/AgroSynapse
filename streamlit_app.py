@@ -1864,16 +1864,20 @@ _CHROME_CSS = (
     "div[data-testid='stColumn']:has(#cult-soil-card) [data-testid='stFileUploaderDropzone']{background:#f2ede2!important;border:1.5px dashed rgba(20,20,15,0.15)!important;border-radius:12px!important;min-height:80px!important;padding:10px 14px!important;}"
     "div[data-testid='stColumn']:has(#cult-soil-card) [data-testid='stImage'] img{max-height:200px!important;width:100%!important;object-fit:cover!important;border-radius:12px!important;display:block!important;}"
     "div[data-testid='stColumn']:has(#cult-soil-card) [data-testid='stImage']{max-height:200px!important;overflow:hidden!important;border-radius:12px!important;}"
-    "div[data-testid='stElementContainer']:has(#ready-synth-card) ~ div[data-testid='stColumns']{background:linear-gradient(135deg,#062515 0%,#0f2818 62%,#173b24 100%)!important;border-radius:20px!important;padding:28px 40px!important;border:1px solid rgba(250,248,243,0.12)!important;box-shadow:0 4px 20px rgba(15,40,24,0.18)!important;margin-top:14px!important;align-items:center!important;}"
-    "div[data-testid='stElementContainer']:has(#ready-synth-card) ~ div[data-testid='stColumns'] [data-testid='stMarkdownContainer'] h3{font-family:'Instrument Serif',serif!important;font-size:28px!important;letter-spacing:-0.02em!important;line-height:1!important;color:#faf8f3!important;}"
-    "div[data-testid='stElementContainer']:has(#ready-synth-card) ~ div[data-testid='stColumns'] [data-testid='stMarkdownContainer'] p{font-size:14px!important;color:rgba(250,248,243,0.72)!important;margin-top:6px!important;}"
-    "div[data-testid='stElementContainer']:has(#ready-synth-card) ~ div[data-testid='stColumns'] [data-testid='stButton']>button{background:#5a8a3a!important;color:#faf8f3!important;border:0!important;font-weight:600!important;padding:14px 28px!important;font-size:14px!important;border-radius:999px!important;}"
-    "div[data-testid='stElementContainer']:has(#ready-synth-card) ~ div[data-testid='stColumns'] [data-testid='stButton']>button:hover{background:#6a9a46!important;}"
+    "div[data-testid='stElementContainer']:has(#ready-synth-card) ~ div[data-testid='stColumns']{background:linear-gradient(135deg,#062515 0%,#0f2818 62%,#173b24 100%)!important;border-radius:20px!important;padding:28px 40px!important;border:1px solid rgba(250,248,243,0.12)!important;box-shadow:0 4px 20px rgba(15,40,24,0.18)!important;margin-top:14px!important;align-items:center!important;display:none!important;}"
     ".as-hamburger{display:none;width:36px;height:36px;border-radius:8px;background:transparent;border:0;cursor:pointer;place-items:center;color:#3a3a32;transition:all 0.2s;flex-shrink:0;margin-right:4px;padding:0;}"
     ".as-hamburger:hover{background:rgba(20,20,15,0.07);}"
     "#as-rail-backdrop{display:none;position:fixed;inset:0;background:rgba(10,20,10,0.45);z-index:150;cursor:pointer;-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px);}"
     ".rail-label{display:none;font-size:12px;font-family:'Inter Tight',-apple-system,sans-serif;color:rgba(250,248,243,0.65);letter-spacing:0.02em;white-space:nowrap;}"
     "a.rail-btn.active .rail-label{color:rgba(250,248,243,1);}"
+    ".home-pipeline-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:24px;}"
+    ".synth-box{background:linear-gradient(135deg,#062515 0%,#0f2818 62%,#173b24 100%);border-radius:20px;padding:28px 40px;margin-top:14px;border:1px solid rgba(250,248,243,0.12);box-shadow:0 4px 20px rgba(15,40,24,0.18);display:flex;align-items:center;justify-content:space-between;gap:24px;width:100%;}"
+    ".synth-box-text{flex:1;}"
+    ".synth-box-title{font-family:'Instrument Serif','Times New Roman',serif;font-size:28px;font-weight:400;color:#faf8f3;line-height:1;letter-spacing:-0.02em;}"
+    ".synth-box-sub{font-size:14px;color:rgba(250,248,243,0.7);margin-top:8px;}"
+    ".synth-box-btn{flex-shrink:0;}"
+    "div[data-testid='stElementContainer']:has(.synth-box)~div[data-testid='stElementContainer'] [data-testid='stButton']>button{background:#5a8a3a!important;color:#faf8f3!important;border:0!important;font-weight:600!important;padding:14px 28px!important;font-size:14px!important;border-radius:999px!important;white-space:nowrap;}"
+    "div[data-testid='stElementContainer']:has(.synth-box)~div[data-testid='stElementContainer'] [data-testid='stButton']>button:hover{background:#6a9a46!important;}"
     "@media(max-width:768px){"
     "#as-rail{transform:translateX(-100%)!important;transition:transform 0.28s cubic-bezier(0.2,0.8,0.2,1)!important;z-index:200!important;width:220px!important;align-items:flex-start!important;padding:20px 0 20px 12px!important;}"
     "#as-rail.as-open{transform:translateX(0)!important;}"
@@ -1889,11 +1893,11 @@ _CHROME_CSS = (
     ".rail-label{display:block!important;}"
     ".rail-logo{align-self:flex-start!important;margin-left:4px!important;margin-bottom:12px!important;}"
     ".rail-user{align-self:flex-start!important;margin-left:8px!important;}"
-    "div[style*='repeat(4,1fr)']{grid-template-columns:1fr 1fr!important;}"
+    ".home-pipeline-grid{grid-template-columns:1fr 1fr!important;gap:16px!important;}"
     "section[style*='padding:80px 48px']{padding:40px 16px!important;}"
     "h3.tool-block-title[style*='46px']{font-size:24px!important;line-height:1.2!important;}"
-    "div[data-testid='stElementContainer']:has(#ready-synth-card)~div[data-testid='stColumns']{padding:20px 18px!important;}"
-    "div[data-testid='stElementContainer']:has(#ready-synth-card)~div[data-testid='stColumns'] [data-testid='stButton']>button{width:100%!important;justify-content:center!important;padding:14px!important;}"
+    ".synth-box{flex-direction:column!important;align-items:stretch!important;padding:24px 20px!important;gap:16px!important;}"
+    "div[data-testid='stElementContainer']:has(.synth-box)~div[data-testid='stElementContainer'] [data-testid='stButton']>button{width:100%!important;justify-content:center!important;}"
     ".tool-block{padding:16px!important;border-radius:14px!important;}"
     ".page-tool,.page-dashboard{padding:20px 12px 80px!important;}"
     ".diag-grid{grid-template-columns:1fr!important;}"
@@ -2023,15 +2027,16 @@ st.markdown(f"""
 </header>
 {_tweaks_panel}
 """, unsafe_allow_html=True)
-try:
-    st.html("""<script>
-function asToggleRail(){
-  document.getElementById('as-rail').classList.toggle('as-open');
-  document.getElementById('as-rail-backdrop').classList.toggle('as-open');
-}
-</script>""")
-except Exception:
-    pass
+components.html("""<script>
+(function(){
+  function asToggleRail(){
+    var r=window.parent.document.getElementById('as-rail');
+    var b=window.parent.document.getElementById('as-rail-backdrop');
+    if(r&&b){r.classList.toggle('as-open');b.classList.toggle('as-open');}
+  }
+  window.parent.asToggleRail=asToggleRail;
+})();
+</script>""", height=0)
 
 # ==============================================================
 # HOME PAGE
@@ -2238,7 +2243,7 @@ requestAnimationFrame(floatSVG);
     <h2 style="font-family:'Instrument Serif','Times New Roman',serif;font-size:clamp(36px,5vw,64px);font-weight:400;color:#faf8f3;margin:12px 0 0;line-height:1.05;">From soil, a <em style="color:#7ba854;">crop.</em></h2>
     <p style="font-size:16px;line-height:1.55;color:rgba(250,248,243,0.65);margin-top:16px;max-width:600px;">Four stages of multimodal synthesis converge into a probability-ranked cultivation protocol.</p>
   </div>
-  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:24px;">
+  <div class="home-pipeline-grid">
     <div style="position:relative;padding:28px 24px;background:rgba(250,248,243,0.07);border:1px solid rgba(250,248,243,0.12);border-radius:18px;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;">
         <div style="width:40px;height:40px;border-radius:12px;background:rgba(122,168,84,0.15);border:1px solid rgba(122,168,84,0.3);display:grid;place-items:center;color:#a8d080;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V4a1 1 0 0 1 1-1h3"/><path d="M17 3h3a1 1 0 0 1 1 1v3"/><path d="M21 17v3a1 1 0 0 1-1 1h-3"/><path d="M7 21H4a1 1 0 0 1-1-1v-3"/><path d="M3 12h18"/></svg></div>
@@ -2286,7 +2291,7 @@ requestAnimationFrame(floatSVG);
     <h2 style="font-family:'Instrument Serif','Times New Roman',serif;font-size:clamp(36px,5vw,64px);font-weight:400;color:#faf8f3;margin:12px 0 0;line-height:1.05;">From leaf, a <em style="color:#d4a373;">cure.</em></h2>
     <p style="font-size:16px;line-height:1.55;color:rgba(250,248,243,0.65);margin-top:16px;max-width:600px;">A single forward pass resolves pathogen identity and returns a dosage-precise treatment plan.</p>
   </div>
-  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:24px;">
+  <div class="home-pipeline-grid">
     <div style="position:relative;padding:28px 24px;background:rgba(250,248,243,0.09);border:1px solid rgba(250,248,243,0.2);border-radius:18px;box-shadow:0 10px 26px rgba(0,0,0,0.18);">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;">
         <div style="width:40px;height:40px;border-radius:12px;background:rgba(212,163,115,0.1);border:1px solid rgba(212,163,115,0.25);display:grid;place-items:center;color:#b8884f;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4m0 0-4 4m4-4 4 4"/><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg></div>
@@ -2504,20 +2509,13 @@ elif _page == "cultivation":
             irrig_val = st.selectbox("Irrigation system", ["Canal", "Drip", "Rainfed", "Sprinkler"], key="irrig_val")
             region_val = st.selectbox("Geographic zone", ["Central", "East", "North", "South", "West"], key="region_val")
 
-    st.markdown('<span id="ready-synth-card"></span>', unsafe_allow_html=True)
-    st.markdown('<div class="tool-analyze">', unsafe_allow_html=True)
-    _an1, _an2 = st.columns([3.8, 1.25])
-    with _an1:
-        st.markdown("""
-<div class="tool-analyze-copy">
-  <h3 class="display tool-analyze-title">Ready to synthesize.</h3>
-  <p class="tool-analyze-sub">All four vectors complete. Expected synthesis time: ~2.4 seconds.</p>
+    st.markdown("""<div class="synth-box">
+  <div class="synth-box-text">
+    <div class="synth-box-title">Ready to synthesize.</div>
+    <div class="synth-box-sub">All four vectors complete. Expected synthesis time: ~2.4 seconds.</div>
+  </div>
 </div>""", unsafe_allow_html=True)
-    with _an2:
-        st.markdown('<div class="tool-analyze-btn-wrap">', unsafe_allow_html=True)
-        analyze_btn = st.button("Analyze and predict crop", key="analyze_predict_btn", use_container_width=True, type="primary")
-        st.markdown('</div>', unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
+    analyze_btn = st.button("⚙ Analyze & predict crop →", key="analyze_predict_btn", use_container_width=True, type="primary")
 
     if analyze_btn and soil_img is not None and _models_ok:
         _img_bytes = soil_img_bytes or soil_img.getvalue()
