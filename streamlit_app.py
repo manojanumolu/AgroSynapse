@@ -1747,7 +1747,7 @@ _CHROME_CSS = (
     "section[data-testid='stMain']{padding-left:72px!important;padding-top:69px!important;min-height:100vh;}"
     "[data-testid='stForm']{margin-top:0!important;padding-top:0!important;border:0!important;}"
     ".tool-header{padding-bottom:16px!important;}"
-    "#as-rail{position:fixed;left:0;top:0;z-index:100;width:72px;height:100vh;background:#0f2818;}"
+    "#as-rail{position:fixed;left:0;top:0;z-index:100;width:72px;height:100vh;background:#0f2818;transform:none!important;}"
     "#as-topbar{position:fixed;top:0;left:72px;right:0;z-index:90;height:69px;"
     "display:flex;align-items:center;padding:0 32px;gap:16px;"
     "background:rgba(250,248,243,0.92);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);"
@@ -1894,11 +1894,12 @@ _CHROME_CSS = (
     "#as-rail.as-rail-ready{transition:transform 0.28s cubic-bezier(0.2,0.8,0.2,1)!important;}"
     "#as-rail.as-open{transform:translateX(0)!important;}"
     "#as-rail-backdrop.as-open{display:block!important;}"
-    "#as-topbar{left:0!important;padding:0 10px!important;}"
+    "#as-topbar{left:0!important;padding:0 10px!important;gap:8px!important;}"
     "section[data-testid='stMain']{padding-left:0!important;}"
     ".topbar-crumb{display:none!important;}"
-    ".topbar-nav{display:grid!important;grid-template-columns:repeat(4,1fr)!important;gap:1px!important;flex:1!important;}"
-    ".topbar-nav a{padding:4px 2px!important;font-size:10px!important;text-align:center!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;}"
+    "#as-topbar>div[style*='flex:1']{display:none!important;}"
+    ".topbar-nav{display:flex!important;flex:1!important;gap:0!important;align-items:center!important;}"
+    ".topbar-nav a{flex:1!important;text-align:center!important;padding:4px 0!important;font-size:10px!important;white-space:nowrap!important;}"
     ".topbar-nav a.active{background:transparent!important;color:#5a8a3a!important;box-shadow:none!important;font-weight:700!important;border-radius:0!important;border-bottom:2px solid #5a8a3a!important;}"
     ".topbar-icon{display:none!important;}"
     ".as-hamburger{display:grid!important;}"
@@ -1916,6 +1917,7 @@ _CHROME_CSS = (
     "h3.tool-block-title[style*='46px']{font-size:20px!important;line-height:1.2!important;}"
     ".tool-block-head{flex-wrap:wrap!important;align-items:flex-start!important;gap:6px!important;}"
     "div[data-testid='stColumn']:has(#diag-specimen-card){margin-bottom:16px!important;}"
+    ".diag-actions{margin-top:16px!important;}"
     "div[data-testid='stColumns']:has(.synth-text),div[data-testid='stHorizontalBlock']:has(.synth-text){flex-direction:column!important;overflow:visible!important;margin-bottom:60px!important;}"
     "div[data-testid='stColumns']:has(.synth-text)>[data-testid='stColumn']>[data-testid='stVerticalBlock'],div[data-testid='stHorizontalBlock']:has(.synth-text)>[data-testid='stColumn']>[data-testid='stVerticalBlock']{padding:16px 20px!important;}"
     "div[data-testid='stColumns']:has(.synth-text)>[data-testid='stColumn']:first-child>[data-testid='stVerticalBlock'],div[data-testid='stHorizontalBlock']:has(.synth-text)>[data-testid='stColumn']:first-child>[data-testid='stVerticalBlock']{padding:20px 20px 8px!important;}"
@@ -1997,7 +1999,7 @@ _tweaks_panel = f"""
 st.markdown(f"""
 <div id="as-rail-backdrop" onclick="asToggleRail()"></div>
 <aside id="as-rail" style="position:fixed;left:0;top:0;z-index:100;width:72px;height:100vh;
-  background:#0f2818;display:flex;flex-direction:column;align-items:center;padding:16px 0 20px;">
+  background:#0f2818;display:flex;flex-direction:column;align-items:center;padding:16px 0 20px;transform:translateX(-100%);">
   <div class="rail-logo" title="AgroSynapse" style="margin-bottom:20px;">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="{_ac_mid}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M4 20c0-9 7-16 16-16 0 9-7 16-16 16Z" fill="{_ac_mid}" fill-opacity="0.2"/><path d="M4 20 12 12" stroke="{_ac_mid}"/>
@@ -2054,30 +2056,36 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 components.html("""<script>
 (function(){
-  function asToggleRail(){
-    var r=window.parent.document.getElementById('as-rail');
-    var b=window.parent.document.getElementById('as-rail-backdrop');
-    if(r)r.classList.toggle('as-open');
-    if(b)b.classList.toggle('as-open');
+  /* Persist one toggle function on parent window so removeEventListener deduplicates */
+  if(!window.parent._asNavToggle){
+    window.parent._asNavToggle=function(){
+      var r=window.parent.document.getElementById('as-rail');
+      var b=window.parent.document.getElementById('as-rail-backdrop');
+      if(r)r.classList.toggle('as-open');
+      if(b)b.classList.toggle('as-open');
+    };
   }
+  var fn=window.parent._asNavToggle;
+  window.parent.asToggleRail=fn;
   var _tries=0;
   function attachListeners(){
-    if(_tries++>60)return;
+    if(_tries++>80)return;
     var p=window.parent.document;
     var rail=p.getElementById('as-rail');
     var hams=p.querySelectorAll('.as-hamburger');
     var bkd=p.getElementById('as-rail-backdrop');
-    if(!hams.length||!rail){setTimeout(attachListeners,60);return;}
-    /* Enable smooth transition only after initial render to prevent page-load flash */
-    setTimeout(function(){rail.classList.add('as-rail-ready');},200);
-    window.parent.asToggleRail=asToggleRail;
+    if(!hams.length||!rail){setTimeout(attachListeners,50);return;}
+    /* Enable transition after initial paint — prevents FOUC slide */
+    setTimeout(function(){if(rail)rail.classList.add('as-rail-ready');},220);
     hams.forEach(function(el){
       el.removeAttribute('onclick');
-      el.addEventListener('click',asToggleRail,{passive:true});
+      el.removeEventListener('click',fn);
+      el.addEventListener('click',fn,{passive:true});
     });
     if(bkd){
       bkd.removeAttribute('onclick');
-      bkd.addEventListener('click',asToggleRail,{passive:true});
+      bkd.removeEventListener('click',fn);
+      bkd.addEventListener('click',fn,{passive:true});
     }
   }
   attachListeners();
