@@ -1897,9 +1897,9 @@ _CHROME_CSS = (
     "#as-topbar{left:0!important;padding:0 10px!important;gap:8px!important;}"
     "section[data-testid='stMain']{padding-left:0!important;}"
     ".topbar-crumb{display:none!important;}"
-    "#as-topbar>div[style*='flex:1']{display:none!important;}"
-    ".topbar-nav{display:flex!important;flex:1!important;gap:0!important;align-items:center!important;}"
-    ".topbar-nav a{flex:1!important;text-align:center!important;padding:4px 0!important;font-size:10px!important;white-space:nowrap!important;}"
+    "#as-topbar-spacer{display:none!important;}"
+    ".topbar-nav{display:flex!important;flex:1!important;gap:2px!important;align-items:center!important;}"
+    ".topbar-nav a{flex:1!important;text-align:center!important;padding:4px 2px!important;font-size:10px!important;white-space:nowrap!important;}"
     ".topbar-nav a.active{background:transparent!important;color:#5a8a3a!important;box-shadow:none!important;font-weight:700!important;border-radius:0!important;border-bottom:2px solid #5a8a3a!important;}"
     ".topbar-icon{display:none!important;}"
     ".as-hamburger{display:grid!important;}"
@@ -1928,6 +1928,13 @@ _CHROME_CSS = (
     ".tool-block{padding:16px!important;border-radius:14px!important;}"
     ".page-tool,.page-dashboard{padding:20px 12px 80px!important;}"
     ".diag-grid{grid-template-columns:1fr!important;}"
+    ".rec-crop{grid-template-columns:1fr!important;min-height:auto!important;}"
+    ".rec-crop .rec-crop-img,.rec-crop-img{min-height:100px!important;border-right:0!important;border-bottom:1px solid rgba(250,248,243,0.06)!important;}"
+    ".rec-crop .rec-crop-body{padding:16px 18px!important;overflow:visible!important;}"
+    ".rec-crop>div:nth-child(3){border-left:0!important;border-top:1px solid rgba(250,248,243,0.08)!important;flex-direction:row!important;align-items:center!important;justify-content:center!important;padding:16px 20px!important;gap:16px!important;}"
+    "div[data-testid='stHorizontalBlock']:has(#diag-specimen-card){flex-direction:column!important;}"
+    "div[data-testid='stHorizontalBlock']:has(#diag-specimen-card)>[data-testid='stColumn']{width:100%!important;flex:1 1 100%!important;min-width:100%!important;}"
+    ".upload-preview-chip-static{white-space:nowrap!important;font-size:11px!important;padding:6px 10px!important;}"
     "}"
 )
 
@@ -2035,7 +2042,7 @@ st.markdown(f"""
     <span style="width:6px;height:6px;border-radius:50%;background:{_ac_mid};display:inline-block;"></span>
     <span>AGROSYNAPSE{_crumb}</span>
   </div>
-  <div style="flex:1;"></div>
+  <div id="as-topbar-spacer" style="flex:1;"></div>
   <nav class="topbar-nav" style="display:flex;gap:4px;">
     <a class="{_ac_home}" href="?page=home&{_base_params}" target="_self">Home</a>
     <a class="{_ac_cult}" href="?page=cultivation&{_base_params}" target="_self">Cultivation</a>
