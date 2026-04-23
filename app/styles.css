@@ -279,11 +279,12 @@ body { overflow-x: hidden; }
 .reveal.in { transform: translateY(0); }
 
 /* ---------- Page transition ---------- */
-.page-enter { animation: pageEnter 0.2s ease-out both; }
+.page-enter { animation: pageEnter 0.07s ease-out both; transition: filter 0.07s ease, opacity 0.07s ease; will-change: filter; }
 @keyframes pageEnter {
-  from { opacity: 0.92; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0.97; }
+  to { opacity: 1; }
 }
+.page-enter.blurring { filter: blur(7px) brightness(0.97); pointer-events: none; }
 
 .reveal-mask { overflow: hidden; display: inline-block; vertical-align: top; }
 .reveal-mask > span { display: inline-block; transform: translateY(110%); transition: transform 0.4s var(--ease-out); will-change: transform; }

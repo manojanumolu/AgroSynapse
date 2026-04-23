@@ -63,8 +63,19 @@ const App = () => {
     if (urlPage) return urlPage;
     return localStorage.getItem("as_page") || "home";
   });
+  const [blurring, setBlurring] = React.useState(false);
   const [tweaksOpen, setTweaksOpen] = React.useState(false);
   const [tweaks, setTweaks] = React.useState(TWEAK_DEFAULTS);
+  const navTimer = React.useRef(null);
+
+  const navigateTo = React.useCallback((newPage) => {
+    if (navTimer.current) clearTimeout(navTimer.current);
+    setBlurring(true);
+    navTimer.current = setTimeout(() => {
+      setPage(newPage);
+      setBlurring(false);
+    }, 75);
+  }, []);
 
   React.useEffect(() => {
     const s = document.getElementById("as-splash");
@@ -72,7 +83,7 @@ const App = () => {
   }, []);
   React.useEffect(() => { applyTweaks(tweaks); }, [tweaks]);
   React.useEffect(() => { localStorage.setItem("as_page", page); window.scrollTo({ top: 0, behavior: "auto" }); }, [page]);
-  React.useEffect(() => { window.__setPage = setPage; }, [setPage]);
+  React.useEffect(() => { window.__setPage = navigateTo; }, [navigateTo]);
 
   React.useEffect(() => {
     const onMsg = (e) => {
@@ -106,12 +117,12 @@ const App = () => {
 
   return (
     <div className="shell">
-      <Rail page={page} setPage={setPage} />
+      <Rail page={page} setPage={navigateTo} />
       <main className="main">
-        <TopBar page={page} setPage={setPage} onTweaks={() => setTweaksOpen(o => !o)} />
-        <div className="page-enter">
-          {page === "home" && <HomePage setPage={setPage} />}
-          {page === "cultivation" && <CultivationPage setPage={setPage} />}
+        <TopBar page={page} setPage={navigateTo} onTweaks={() => setTweaksOpen(o => !o)} />
+        <div className={"page-enter" + (blurring ? " blurring" : "")}>
+          {page === "home" && <HomePage setPage={navigateTo} />}
+          {page === "cultivation" && <CultivationPage setPage={navigateTo} />}
           {page === "diagnostic" && <DiagnosticPage />}
           {page === "dashboard" && <DashboardPage />}
         </div>
@@ -144,10 +155,10 @@ const App = () => {
         <div className="row">
           <span className="name">Page</span>
           <div className="seg">
-            <button className={page === "home" ? "active" : ""} onClick={() => setPage("home")}>Home</button>
-            <button className={page === "cultivation" ? "active" : ""} onClick={() => setPage("cultivation")}>Cult.</button>
-            <button className={page === "diagnostic" ? "active" : ""} onClick={() => setPage("diagnostic")}>Diag.</button>
-            <button className={page === "dashboard" ? "active" : ""} onClick={() => setPage("dashboard")}>Dash.</button>
+            <button className={page === "home" ? "active" : ""} onClick={() => navigateTo("home")}>Home</button>
+            <button className={page === "cultivation" ? "active" : ""} onClick={() => navigateTo("cultivation")}>Cult.</button>
+            <button className={page === "diagnostic" ? "active" : ""} onClick={() => navigateTo("diagnostic")}>Diag.</button>
+            <button className={page === "dashboard" ? "active" : ""} onClick={() => navigateTo("dashboard")}>Dash.</button>
           </div>
         </div>
       </div>
