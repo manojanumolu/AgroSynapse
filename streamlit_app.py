@@ -2547,6 +2547,35 @@ elif _page == "cultivation":
                 st.session_state.auto_hum = _clm.get("humidity", 75.3)
                 st.session_state.auto_rain = _clm.get("rainfall", 1302.0)
                 st.session_state.location_name = _clm.get("location", "")
+                st.session_state.climate_note = _clm.get("note", "")
+                st.session_state.climate_fetched = True
+            else:
+                st.session_state.climate_fetched = False
+                st.session_state.climate_error = _clm_err or "Unknown error"
+
+        if st.session_state.get("climate_fetched"):
+            _loc  = st.session_state.get("location_name", "")
+            _note = st.session_state.get("climate_note", "")
+            _icon = "✓" if "found" in _note else "ℹ"
+            _color = "#2d6a2d" if "found" in _note else "#5a6a2d"
+            _bg    = "#edf7ed" if "found" in _note else "#f5f7ed"
+            st.markdown(f"""
+<div style="display:flex;align-items:flex-start;gap:10px;background:{_bg};border:1px solid {_color}33;
+     border-left:4px solid {_color};border-radius:8px;padding:10px 14px;margin:8px 0;">
+  <span style="font-size:16px;line-height:1.4;">{_icon}</span>
+  <div>
+    <div style="font-weight:600;color:{_color};font-size:13px;">Climate data loaded — {_note}</div>
+    <div style="color:#444;font-size:12px;margin-top:2px;">
+      Location: <strong>{_loc}</strong> &nbsp;·&nbsp; 10-year avg (2015–2024)
+    </div>
+  </div>
+</div>""", unsafe_allow_html=True)
+        elif st.session_state.get("climate_error"):
+            st.markdown(f"""
+<div style="background:#fdf0f0;border:1px solid #c4453633;border-left:4px solid #c44536;
+     border-radius:8px;padding:10px 14px;margin:8px 0;font-size:13px;color:#a03030;">
+  ✗ {st.session_state.climate_error}
+</div>""", unsafe_allow_html=True)
 
         _t = st.session_state.auto_temp
         _h = st.session_state.auto_hum
