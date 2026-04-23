@@ -2087,21 +2087,6 @@ components.html("""<script>
 (function(){
   var P=window.parent;
 
-  /* ── SPA navigation: intercept all ?-href links so Streamlit reruns
-        via WebSocket instead of doing a full white-flash page reload ── */
-  if(!P._asNavDelegated){
-    P._asNavDelegated=true;
-    P.document.body.addEventListener('click',function(e){
-      var a=e.target.closest('a[href^="?"]');
-      if(!a)return;
-      e.preventDefault();
-      e.stopPropagation();
-      var href=a.getAttribute('href');
-      P.history.pushState(null,'',href);
-      P.dispatchEvent(new P.PopStateEvent('popstate',{state:null}));
-    },false);
-  }
-
   /* ── Rail toggle ── */
   if(!P._asNavToggle){
     P._asNavToggle=function(){
