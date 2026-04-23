@@ -2686,6 +2686,10 @@ elif _page == "diagnostic":
         st.session_state.leaf_labels_cached = _leaf_labels
         st.session_state.leaf_ferts_cached = _leaf_ferts
 
+    # Scroll to top when results just arrived (set by run_diag rerun)
+    if st.session_state.pop("diag_scroll_top", False):
+        components.html("<script>window.parent.scrollTo({top:0,behavior:'auto'});</script>", height=0)
+
     st.markdown("""
 <div class="page-tool">
 <div class="tool-header">
@@ -2825,6 +2829,7 @@ elif _page == "diagnostic":
                         else:
                             _pc, _cf, _t5 = run_leaf_inference(leaf_model, leaf_labels, _lb)
                             st.session_state.leaf_result = (_pc, _cf, _t5)
+                            st.session_state.diag_scroll_top = True
                             st.rerun()
                     except Exception as _le:
                         st.error(f"Diagnosis failed: {_le}")
