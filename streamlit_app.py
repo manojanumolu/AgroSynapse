@@ -1573,42 +1573,60 @@ def get_climate_data(village, district, state):
         lat, lon = coords
 
         if village and village.strip():
+            found_village = False
+            # 1st try: Open-Meteo geocoding (fast, good for towns/cities)
             try:
                 geo_url = (
                     "https://geocoding-api.open-meteo.com"
                     "/v1/search"
                     f"?name={requests.utils.quote(village.strip())}"
-                    "&count=5&language=en&format=json"
+                    "&count=10&language=en&format=json"
                 )
-                geo_resp = requests.get(geo_url, timeout=5)
+                geo_resp = requests.get(geo_url, timeout=6)
                 geo_data = geo_resp.json()
                 results = geo_data.get("results", [])
                 india_results = [r for r in results if r.get("country_code", "").upper() == "IN"]
                 state_results = [r for r in india_results if state.lower() in r.get("admin1", "").lower()]
-                # Only accept a result that matches the selected state.
-                # Do NOT fall back to india_results[0] — that picks same-named
-                # villages in other states (e.g. Bheemavaram in AP vs Telangana).
                 if state_results:
                     lat = state_results[0]["latitude"]
                     lon = state_results[0]["longitude"]
-                    location_label = f"{village}, {district}, {state}"
-                    note = "Village location found ✓"
-                else:
-                    location_label = f"{village}, {district}, {state}"
-                    note = f"Using {district} district coordinates"
+                    found_village = True
             except Exception:
-                location_label = f"{village}, {district}, {state}"
-                note = f"Using {district} district coordinates"
+                pass
+
+            # 2nd try: Nominatim (OpenStreetMap) — far better village/hamlet coverage
+            if not found_village:
+                try:
+                    nom_q = f"{village.strip()}, {district}, {state}, India"
+                    nom_url = (
+                        "https://nominatim.openstreetmap.org/search"
+                        f"?q={requests.utils.quote(nom_q)}"
+                        "&format=json&limit=5&countrycodes=in"
+                    )
+                    nom_resp = requests.get(
+                        nom_url, timeout=10,
+                        headers={"User-Agent": "AgroSynapse/1.0 (agri-advisory)"}
+                    )
+                    nom_data = nom_resp.json()
+                    if nom_data:
+                        lat = float(nom_data[0]["lat"])
+                        lon = float(nom_data[0]["lon"])
+                        found_village = True
+                except Exception:
+                    pass
+
+            location_label = f"{village}, {district}, {state}"
+            note = "Village location found ✓" if found_village else f"Using {district} district coordinates"
         else:
             location_label = f"{district}, {state}"
             note = "District coordinates used"
 
-        # Daily: temp + rain for 10-year average (2014-2023)
+        # Daily: temp + rain for 10-year average (2015-2024, up to end of 2024)
         # Hourly: humidity from ERA5 for accurate mean (avoids daily-aggregate bias)
         climate_url = (
             "https://archive-api.open-meteo.com/v1/archive"
             f"?latitude={lat}&longitude={lon}"
-            "&start_date=2014-01-01&end_date=2023-12-31"
+            "&start_date=2015-01-01&end_date=2024-12-31"
             "&daily=temperature_2m_mean,precipitation_sum"
             "&hourly=relative_humidity_2m"
             "&timezone=Asia%2FKolkata"
@@ -2509,9 +2527,10 @@ elif _page == "cultivation":
 <p class="tool-block-sub" style="margin-bottom:12px;">District-grade vectors pulled from 12-year IMD historical series.</p>""", unsafe_allow_html=True)
         clc1, clc2, clc3 = st.columns(3)
         with clc1:
-            state_val = st.selectbox("State", ["Andhra Pradesh", "Telangana", "Karnataka", "Tamil Nadu", "Maharashtra", "Gujarat", "Rajasthan", "Punjab", "Haryana", "Uttar Pradesh", "Madhya Pradesh", "Bihar", "West Bengal", "Odisha", "Kerala"], key="state_val")
+            state_val = st.selectbox("State", sorted(INDIA_STATES_DISTRICTS.keys()), key="state_val")
         with clc2:
-            district_val = st.selectbox("District", ["Guntur", "Krishna", "Nellore", "Kurnool", "Chittoor", "Hyderabad", "Warangal", "Bengaluru", "Chennai", "Mumbai"], key="district_val")
+            _dist_opts = INDIA_STATES_DISTRICTS.get(state_val, [])
+            district_val = st.selectbox("District", _dist_opts, key="district_val")
         with clc3:
             village_val = st.text_input("Village / Town", value="Rawada", key="village_val")
         st.markdown('<div class="climate-action-row">', unsafe_allow_html=True)
