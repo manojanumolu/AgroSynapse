@@ -2085,21 +2085,38 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 components.html("""<script>
 (function(){
-  /* Persist one toggle function on parent window so removeEventListener deduplicates */
-  if(!window.parent._asNavToggle){
-    window.parent._asNavToggle=function(){
-      var r=window.parent.document.getElementById('as-rail');
-      var b=window.parent.document.getElementById('as-rail-backdrop');
+  var P=window.parent;
+
+  /* ── SPA navigation: intercept all ?-href links so Streamlit reruns
+        via WebSocket instead of doing a full white-flash page reload ── */
+  if(!P._asNavDelegated){
+    P._asNavDelegated=true;
+    P.document.body.addEventListener('click',function(e){
+      var a=e.target.closest('a[href^="?"]');
+      if(!a)return;
+      e.preventDefault();
+      e.stopPropagation();
+      var href=a.getAttribute('href');
+      P.history.pushState(null,'',href);
+      P.dispatchEvent(new P.PopStateEvent('popstate',{state:null}));
+    },false);
+  }
+
+  /* ── Rail toggle ── */
+  if(!P._asNavToggle){
+    P._asNavToggle=function(){
+      var r=P.document.getElementById('as-rail');
+      var b=P.document.getElementById('as-rail-backdrop');
       if(r)r.classList.toggle('as-open');
       if(b)b.classList.toggle('as-open');
     };
   }
-  var fn=window.parent._asNavToggle;
-  window.parent.asToggleRail=fn;
+  var fn=P._asNavToggle;
+  P.asToggleRail=fn;
   var _tries=0;
   function attachListeners(){
     if(_tries++>80)return;
-    var p=window.parent.document;
+    var p=P.document;
     var rail=p.getElementById('as-rail');
     var hams=p.querySelectorAll('.as-hamburger');
     var bkd=p.getElementById('as-rail-backdrop');
