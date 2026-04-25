@@ -52,8 +52,6 @@ if "location_name" not in st.session_state:
     st.session_state.location_name = ""
 if "location_note" not in st.session_state:
     st.session_state.location_note = ""
-if "theme" not in st.session_state:
-    st.session_state.theme = "light"
 if "sidebar_open" not in st.session_state:
     st.session_state.sidebar_open = False
 if "page" not in st.session_state:
@@ -67,36 +65,7 @@ if "leaf_model_error" not in st.session_state:
 if "leaf_valid" not in st.session_state:
     st.session_state.leaf_valid = None   # None=not checked, True=valid, False=invalid
 
-if st.session_state.theme == "dark":
-    THEME_VARS = """<style>
-:root {
-    --bg: #1c211d;
-    --surface: #222823;
-    --surface-2: #283028;
-    --surface-3: #2d352e;
-    --surface-container-low: #283028;
-    --surface-container-lowest: #313b33;
-    --surface-container: #2a312b;
-    --surface-container-high: #333c34;
-    --surface-container-highest: #3a443b;
-    --outline: #4b564d;
-    --text: #e8ece8;
-    --muted: #b8c1b8;
-    --primary: #acf3ba;
-    --primary-2: #4a8c5c;
-    --secondary: #9fd2a8;
-  --secondary-fixed: #2b3f5a;
-  --on-secondary-fixed-variant: #cfe3ff;
-  --tertiary: #a56b6d;
-  --danger: #ff6b6b;
-  --card: #1d1d1d;
-  --border: #2f2f2f;
-  --pill: #1a3a1a;
-  --sidebar: #1a1a1a;
-}
-</style>"""
-else:
-    THEME_VARS = """<style>
+THEME_VARS = """<style>
 :root {
     --bg: #F2EEE7;
   --surface: #DCDCDC;
@@ -1682,10 +1651,8 @@ if _qp and _qp in ("home", "cultivation", "diagnostic", "dashboard"):
     st.session_state.page = _qp
 
 _page = st.session_state.page
-_theme  = st.query_params.get("theme", "light")
 _accent = st.query_params.get("accent", "0")
 _tweaks = st.query_params.get("tweaks", "0")
-_toggle_theme = "dark" if _theme == "light" else "light"
 
 _ACCENT_MAP = {
     "0": ("#5a8a3a", "#7ba854", "rgba(122,168,84,0.12)"),
@@ -1957,22 +1924,7 @@ _CHROME_CSS = (
     "}"
 )
 
-_DARK_CSS = (
-    "body,.stApp{background:#0a160a!important;}"
-    "section[data-testid='stMain']{background:#0a160a!important;}"
-    "#as-rail{background:#050e05!important;}"
-    "#as-topbar{background:rgba(5,14,5,0.96)!important;border-bottom-color:rgba(250,248,243,0.06)!important;}"
-    ".topbar-crumb span,.topbar-nav a{color:#7a9a70!important;}"
-    "[data-testid='stNumberInput']>div>div>input,[data-testid='stTextInput'] input{"
-    "background:#0f1f0f!important;color:#e8e5dc!important;border-color:rgba(250,248,243,0.12)!important;}"
-    "[data-testid='stSelectbox']>div>div{background:#0f1f0f!important;}"
-    "[data-testid='stSelectbox'] span{color:#e8e5dc!important;}"
-    "[data-testid='stNumberInput'] label,[data-testid='stSelectbox'] label,"
-    "[data-testid='stTextInput'] label{color:#5a7a50!important;}"
-    ".stApp,.block-container{background:#0a160a!important;}"
-    ".as-hamburger{color:rgba(250,248,243,0.75)!important;}"
-    ".as-hamburger:hover{background:rgba(250,248,243,0.08)!important;}"
-) if _theme == "dark" else ""
+_DARK_CSS = ""
 
 _ALL_CSS = "<style>" + _CHROME_CSS + _DESIGN_CSS + _DARK_CSS + "</style>"
 if hasattr(st, "html"):
@@ -1983,8 +1935,8 @@ else:
 # ── 3. Chrome HTML ─────────────────────────────────────────────
 _ac_home = _ac("home"); _ac_cult = _ac("cultivation")
 _ac_diag = _ac("diagnostic"); _ac_dash = _ac("dashboard")
-_tweaks_href = f"?page={_page}&theme={_theme}&accent={_accent}&tweaks={'0' if _tweaks=='1' else '1'}"
-_base_params = f"theme={_theme}&accent={_accent}"
+_tweaks_href = f"?page={_page}&accent={_accent}&tweaks={'0' if _tweaks=='1' else '1'}"
+_base_params = f"accent={_accent}"
 
 # Accent dot helpers
 def _adot(a_idx, a_color):
@@ -2002,13 +1954,6 @@ _tweaks_panel = f"""
     <span class="tweaks-label">Accent</span>
     <div class="tweaks-dots">
       {_adot(0,"#5a8a3a")}{_adot(1,"#1a6aae")}{_adot(2,"#c44536")}{_adot(3,"#9ab830")}
-    </div>
-  </div>
-  <div class="tweaks-row">
-    <span class="tweaks-label">Theme</span>
-    <div class="tweaks-btns">
-      <a class="tweaks-btn {'active' if _theme=='light' else ''}" href="?page={_page}&theme=light&accent={_accent}&tweaks=1" target="_self">LIGHT</a>
-      <a class="tweaks-btn {'active' if _theme=='dark' else ''}" href="?page={_page}&theme=dark&accent={_accent}&tweaks=1" target="_self">DARK</a>
     </div>
   </div>
   <div class="tweaks-row">
