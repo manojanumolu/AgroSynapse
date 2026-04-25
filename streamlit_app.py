@@ -54,6 +54,9 @@ if "location_note" not in st.session_state:
     st.session_state.location_note = ""
 if "theme" not in st.session_state:
     st.session_state.theme = "light"
+_theme_qp = st.query_params.get("theme", "light")
+if _theme_qp in ("light", "dark"):
+    st.session_state.theme = _theme_qp
 if "sidebar_open" not in st.session_state:
     st.session_state.sidebar_open = False
 if "page" not in st.session_state:
@@ -1972,7 +1975,7 @@ _DARK_CSS = (
     ".stApp,.block-container{background:#0a160a!important;}"
     ".as-hamburger{color:rgba(250,248,243,0.75)!important;}"
     ".as-hamburger:hover{background:rgba(250,248,243,0.08)!important;}"
-) if _theme == "dark" else ""
+) if st.session_state.theme == "dark" else ""
 
 _ALL_CSS = "<style>" + _CHROME_CSS + _DESIGN_CSS + _DARK_CSS + "</style>"
 if hasattr(st, "html"):
