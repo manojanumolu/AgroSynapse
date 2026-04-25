@@ -2284,7 +2284,7 @@ requestAnimationFrame(floatSVG);
     <h2 class="display section-title">Two instruments, <em>calibrated</em> for your land.</h2>
   </div>
   <div class="modules-grid">
-    <a class="module-card" href="?page=cultivation" target="_self" style="text-decoration:none;">
+    <a class="module-card" href="?page=cultivation&{_base_params}" target="_self" style="text-decoration:none;">
       <div class="module-card-header">
         <div class="module-icon">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22V10"/><path d="M12 10c0-3 2-6 6-6 0 3-2 6-6 6Z"/><path d="M12 12c0-2.5-2-5-6-5 0 2.5 2 5 6 5Z"/></svg>
@@ -2300,7 +2300,7 @@ requestAnimationFrame(floatSVG);
         </div>
       </div>
     </a>
-    <a class="module-card earth" href="?page=diagnostic" target="_self" style="text-decoration:none;">
+    <a class="module-card earth" href="?page=diagnostic&{_base_params}" target="_self" style="text-decoration:none;">
       <div class="module-card-header">
         <div class="module-icon">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18h8"/><path d="M3 22h18"/><path d="M14 22a7 7 0 1 0 0-14h-1"/><path d="M9 14h2"/><path d="M9 12a2 2 0 0 1-2-2V6h4v4a2 2 0 0 1-2 2Z"/><path d="M12 6H6"/><path d="M10 2h4"/></svg>
@@ -2424,7 +2424,7 @@ requestAnimationFrame(floatSVG);
     <h2 class="display cta-title">Put a <em>lab</em> behind every field.</h2>
     <p class="cta-sub">Specimen imagery in, protocol out. No login gymnastics. No field experts required.</p>
     <div class="cta-actions">
-      <a class="btn btn-sage" href="?page=cultivation" target="_self" style="text-decoration:none;">Start with a soil scan &#8594;</a>
+      <a class="btn btn-sage" href="?page=cultivation&{_base_params}" target="_self" style="text-decoration:none;">Start with a soil scan &#8594;</a>
     </div>
   </div>
 </section>
@@ -3138,7 +3138,7 @@ else:  # dashboard
   <span class="eyebrow">No results yet</span>
   <h2 class="display section-title" style="margin-top:16px;">Run an analysis first.</h2>
   <p style="color:var(--ink-2);font-size:16px;margin:20px auto;max-width:480px;">Submit a soil image and parameters on the Cultivation page to generate your first synthesis report.</p>
-  <a class="btn btn-primary" href="?page=cultivation" target="_self" style="text-decoration:none;display:inline-flex;align-items:center;gap:10px;">Go to Cultivation &#8594;</a>
+  <a class="btn btn-primary" href="?page=cultivation&{_base_params}" target="_self" style="text-decoration:none;display:inline-flex;align-items:center;gap:10px;">Go to Cultivation &#8594;</a>
 </div>""", unsafe_allow_html=True)
 
     st.markdown('</div>', unsafe_allow_html=True)
