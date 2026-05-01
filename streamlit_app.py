@@ -2192,7 +2192,7 @@ def _fetch_sensor_data():
     if not ok:
         return None, err
     try:
-        data = firebase_db.reference("/").get() or {}
+        data = firebase_db.reference("/sensor").get() or {}
         return {
             "nitrogen":   float(data.get("nitrogen",   0.0)),
             "phosphorus": float(data.get("phosphorus", 0.0)),
@@ -2599,7 +2599,7 @@ elif _page == "cultivation":
                 st.session_state.n_val = min(max(_sensor_data["nitrogen"],   0.0), 200.0)
                 st.session_state.p_val = min(max(_sensor_data["phosphorus"], 0.0), 100.0)
                 st.session_state.k_val = min(max(_sensor_data["potassium"],  0.0), 200.0)
-                st.session_state.ph_val = min(max(_sensor_data["ph"],        3.0),  10.0)
+                st.session_state.ph_val = min(max(_sensor_data["ph"],        0.0),  14.0)
                 st.session_state.sensor_loaded = True
                 st.session_state.sensor_error = None
                 st.rerun()
@@ -2609,14 +2609,14 @@ elif _page == "cultivation":
         if st.session_state.get("sensor_loaded"):
             st.markdown("""
 <div style="display:flex;align-items:center;gap:8px;background:#edf7ed;border:1px solid #2d6a2d33;
-     border-left:4px solid #2d6a2d;border-radius:8px;padding:8px 12px;margin:6px 0;">
+     border-left:4px solid #2d6a2d;border-radius:8px;padding:8px 12px;margin:6px 0 14px 0;">
   <span style="font-size:14px;">&#10003;</span>
   <span style="font-weight:600;color:#2d6a2d;font-size:12px;">Sensor data loaded from Firebase</span>
 </div>""", unsafe_allow_html=True)
         elif st.session_state.get("sensor_error"):
             st.markdown(
                 f'<div style="background:#fdf0f0;border:1px solid #c4453633;border-left:4px solid #c44536;'
-                f'border-radius:8px;padding:8px 12px;margin:6px 0;font-size:12px;color:#a03030;">'
+                f'border-radius:8px;padding:8px 12px;margin:6px 0 14px 0;font-size:12px;color:#a03030;">'
                 f'&#10007; {st.session_state.sensor_error}</div>',
                 unsafe_allow_html=True,
             )
@@ -2629,7 +2629,7 @@ elif _page == "cultivation":
         with cc2:
             p_val = st.number_input("Phosphorus (P) - mg/kg", min_value=0.0, max_value=100.0, value=35.0, step=1.0, key="p_val")
             st.markdown(_metric_range_html("P", p_val, 0.0, 100.0, 20.0, 60.0, "mg/kg"), unsafe_allow_html=True)
-            ph_val = st.number_input("Soil pH", min_value=3.0, max_value=10.0, value=6.5, step=0.1, key="ph_val")
+            ph_val = st.number_input("Soil pH", min_value=0.0, max_value=14.0, value=6.5, step=0.1, key="ph_val")
             st.markdown(_metric_range_html("PH", ph_val, 3.0, 10.0, 6.0, 7.2, "units"), unsafe_allow_html=True)
     lc1, lc2 = st.columns(2)
 
