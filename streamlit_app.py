@@ -2155,6 +2155,54 @@ components.html("""<script>
 })();
 </script>""", height=0)
 
+# ── Firebase helpers ────────────────────────────────────────────
+_FIREBASE_DB_URL = "https://soil-sensor-52d65-default-rtdb.asia-southeast1.firebasedatabase.app"
+_FIREBASE_KEY_FILE = "soil-sensor-52d65-firebase-adminsdk-fbsvc-f5cb22fda2.json"
+
+
+def _init_firebase():
+    """Initialize Firebase Admin SDK once per Python process.
+    Checks Streamlit Secrets first (production), then falls back to the local
+    service-account JSON file (local development — NEVER commit that file).
+    Returns (ok: bool, error_msg: str|None).
+    """
+    if not _FIREBASE_AVAILABLE:
+        return False, "firebase-admin not installed. Run: pip install firebase-admin"
+    try:
+        try:
+            firebase_admin.get_app()
+        except ValueError:
+            if "FIREBASE_KEY" in st.secrets:
+                cred = credentials.Certificate(dict(st.secrets["FIREBASE_KEY"]))
+            else:
+                if not os.path.exists(_FIREBASE_KEY_FILE):
+                    return False, f"Service-account key not found: {_FIREBASE_KEY_FILE}"
+                cred = credentials.Certificate(_FIREBASE_KEY_FILE)
+            firebase_admin.initialize_app(cred, {"databaseURL": _FIREBASE_DB_URL})
+        return True, None
+    except Exception as _fb_err:
+        return False, str(_fb_err)
+
+
+def _fetch_sensor_data():
+    """Read the sensor node from Firebase Realtime Database.
+    Returns (data: dict|None, error: str|None).
+    """
+    ok, err = _init_firebase()
+    if not ok:
+        return None, err
+    try:
+        data = firebase_db.reference("/").get() or {}
+        return {
+            "nitrogen":   float(data.get("nitrogen",   0.0)),
+            "phosphorus": float(data.get("phosphorus", 0.0)),
+            "potassium":  float(data.get("potassium",  0.0)),
+            "ph":         float(data.get("ph",         7.0)),
+        }, None
+    except Exception as _fb_err:
+        return None, str(_fb_err)
+
+
 # ==============================================================
 # HOME PAGE
 # ==============================================================
@@ -2473,54 +2521,6 @@ requestAnimationFrame(floatSVG);
   </div>
 </footer>
 """, unsafe_allow_html=True)
-
-
-# ── Firebase helpers ────────────────────────────────────────────
-_FIREBASE_DB_URL = "https://soil-sensor-52d65-default-rtdb.asia-southeast1.firebasedatabase.app"
-_FIREBASE_KEY_FILE = "soil-sensor-52d65-firebase-adminsdk-fbsvc-f5cb22fda2.json"
-
-
-def _init_firebase():
-    """Initialize Firebase Admin SDK once per Python process.
-    Checks Streamlit Secrets first (production), then falls back to the local
-    service-account JSON file (local development — NEVER commit that file).
-    Returns (ok: bool, error_msg: str|None).
-    """
-    if not _FIREBASE_AVAILABLE:
-        return False, "firebase-admin not installed. Run: pip install firebase-admin"
-    try:
-        try:
-            firebase_admin.get_app()
-        except ValueError:
-            if "FIREBASE_KEY" in st.secrets:
-                cred = credentials.Certificate(dict(st.secrets["FIREBASE_KEY"]))
-            else:
-                if not os.path.exists(_FIREBASE_KEY_FILE):
-                    return False, f"Service-account key not found: {_FIREBASE_KEY_FILE}"
-                cred = credentials.Certificate(_FIREBASE_KEY_FILE)
-            firebase_admin.initialize_app(cred, {"databaseURL": _FIREBASE_DB_URL})
-        return True, None
-    except Exception as _fb_err:
-        return False, str(_fb_err)
-
-
-def _fetch_sensor_data():
-    """Read the sensor node from Firebase Realtime Database.
-    Returns (data: dict|None, error: str|None).
-    """
-    ok, err = _init_firebase()
-    if not ok:
-        return None, err
-    try:
-        data = firebase_db.reference("/").get() or {}
-        return {
-            "nitrogen":   float(data.get("nitrogen",   0.0)),
-            "phosphorus": float(data.get("phosphorus", 0.0)),
-            "potassium":  float(data.get("potassium",  0.0)),
-            "ph":         float(data.get("ph",         7.0)),
-        }, None
-    except Exception as _fb_err:
-        return None, str(_fb_err)
 
 
 # ==============================================================
