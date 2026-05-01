@@ -21,3 +21,6 @@ Thumbs.db
 .idea/
 _model_backup/
 screen.png
+
+# Firebase service-account keys — NEVER commit these
+*.json

@@ -11,6 +11,26 @@ import streamlit as st
 import plotly.graph_objects as go
 from PIL import Image, ImageDraw, ImageFont
 
+# ╔══════════════════════════════════════════════════════════════════════════════╗
+# ║   !!!  CRITICAL SECURITY REMINDER  !!!                                      ║
+# ║   Your Firebase service-account key is a JSON file. You MUST add it to     ║
+# ║   .gitignore RIGHT NOW so it is NEVER pushed to GitHub:                     ║
+# ║                                                                              ║
+# ║       Add this line to your .gitignore:   *.json                            ║
+# ║                                                                              ║
+# ║   If the key is ever committed — even for one second — immediately go to    ║
+# ║   the Firebase console, revoke the key, and generate a new one.             ║
+# ║   NEVER hardcode the JSON contents in source code.                          ║
+# ║   Use Streamlit Secrets (st.secrets["FIREBASE_KEY"]) in production.         ║
+# ╚══════════════════════════════════════════════════════════════════════════════╝
+_FIREBASE_AVAILABLE = False
+try:
+    import firebase_admin
+    from firebase_admin import credentials, db as firebase_db
+    _FIREBASE_AVAILABLE = True
+except ImportError:
+    pass
+
 _IMPORT_ERROR = None
 try:
     import torch, torch.nn as nn
@@ -69,6 +89,18 @@ if "leaf_model_error" not in st.session_state:
     st.session_state.leaf_model_error = None
 if "leaf_valid" not in st.session_state:
     st.session_state.leaf_valid = None   # None=not checked, True=valid, False=invalid
+if "n_val" not in st.session_state:
+    st.session_state.n_val = 90.0
+if "p_val" not in st.session_state:
+    st.session_state.p_val = 35.0
+if "k_val" not in st.session_state:
+    st.session_state.k_val = 54.0
+if "ph_val" not in st.session_state:
+    st.session_state.ph_val = 6.5
+if "sensor_loaded" not in st.session_state:
+    st.session_state.sensor_loaded = False
+if "sensor_error" not in st.session_state:
+    st.session_state.sensor_error = None
 
 if st.session_state.theme == "dark":
     THEME_VARS = """<style>
@@ -2443,6 +2475,54 @@ requestAnimationFrame(floatSVG);
 """, unsafe_allow_html=True)
 
 
+# ── Firebase helpers ────────────────────────────────────────────
+_FIREBASE_DB_URL = "https://soil-sensor-52d65-default-rtdb.asia-southeast1.firebasedatabase.app"
+_FIREBASE_KEY_FILE = "soil-sensor-52d65-firebase-adminsdk-fbsvc-f5cb22fda2.json"
+
+
+def _init_firebase():
+    """Initialize Firebase Admin SDK once per Python process.
+    Checks Streamlit Secrets first (production), then falls back to the local
+    service-account JSON file (local development — NEVER commit that file).
+    Returns (ok: bool, error_msg: str|None).
+    """
+    if not _FIREBASE_AVAILABLE:
+        return False, "firebase-admin not installed. Run: pip install firebase-admin"
+    try:
+        try:
+            firebase_admin.get_app()
+        except ValueError:
+            if "FIREBASE_KEY" in st.secrets:
+                cred = credentials.Certificate(dict(st.secrets["FIREBASE_KEY"]))
+            else:
+                if not os.path.exists(_FIREBASE_KEY_FILE):
+                    return False, f"Service-account key not found: {_FIREBASE_KEY_FILE}"
+                cred = credentials.Certificate(_FIREBASE_KEY_FILE)
+            firebase_admin.initialize_app(cred, {"databaseURL": _FIREBASE_DB_URL})
+        return True, None
+    except Exception as _fb_err:
+        return False, str(_fb_err)
+
+
+def _fetch_sensor_data():
+    """Read the sensor node from Firebase Realtime Database.
+    Returns (data: dict|None, error: str|None).
+    """
+    ok, err = _init_firebase()
+    if not ok:
+        return None, err
+    try:
+        data = firebase_db.reference("/").get() or {}
+        return {
+            "nitrogen":   float(data.get("nitrogen",   0.0)),
+            "phosphorus": float(data.get("phosphorus", 0.0)),
+            "potassium":  float(data.get("potassium",  0.0)),
+            "ph":         float(data.get("ph",         7.0)),
+        }, None
+    except Exception as _fb_err:
+        return None, str(_fb_err)
+
+
 # ==============================================================
 # CULTIVATION PAGE
 # ==============================================================
@@ -2509,6 +2589,37 @@ elif _page == "cultivation":
   <span class="pill">NPK - pH</span>
 </div>
 <p class="tool-block-sub" style="margin-bottom:12px;">Known values from lab report, or estimates from field tests.</p>""", unsafe_allow_html=True)
+        _sensor_spacer, _sensor_btn_col = st.columns([2.2, 1])
+        with _sensor_btn_col:
+            load_sensor = st.button("⬇ Load from Sensor", key="load_sensor_btn", use_container_width=True)
+        if load_sensor:
+            with st.spinner("Fetching sensor data from Firebase..."):
+                _sensor_data, _sensor_err = _fetch_sensor_data()
+            if _sensor_data:
+                st.session_state.n_val = min(max(_sensor_data["nitrogen"],   0.0), 200.0)
+                st.session_state.p_val = min(max(_sensor_data["phosphorus"], 0.0), 100.0)
+                st.session_state.k_val = min(max(_sensor_data["potassium"],  0.0), 200.0)
+                st.session_state.ph_val = min(max(_sensor_data["ph"],        3.0),  10.0)
+                st.session_state.sensor_loaded = True
+                st.session_state.sensor_error = None
+                st.rerun()
+            else:
+                st.session_state.sensor_loaded = False
+                st.session_state.sensor_error = _sensor_err or "Unknown error"
+        if st.session_state.get("sensor_loaded"):
+            st.markdown("""
+<div style="display:flex;align-items:center;gap:8px;background:#edf7ed;border:1px solid #2d6a2d33;
+     border-left:4px solid #2d6a2d;border-radius:8px;padding:8px 12px;margin:6px 0;">
+  <span style="font-size:14px;">&#10003;</span>
+  <span style="font-weight:600;color:#2d6a2d;font-size:12px;">Sensor data loaded from Firebase</span>
+</div>""", unsafe_allow_html=True)
+        elif st.session_state.get("sensor_error"):
+            st.markdown(
+                f'<div style="background:#fdf0f0;border:1px solid #c4453633;border-left:4px solid #c44536;'
+                f'border-radius:8px;padding:8px 12px;margin:6px 0;font-size:12px;color:#a03030;">'
+                f'&#10007; {st.session_state.sensor_error}</div>',
+                unsafe_allow_html=True,
+            )
         cc1, cc2 = st.columns(2)
         with cc1:
             n_val = st.number_input("Nitrogen (N) - mg/kg", min_value=0.0, max_value=200.0, value=90.0, step=1.0, key="n_val")
