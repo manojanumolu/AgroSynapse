@@ -2588,7 +2588,7 @@ elif _page == "cultivation":
   <h3 class="display tool-block-title">Chemical Profile</h3>
   <span class="pill">NPK - pH</span>
 </div>
-<p class="tool-block-sub" style="margin-bottom:12px;">Known values from lab report, or estimates from field tests.</p>""", unsafe_allow_html=True)
+<p class="tool-block-sub" style="margin-bottom:12px;">Live sensor readings via Firebase &mdash; click <strong>Load from Sensor</strong> to auto-fill, or enter values manually.</p>""", unsafe_allow_html=True)
         _sensor_spacer, _sensor_btn_col = st.columns([2.2, 1])
         with _sensor_btn_col:
             load_sensor = st.button("⬇ Load from Sensor", key="load_sensor_btn", use_container_width=True)

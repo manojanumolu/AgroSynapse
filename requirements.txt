@@ -10,3 +10,4 @@ torch==2.2.2
 torchvision==0.17.2
 tensorflow-cpu==2.16.1
 keras==3.13.2
+firebase-admin>=6.0.0
